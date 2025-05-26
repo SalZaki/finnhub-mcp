@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>MCP.FinnHub.Server.SSE</RootNamespace>
+    <AssemblyTitle>MCP.FinnHub.Server.SSE</AssemblyTitle>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Title>MCP FinnHub Server SSE</Title>
+    <Description>
+      A real-time financial data streaming server built with the official Model Context Protocol (MCP) C# SDK.
+      Integrates with the FinnHub API and provides Server-Sent Events (SSE) endpoints to stream live financial data.
+    </Description>
+    <NeutralLanguage>en-GB</NeutralLanguage>
+    <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+    <RepositoryUrl>https://github.com/salzaki/mcp-finnhub</RepositoryUrl>
+  </PropertyGroup>
+  <ItemGroup Label="Packages">
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
+</Project>

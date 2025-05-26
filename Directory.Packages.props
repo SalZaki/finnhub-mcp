@@ -1,0 +1,15 @@
+<Project>
+  <Import Project=".\Packages.props"/>
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup Label="ModelContextProtocol">
+    <PackageVersion Include="ModelContextProtocol" Version="$(ModelContextProtocolVersion)" />
+    <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="$(ModelContextProtocolVersion)" />
+  </ItemGroup>
+  <ItemGroup Label="Common">
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.16"/>
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.2" />
+  </ItemGroup>
+</Project>
