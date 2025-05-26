@@ -16,6 +16,6 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Restore dependencies
-        run: dotnet restore ./mcp-finnhub.sln
+        run: dotnet restore
       - name: Build
-        run: dotnet build ./mcp-finnhub.sln --no-restore
+        run: dotnet build --no-restore
