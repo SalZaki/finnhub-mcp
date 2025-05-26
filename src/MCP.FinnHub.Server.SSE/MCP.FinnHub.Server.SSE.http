@@ -1,4 +1,4 @@
-@MCP.FinnHub.Server.Sse_HostAddress = http://localhost:5058
+@MCP.FinnHub.Server.Sse_HostAddress = http://localhost:5101
 
 GET {{MCP.FinnHub.Server.Sse_HostAddress}}/weatherforecast/
 Accept: application/json
