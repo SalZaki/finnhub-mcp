@@ -3,11 +3,11 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>MCP.FinnHub.Server.Sse</RootNamespace>
-    <AssemblyTitle>MCP.FinnHub.Server.Sse</AssemblyTitle>
+    <RootNamespace>MCP.FinnHub.Server.SSE</RootNamespace>
+    <AssemblyTitle>MCP.FinnHub.Server.SSE</AssemblyTitle>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Title>MCP FinnHub Server Sse</Title>
+    <Title>MCP FinnHub Server SSE</Title>
     <Description>
       A real-time financial data streaming server built with the official Model Context Protocol (MCP) C# SDK.
       Integrates with the FinnHub API and provides Server-Sent Events (SSE) endpoints to stream live financial data.
