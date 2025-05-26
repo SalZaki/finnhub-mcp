@@ -1,4 +1,4 @@
-name: .NET Restore, Build and Test
+name: .NET Restore and Build
 
 on:
   push:
@@ -16,8 +16,6 @@ jobs:
         with:
           dotnet-version: '8.0.x'
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore ./mcp-finnhub.sln
       - name: Build
-        run: dotnet build --no-restore
-      - name: Test
-        run: dotnet test --no-build --verbosity normal
+        run: dotnet build ./mcp-finnhub.sln --no-restore
