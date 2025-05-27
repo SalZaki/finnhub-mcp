@@ -1,4 +1,4 @@
-# MCP FinnHub Server SSE
+# MCP FinnHub Server
 
 
 ### 🔧 CORS Configuration
