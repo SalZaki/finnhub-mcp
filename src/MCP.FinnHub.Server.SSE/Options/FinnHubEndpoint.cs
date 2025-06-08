@@ -1,7 +1,9 @@
 using System.ComponentModel.DataAnnotations;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MCP.FinnHub.Server.SSE.Options;
 
+[ExcludeFromCodeCoverage]
 public sealed class FinnHubEndpoint
 {
     [Required]
