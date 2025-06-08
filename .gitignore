@@ -48,3 +48,6 @@ x86/
 
 #Teams fx
 .fx/
+
+.env
+.env.local
