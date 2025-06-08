@@ -1,9 +1,17 @@
+using MCP.FinnHub.Server.SSE.Options;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
     .AddEnvironmentVariables();
+
+builder.Services
+    .AddOptions<FinnHubOptions>()
+    .Bind(builder.Configuration.GetSection("FinnHub"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
