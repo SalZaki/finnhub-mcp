@@ -1,6 +1,9 @@
+using System.Diagnostics;
+using System.Reflection;
 using MCP.FinnHub.Server.SSE.Options;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using ModelContextProtocol.Protocol;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +34,26 @@ builder.Services.AddCors(options =>
             .WithExposedHeaders("Content-Type", "Cache-Control", "Connection");
     });
 });
+
+var assembly = Assembly.GetExecutingAssembly();
+builder.Services
+    .AddMcpServer(o =>
+    {
+        var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
+        var version = fvi.FileVersion ?? "v0.0.1";
+
+        o.ServerInfo = new Implementation
+        {
+            Name = "Custom MCP Server (SSE)",
+            Version = version
+        };
+        o.ServerInstructions =
+            "If no programming language is specified, assume C#. Keep your responses brief and professional.";
+    })
+    .WithHttpTransport()
+    .WithResourcesFromAssembly(assembly)
+    .WithPromptsFromAssembly(assembly)
+    .WithToolsFromAssembly(assembly);
 
 var app = builder.Build();
 
@@ -71,5 +94,5 @@ app.MapHealthChecks("/health/ready", CreateHealthOptions());
 app.MapHealthChecks("/health/live", CreateHealthOptions());
 app.UseCors();
 app.UseHttpsRedirection();
-
+app.MapMcp();
 app.Run();
