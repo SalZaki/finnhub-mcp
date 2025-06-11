@@ -7,7 +7,7 @@
     <AssemblyTitle>MCP.FinnHub.Server.SSE</AssemblyTitle>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Title>MCP FinnHub Server SSE</Title>
+    <Title>FinnHub MCP Server (SSE)</Title>
     <Description>
       A real-time financial data streaming server built with the official Model Context Protocol (MCP) C# SDK.
       Integrates with the FinnHub API and provides Server-Sent Events (SSE) endpoints to stream live financial data.
@@ -21,5 +21,8 @@
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Swashbuckle.AspNetCore" />
+    <PackageReference Include="DotNetEnv" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
   </ItemGroup>
 </Project>
