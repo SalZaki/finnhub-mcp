@@ -1,0 +1,43 @@
+namespace MCP.FinnHub.Server.SSE.Models;
+
+/// <summary>
+/// Represents a stock symbol as returned by the Finnhub API.
+/// This includes metadata such as exchange codes, security type, and identifiers.
+/// </summary>
+public sealed class StockSymbol
+{
+    /// <summary>
+    /// The currency in which the stock is traded (e.g., "USD").
+    /// </summary>
+    public required string Currency { get; set; }
+
+    /// <summary>
+    /// A human-readable name or description of the company or security.
+    /// </summary>
+    public required string Description { get; set; }
+
+    /// <summary>
+    /// The symbol displayed to users or traders, which may differ slightly from the raw symbol.
+    /// </summary>
+    public required string DisplaySymbol { get; set; }
+
+    /// <summary>
+    /// The FIGI (Financial Instrument Global Identifier) for the security.
+    /// </summary>
+    public required string Figi { get; set; }
+
+    /// <summary>
+    /// The MIC (Market Identifier Code) where the stock is traded (e.g., "XNYS" for NYSE).
+    /// </summary>
+    public required string Mic { get; set; }
+
+    /// <summary>
+    /// The raw symbol code used to identify the stock on the exchange.
+    /// </summary>
+    public required string Symbol { get; set; }
+
+    /// <summary>
+    /// The type of security (e.g., "Common Stock").
+    /// </summary>
+    public required string Type { get; set; }
+}

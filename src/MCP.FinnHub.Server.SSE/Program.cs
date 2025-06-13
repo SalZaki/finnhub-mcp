@@ -1,14 +1,22 @@
-using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Reflection;
 using DotNetEnv;
 using MCP.FinnHub.Server.SSE.HealthChecks;
 using MCP.FinnHub.Server.SSE.Options;
+using MCP.FinnHub.Server.SSE.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using ModelContextProtocol.Protocol;
 
-var builder = WebApplication.CreateBuilder(args);
+var assembly = Assembly.GetEntryAssembly();
+var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"mcp.server.finnhub.{Guid.NewGuid()}.sse";
+var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "1.0.0";
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    ApplicationName = applicationName,
+    Args = args
+});
 
 Env.Load("../../.env");
 
@@ -24,6 +32,7 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services.AddScoped<IFinnHubService, FinnHubService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -61,14 +70,9 @@ builder.Services.AddCors(options =>
     });
 });
 
-var assembly = Assembly.GetExecutingAssembly();
-
 builder.Services
     .AddMcpServer(o =>
     {
-        var fvi = FileVersionInfo.GetVersionInfo(assembly.Location);
-        var version = fvi.FileVersion ?? "v0.0.1";
-
         o.ServerInfo = new Implementation
         {
             Name = "FinnHub MCP Server (SSE)",
@@ -91,6 +95,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseCors();
+
+app.Map("/", () => $"MCP Server '{applicationName}' ({version}) is running.");
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
