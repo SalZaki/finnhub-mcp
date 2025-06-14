@@ -23,9 +23,15 @@ jobs:
       - name: Build
         run: dotnet build -p:CurrentYear=$(date +'%Y') --no-restore
 
-      - name: Test with Coverage
+      - name: Run Tests with Coverage
         run: |
-          dotnet test --no-build --configuration Release /p:CollectCoverage=true /p:CoverletOutputFormat=cobertura
+          dotnet test ./test/MCP.FinnHub.Server.SSE.Tests.Unit/MCP.FinnHub.Server.SSE.Tests.Unit.csproj \
+          --configuration Release \
+          --no-build \
+          /p:CollectCoverage=true \
+          /p:CoverletOutputFormat=cobertura \
+          /p:ExcludeByAttribute=GeneratedCodeAttribute \
+          /p:CoverletOutput=./TestResults/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
