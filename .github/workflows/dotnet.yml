@@ -26,17 +26,23 @@ jobs:
       - name: Run Tests with Coverage
         run: |
           dotnet test ./test/MCP.FinnHub.Server.SSE.Tests.Unit/MCP.FinnHub.Server.SSE.Tests.Unit.csproj \
-          --configuration Release \
-          --no-build \
-          /p:CollectCoverage=true \
-          /p:CoverletOutputFormat=cobertura \
-          /p:ExcludeByAttribute=GeneratedCodeAttribute \
-          /p:CoverletOutput=./TestResults/
+            --configuration Release \
+            --no-build \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura \
+            /p:ExcludeByAttribute=GeneratedCodeAttribute \
+            /p:CoverletOutput=./TestResults/coverage.cobertura.xml
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: ./TestResults/
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: '**/coverage.cobertura.xml'
+          files: './TestResults/coverage.cobertura.xml'
           flags: unittests
           name: codecov-mcp-finnhub
