@@ -30,13 +30,14 @@ jobs:
             /p:CollectCoverage=true \
             /p:CoverletOutputFormat=cobertura \
             /p:ExcludeByAttribute=GeneratedCodeAttribute \
-            /p:CoverletOutput=TestResults/
+            /p:CoverletOutput=TestResults/coverage
 
-      - name: Upload test results
+      - name: Upload test coverage
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: ./TestResults/
+          path: TestResults/coverage.cobertura.xml
+          if-no-files-found: warn
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
