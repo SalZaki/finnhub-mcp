@@ -1,4 +1,4 @@
-name: .NET Restore and Build
+name: .NET Restore, Build, Test, and Coverage
 
 on:
   push:
@@ -11,11 +11,38 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-      - name: Restore dependencies
+
+      - name: Restore
         run: dotnet restore
+
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build -p:CurrentYear=$(date +'%Y') --no-restore
+
+      - name: Run Tests with Coverage
+        run: |
+          dotnet test ./test/MCP.FinnHub.Server.SSE.Tests.Unit/MCP.FinnHub.Server.SSE.Tests.Unit.csproj \
+            --configuration Release \
+            /p:CollectCoverage=true \
+            /p:CoverletOutputFormat=cobertura \
+            /p:ExcludeByAttribute=GeneratedCodeAttribute \
+            /p:CoverletOutput=TestResults/coverage
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/coverage.cobertura.xml
+          if-no-files-found: warn
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: TestResults/coverage.cobertura.xml
+          flags: unittests
+          name: codecov-mcp-finnhub
