@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageProjectUrl>https://github.com/SalZaki/mcp-finnhub.git</PackageProjectUrl>
     <Company>Sal Zaki</Company>
-    <Copyright>Copyright © 2024</Copyright>
+    <Copyright>Copyright © $(CurrentYear) $(Company)</Copyright>
     <Authors>$(Company)</Authors>
     <Product>MCP FinnHub</Product>
     <LangVersion>Latest</LangVersion>
@@ -11,6 +11,6 @@
     <Version>1.0.0</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);CS1591</WarningsNotAsErrors>
-    <RepositoryRoot>$(MSBuildThisFileDirectory)</RepositoryRoot>
+    <RepositoryUrl>https://github.com/SalZaki/mcp-finnhub</RepositoryUrl>
   </PropertyGroup>
 </Project>

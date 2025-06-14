@@ -7,12 +7,12 @@ namespace MCP.FinnHub.Server.SSE.Options;
 public sealed class FinnHubEndpoint
 {
     [Required]
-    public string Name { get; set; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
 
     [Required]
-    public string Url { get; set; } = string.Empty;
+    public string Url { get; init; } = string.Empty;
 
-    public bool IsActive { get; set; } = true;
+    public bool IsActive { get; init; } = true;
 
-    public string Description { get; set; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
 }

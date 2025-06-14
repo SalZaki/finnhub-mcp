@@ -1,5 +1,6 @@
 <Project>
   <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <ModelContextProtocolVersion>0.2.0-preview.1</ModelContextProtocolVersion>
     <MicrosoftDependencyInjectionVersion>7.0.0</MicrosoftDependencyInjectionVersion>
     <MicrosoftLoggingVersion>7.0.0</MicrosoftLoggingVersion>

@@ -7,13 +7,13 @@ namespace MCP.FinnHub.Server.SSE.Options;
 public sealed class FinnHubOptions
 {
     [Required]
-    public string ApiKey { get; set; } = string.Empty;
+    public string ApiKey { get; init; } = string.Empty;
 
     [Required]
-    public string BaseUrl { get; set; } = string.Empty;
+    public string BaseUrl { get; init; } = string.Empty;
 
     [Range(1, 60)]
-    public int TimeoutSeconds { get; set; } = 10;
+    public int TimeoutSeconds { get; init; } = 10;
 
-    public List<FinnHubEndpoint> Endpoints { get; set; } = [];
+    public List<FinnHubEndpoint> Endpoints { get; init; } = [];
 }

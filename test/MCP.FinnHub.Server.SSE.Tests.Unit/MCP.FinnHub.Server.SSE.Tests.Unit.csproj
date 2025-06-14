@@ -5,6 +5,7 @@
       <Nullable>enable</Nullable>
       <IsPackable>false</IsPackable>
       <IsTestProject>true</IsTestProject>
+      <RootNamespace>MCP.FinnHub.Server.SSE.Tests.Unit</RootNamespace>
     </PropertyGroup>
     <ItemGroup>       
       <PackageReference Include="coverlet.collector" />

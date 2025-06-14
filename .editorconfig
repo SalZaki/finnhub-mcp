@@ -6,7 +6,9 @@ root = true
 # All files
 [*]
 indent_style = space
+indent_size = 4
 end_of_line = lf
+charset = utf-8
 
 # XML project files
 [*.{csproj,vbproj,vcxproj,vcxproj.filters,proj,projitems,shproj}]
@@ -216,7 +218,7 @@ dotnet_diagnostic.IDE0051.severity = none # Remove unused private member
 dotnet_diagnostic.IDE0052.severity = none # Remove unread private member
 dotnet_diagnostic.IDE0058.severity = none # Remove unused expression value
 dotnet_diagnostic.IDE0059.severity = none # Unnecessary assignment of a value
-dotnet_diagnostic.IDE0060.severity = none # Remove unused parameter
+dotnet_diagnostic.IDE0060.severity = suggestion # Remove unused parameter
 dotnet_diagnostic.IDE0080.severity = none # Remove unnecessary suppression operator
 dotnet_diagnostic.IDE0100.severity = none # Remove unnecessary equality operator
 dotnet_diagnostic.IDE0110.severity = none # Remove unnecessary discards
@@ -362,3 +364,9 @@ csharp_style_expression_bodied_local_functions = false:silent
 
 [*.cs]
 max_line_length = 120
+
+file_header_template = Copyright (c) 2024 Sal Zaki. All rights reserved.
+
+[*.Tests.cs]
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.IDE0060.severity = silent

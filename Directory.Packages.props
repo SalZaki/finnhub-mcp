@@ -1,18 +1,30 @@
 <Project>
   <Import Project=".\Packages.props"/>
+
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>false</CentralPackageTransitivePinningEnabled>
+    <ModelContextProtocolVersion>0.2.0-preview.1</ModelContextProtocolVersion>
   </PropertyGroup>
+
   <ItemGroup Label="ModelContextProtocol">
     <PackageVersion Include="ModelContextProtocol" Version="$(ModelContextProtocolVersion)" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="$(ModelContextProtocolVersion)" />
   </ItemGroup>
+
   <ItemGroup Label="Common">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="8.0.16"/>
     <PackageVersion Include="DotNetEnv" Version="3.1.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.2" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="9.0.3" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="9.6.0" />
+  </ItemGroup>
+
+  <ItemGroup Label="Test">
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.8.0"/>
+    <PackageVersion Include="xunit" Version="2.6.6"/>
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.5.6"/>
+    <PackageVersion Include="coverlet.collector" Version="6.0.0"/>
+    <PackageVersion Include="NSubstitute" Version="5.1.0"/>
   </ItemGroup>
 </Project>
