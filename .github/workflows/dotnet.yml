@@ -77,8 +77,6 @@ jobs:
           --verbosity normal \
           -p:CollectCoverage=true \
           -p:CoverletOutputFormat=cobertura \
-          -p:CollectCoverage=true \
-          -p:CoverletOutputFormat=cobertura \
           -p:ExcludeByAttribute=GeneratedCodeAttribute \
           -p:CoverletOutput=TestResults/coverage
 

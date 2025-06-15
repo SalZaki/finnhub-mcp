@@ -1,6 +1,6 @@
 # MCP FinnHub Server
 
-![Build Status](https://github.com/SalZaki/mcp-finnhub/actions/workflows/ci.yml/badge.svg)
+![Build Status](https://github.com/SalZaki/mcp-finnhub/actions/workflows/dotnet.yml/badge.svg)
 [![codecov](https://codecov.io/gh/SalZaki/mcp-finnhub/branch/main/graph/badge.svg)](https://codecov.io/gh/SalZaki/mcp-finnhub)
 
 A lightweight Model Context Protocol (MCP) Server that integrates with Finnhub’s financial data APIs using both Server-Sent Events (SSE).

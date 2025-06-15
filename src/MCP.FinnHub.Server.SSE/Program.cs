@@ -1,3 +1,13 @@
+﻿// --------------------------------------------------------------------------------------------------------------------
+//  <copyright>
+//    This file is part of the MCP FinnHub project and is licensed under the MIT License.
+//    See the LICENSE file in the project root for full license information.
+//  </copyright>
+//  <summary>
+//    Add summary.
+//  </summary>
+//  --------------------------------------------------------------------------------------------------------------------
+
 using System.Net.Http.Headers;
 using System.Reflection;
 using DotNetEnv;
