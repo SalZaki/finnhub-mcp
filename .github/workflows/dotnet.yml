@@ -74,7 +74,8 @@ jobs:
           --configuration Release \
           --no-build \
           --no-restore \
-          --verbosity normal \
+          --blame \
+          --verbosity diagnostic \
           -p:CollectCoverage=true \
           -p:CoverletOutputFormat=cobertura \
           -p:ExcludeByAttribute=GeneratedCodeAttribute \
