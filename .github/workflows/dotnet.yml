@@ -57,7 +57,7 @@ jobs:
   test:
     name: 🧪 Unit Tests & 📊 Coverage
     runs-on: ubuntu-latest
-    needs: build
+    needs: format
 
     steps:
       - name: 📥 Checkout code
@@ -72,18 +72,21 @@ jobs:
         run: |
           dotnet test ./test/MCP.FinnHub.Server.SSE.Tests.Unit/MCP.FinnHub.Server.SSE.Tests.Unit.csproj \
           --configuration Release \
-          --blame \
-          --verbosity diagnostic \
+          --collect:'XPlat Code Coverage' \
+          --verbosity normal \
           -p:CollectCoverage=true \
           -p:CoverletOutputFormat=cobertura \
           -p:ExcludeByAttribute=GeneratedCodeAttribute \
-          -p:CoverletOutput=TestResults/coverage
+          -p:CoverletOutput=./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults
+
+      - name: 📂 Show test result files
+        run: ls -R ./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./TestResults/coverage.cobertura.xml
+          files: ./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults/coverage.cobertura.xml
           flags: unit-tests
           name: codecov-mcp-finnhub
 
@@ -91,4 +94,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
            name: test-results
-           path: ./TestResults/
+           path: ./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults/
