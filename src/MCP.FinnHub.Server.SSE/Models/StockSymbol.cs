@@ -1,3 +1,13 @@
+﻿// --------------------------------------------------------------------------------------------------------------------
+//  <copyright>
+//    This file is part of the MCP FinnHub project and is licensed under the MIT License.
+//    See the LICENSE file in the project root for full license information.
+//  </copyright>
+//  <summary>
+//    Add summary.
+//  </summary>
+//  --------------------------------------------------------------------------------------------------------------------
+
 namespace MCP.FinnHub.Server.SSE.Models;
 
 /// <summary>
@@ -9,7 +19,7 @@ public sealed class StockSymbol
     /// <summary>
     /// The currency in which the stock is traded (e.g., "USD").
     /// </summary>
-    public required string Currency { get; set; }
+    public required string Currency { get; init; }
 
     /// <summary>
     /// A human-readable name or description of the company or security.

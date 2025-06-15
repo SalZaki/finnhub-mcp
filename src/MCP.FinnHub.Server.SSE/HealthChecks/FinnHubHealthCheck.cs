@@ -1,6 +1,16 @@
+﻿// --------------------------------------------------------------------------------------------------------------------
+//  <copyright>
+//    This file is part of the MCP FinnHub project and is licensed under the MIT License.
+//    See the LICENSE file in the project root for full license information.
+//  </copyright>
+//  <summary>
+//    Add summary.
+//  </summary>
+//  --------------------------------------------------------------------------------------------------------------------
+
+using MCP.FinnHub.Server.SSE.Options;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
-using MCP.FinnHub.Server.SSE.Options;
 
 namespace MCP.FinnHub.Server.SSE.HealthChecks;
 
