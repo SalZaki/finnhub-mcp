@@ -36,16 +36,16 @@ public sealed class SymbolSearchQuery : BaseSearchQuery
 
     public static SymbolSearchQuery Create(string query, int limit = 10)
     {
-        return new SymbolSearchQuery {Query = query, Limit = limit};
+        return new SymbolSearchQuery { Query = query, Limit = limit };
     }
 
     public static SymbolSearchQuery ForExchange(string query, string exchange, int limit = 10)
     {
-        return new SymbolSearchQuery {Query = query, Exchange = exchange, Limit = limit};
+        return new SymbolSearchQuery { Query = query, Exchange = exchange, Limit = limit };
     }
 
     public static SymbolSearchQuery ForType(string query, int limit = 10)
     {
-        return new SymbolSearchQuery {Query = query, Limit = limit};
+        return new SymbolSearchQuery { Query = query, Limit = limit };
     }
 }

@@ -9,5 +9,5 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 global using System.Text.Json;
-global using ModelContextProtocol.Server;
 global using ModelContextProtocol.Protocol;
+global using ModelContextProtocol.Server;

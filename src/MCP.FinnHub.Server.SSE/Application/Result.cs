@@ -32,9 +32,9 @@ public sealed class Result<T>
     public Result<T> Failure(
         string errorMessage,
         ResultErrorType errorType = ResultErrorType.Unknown) => new()
-    {
-        IsSuccess = false,
-        ErrorMessage = errorMessage,
-        ErrorType = errorType
-    };
+        {
+            IsSuccess = false,
+            ErrorMessage = errorMessage,
+            ErrorType = errorType
+        };
 }

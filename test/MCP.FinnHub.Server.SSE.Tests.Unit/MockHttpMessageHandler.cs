@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of  FinnHub MCP project and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -9,7 +9,6 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using System.Net.Http.Headers;
 
 namespace MCP.FinnHub.Server.SSE.Tests.Unit;
 

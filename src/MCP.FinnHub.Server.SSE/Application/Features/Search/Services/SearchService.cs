@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Service for searching stock symbols using the FinnHub API.
+//    Add summary.
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -89,7 +89,7 @@ public sealed class SearchService(
     {
         return this._finnHubOptions
             .EndPoints
-            .FirstOrDefault(x => x is {IsActive: true, Name: "search-symbol"})
+            .FirstOrDefault(x => x is { IsActive: true, Name: "search-symbol" })
             ?.Url;
     }
 

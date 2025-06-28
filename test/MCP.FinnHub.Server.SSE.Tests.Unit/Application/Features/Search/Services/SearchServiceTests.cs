@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of  FinnHub MCP project and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -6,7 +6,7 @@
 //  <summary>
 //    Add summary.
 //  </summary>
-//  --------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
 using System.Net.Http.Headers;
@@ -84,7 +84,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsStockSymbols_WhenApiCallIsSuccessful()
     {
         // Arrange
-        var query = new SymbolSearchQuery {Query = "AAPL"};
+        var query = new SymbolSearchQuery { Query = "AAPL" };
 
         var expectedSymbols = new List<StockSymbol>
         {
@@ -166,7 +166,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ExcludesExchangeParameter_WhenExchangeIsNotProvided()
     {
         // Arrange
-        var request = new SymbolSearchQuery{ Query = "AAPL" };
+        var request = new SymbolSearchQuery { Query = "AAPL" };
 
         var expectedSymbols = new List<StockSymbol>();
         Uri? capturedUri = null;
@@ -335,7 +335,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsRequestTimeout_WhenRequestTimesOut()
     {
         // Arrange
-        var request = new SymbolSearchQuery {Query = "AAPL"};
+        var request = new SymbolSearchQuery { Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => throw new TaskCanceledException("Simulated timeout", new TimeoutException()));
 
@@ -359,7 +359,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsInvalidResponse_WhenResponseIsInvalidResponse()
     {
         // Arrange
-        var request = new SymbolSearchQuery {Query = "AAPL"};
+        var request = new SymbolSearchQuery { Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -386,7 +386,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsEmptyList_WhenResponseIsEmpty()
     {
         // Arrange
-        var request = new SymbolSearchQuery {Query = "AAPL"};
+        var request = new SymbolSearchQuery { Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -412,7 +412,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_IncludesApiKeyInHeaders()
     {
         // Arrange
-        var request = new SymbolSearchQuery {Query = "AAPL"};
+        var request = new SymbolSearchQuery { Query = "AAPL" };
 
         HttpRequestHeaders? capturedHeaders = null;
 
