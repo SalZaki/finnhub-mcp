@@ -6,12 +6,12 @@
 //  <summary>
 //    Add summary.
 //  </summary>
-//  --------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 namespace MCP.FinnHub.Server.SSE.Models;
 
 /// <summary>
-/// Represents a stock symbol as returned by the Finnhub API.
+/// Represents a stock symbol as returned by the FinnHub API.
 /// This includes metadata such as exchange codes, security type, and identifiers.
 /// </summary>
 public sealed class StockSymbol
@@ -24,30 +24,30 @@ public sealed class StockSymbol
     /// <summary>
     /// A human-readable name or description of the company or security.
     /// </summary>
-    public required string Description { get; set; }
+    public required string Description { get; init; }
 
     /// <summary>
     /// The symbol displayed to users or traders, which may differ slightly from the raw symbol.
     /// </summary>
-    public required string DisplaySymbol { get; set; }
+    public required string DisplaySymbol { get; init; }
 
     /// <summary>
     /// The FIGI (Financial Instrument Global Identifier) for the security.
     /// </summary>
-    public required string Figi { get; set; }
+    public required string Figi { get; init; }
 
     /// <summary>
     /// The MIC (Market Identifier Code) where the stock is traded (e.g., "XNYS" for NYSE).
     /// </summary>
-    public required string Mic { get; set; }
+    public required string Mic { get; init; }
 
     /// <summary>
     /// The raw symbol code used to identify the stock on the exchange.
     /// </summary>
-    public required string Symbol { get; set; }
+    public required string Symbol { get; init; }
 
     /// <summary>
     /// The type of security (e.g., "Common Stock").
     /// </summary>
-    public required string Type { get; set; }
+    public required string Type { get; init; }
 }

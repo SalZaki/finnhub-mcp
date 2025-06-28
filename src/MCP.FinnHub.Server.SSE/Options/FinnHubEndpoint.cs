@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace MCP.FinnHub.Server.SSE.Options;
 
 [ExcludeFromCodeCoverage]
-public sealed class FinnHubEndpoint
+public sealed class FinnHubEndPoint
 {
     [Required]
     public string Name { get; init; } = string.Empty;

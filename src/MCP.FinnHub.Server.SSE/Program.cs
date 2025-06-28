@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of the MCP FinnHub project and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -6,20 +6,21 @@
 //  <summary>
 //    Add summary.
 //  </summary>
-//  --------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net.Http.Headers;
 using System.Reflection;
 using DotNetEnv;
-using MCP.FinnHub.Server.SSE.HealthChecks;
+using MCP.FinnHub.Server.SSE.Application.Features.HealthCheck;
+using MCP.FinnHub.Server.SSE.Application.Features.Search.Services;
+using MCP.FinnHub.Server.SSE.Common;
 using MCP.FinnHub.Server.SSE.Options;
-using MCP.FinnHub.Server.SSE.Services;
+using MCP.FinnHub.Server.SSE.Tools.Search;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using ModelContextProtocol.Protocol;
 
 var assembly = Assembly.GetEntryAssembly();
-var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"mcp.server.finnhub.{Guid.NewGuid()}.sse";
+var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"finnhub.mcp.server.{Guid.NewGuid()}.sse";
 var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "1.0.0";
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
@@ -42,7 +43,33 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder.Services.AddScoped<IFinnHubService, FinnHubService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<SearchSymbolsTool>();
+
+var mcpServerOptionsBuilder = builder.Services.AddOptions<McpServerOptions>();
+
+mcpServerOptionsBuilder.Configure<IServiceProvider>((mcpServerOptions, serviceProvider) =>
+{
+    mcpServerOptions.ProtocolVersion = Constants.Server.ProtocolVersion;
+    mcpServerOptions.ServerInstructions = Constants.Server.Instructions;
+    mcpServerOptions.ServerInfo = new Implementation
+    {
+        Name = applicationName,
+        Version = version
+    };
+    mcpServerOptions.Capabilities = new ServerCapabilities
+    {
+        Tools = new ToolsCapability
+        {
+            ToolCollection = [serviceProvider.GetRequiredService<SearchSymbolsTool>()]
+        }
+    };
+});
+
+builder.Services
+    .AddMcpServer()
+    .WithHttpTransport();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -50,7 +77,7 @@ builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
     .AddCheck<FinnHubHealthCheck>("finnhub", tags: ["ready"]);
 
-builder.Services.AddHttpClient("finnhub", client =>
+builder.Services.AddHttpClient("FinnHub", client =>
     {
         client.BaseAddress = new Uri(builder.Configuration["FinnHub:BaseUrl"] ?? "https://finnhub.io/api/v1");
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
@@ -80,21 +107,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services
-    .AddMcpServer(o =>
-    {
-        o.ServerInfo = new Implementation
-        {
-            Name = "FinnHub MCP Server (SSE)",
-            Version = version
-        };
-        o.ServerInstructions = "If no programming language is specified, assume C#. Keep your responses brief and professional.";
-    })
-    .WithHttpTransport()
-    .WithResourcesFromAssembly(assembly)
-    .WithPromptsFromAssembly(assembly)
-    .WithToolsFromAssembly(assembly);
-
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -106,7 +118,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors();
 
-app.Map("/", () => $"MCP Server '{applicationName}' ({version}) is running.");
+app.Map("/", () => $"'{applicationName}' ({version}) is running.");
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {

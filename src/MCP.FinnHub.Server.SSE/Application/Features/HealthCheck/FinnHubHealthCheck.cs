@@ -1,4 +1,4 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of the MCP FinnHub project and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -12,12 +12,14 @@ using MCP.FinnHub.Server.SSE.Options;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
-namespace MCP.FinnHub.Server.SSE.HealthChecks;
+namespace MCP.FinnHub.Server.SSE.Application.Features.HealthCheck;
 
-public sealed class FinnHubHealthCheck(IHttpClientFactory httpClientFactory, IOptions<FinnHubOptions> options)
+public sealed class FinnHubHealthCheck(
+    IHttpClientFactory httpClientFactory,
+    IOptions<FinnHubOptions> options)
     : IHealthCheck
 {
-    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("finnhub");
+    private readonly HttpClient _httpClient = httpClientFactory.CreateClient("FinnHub");
     private readonly FinnHubOptions _options = options.Value;
 
     public async Task<HealthCheckResult> CheckHealthAsync(

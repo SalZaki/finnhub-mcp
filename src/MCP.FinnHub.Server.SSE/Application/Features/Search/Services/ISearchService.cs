@@ -8,22 +8,14 @@
 //  </summary>
 //  --------------------------------------------------------------------------------------------------------------------
 
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
+using MCP.FinnHub.Server.SSE.Application.Features.Search.Queries;
+using MCP.FinnHub.Server.SSE.Models;
 
-namespace MCP.FinnHub.Server.SSE.Options;
+namespace MCP.FinnHub.Server.SSE.Application.Features.Search.Services;
 
-[ExcludeFromCodeCoverage]
-public sealed class FinnHubOptions
+public interface ISearchService
 {
-    [Required]
-    public string ApiKey { get; init; } = string.Empty;
-
-    [Required]
-    public string BaseUrl { get; init; } = string.Empty;
-
-    [Range(1, 60)]
-    public int TimeoutSeconds { get; init; } = 10;
-
-    public List<FinnHubEndPoint> EndPoints { get; init; } = [];
+    Task<Result<IReadOnlyList<StockSymbol>>> SearchSymbolsAsync(
+        SymbolSearchQuery query,
+        CancellationToken cancellationToken = default);
 }
