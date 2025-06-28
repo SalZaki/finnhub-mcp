@@ -1,12 +1,12 @@
-﻿// --------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
-//    This file is part of the MCP FinnHub project and is licensed under the MIT License.
+//    This file is part of  FinnHub MCP project and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
 //    Add summary.
 //  </summary>
-//  --------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
@@ -14,7 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 namespace MCP.FinnHub.Server.SSE.Options;
 
 [ExcludeFromCodeCoverage]
-public sealed class FinnHubEndpoint
+public sealed class FinnHubEndPoint
 {
     [Required]
     public string Name { get; init; } = string.Empty;

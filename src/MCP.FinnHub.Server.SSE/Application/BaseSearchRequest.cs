@@ -8,22 +8,17 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
+namespace MCP.FinnHub.Server.SSE.Application;
 
-namespace MCP.FinnHub.Server.SSE.Options;
-
-[ExcludeFromCodeCoverage]
-public sealed class FinnHubOptions
+public abstract class BaseSearchQuery
 {
-    [Required]
-    public string ApiKey { get; init; } = string.Empty;
+    public int Limit { get; init; } = 10;
 
-    [Required]
-    public string BaseUrl { get; init; } = string.Empty;
-
-    [Range(1, 60)]
-    public int TimeoutSeconds { get; init; } = 10;
-
-    public List<FinnHubEndPoint> EndPoints { get; init; } = [];
+    public virtual void Validate()
+    {
+        if (this.Limit is < 1 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(this.Limit), this.Limit, "Limit must be between 1 and 100.");
+        }
+    }
 }
