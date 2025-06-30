@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -12,8 +12,6 @@ namespace MCP.FinnHub.Server.SSE.Application.Features.Search.Queries;
 
 public sealed class SymbolSearchQuery : BaseSearchQuery
 {
-    public required string Query { get; init; }
-
     public string? Exchange { get; init; }
 
     public override void Validate()
@@ -34,18 +32,18 @@ public sealed class SymbolSearchQuery : BaseSearchQuery
         }
     }
 
-    public static SymbolSearchQuery Create(string query, int limit = 10)
+    public static SymbolSearchQuery Create(string queryId, string query, int limit = 10)
     {
-        return new SymbolSearchQuery { Query = query, Limit = limit };
+        return new SymbolSearchQuery { QueryId = queryId, Query = query, Limit = limit };
     }
 
-    public static SymbolSearchQuery ForExchange(string query, string exchange, int limit = 10)
+    public static SymbolSearchQuery ForExchange(string queryId, string query, string exchange, int limit = 10)
     {
-        return new SymbolSearchQuery { Query = query, Exchange = exchange, Limit = limit };
+        return new SymbolSearchQuery { QueryId = queryId, Query = query, Exchange = exchange, Limit = limit };
     }
 
-    public static SymbolSearchQuery ForType(string query, int limit = 10)
+    public static SymbolSearchQuery ForType(string queryId, string query, int limit = 10)
     {
-        return new SymbolSearchQuery { Query = query, Limit = limit };
+        return new SymbolSearchQuery { QueryId = queryId, Query = query, Limit = limit };
     }
 }

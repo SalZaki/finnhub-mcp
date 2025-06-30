@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     Args = args
 });
 
-Env.Load("../../.env");
+Env.TraversePath().Load();
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
@@ -43,8 +43,8 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
-builder.Services.AddScoped<ISearchService, SearchService>();
-builder.Services.AddScoped<SearchSymbolsTool>();
+builder.Services.AddSingleton<ISearchService, SearchService>();
+builder.Services.AddSingleton<SearchSymbolsTool>();
 
 var mcpServerOptionsBuilder = builder.Services.AddOptions<McpServerOptions>();
 
@@ -75,7 +75,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
-    .AddCheck<FinnHubHealthCheck>("finnhub", tags: ["ready"]);
+    .AddCheck<FinnHubHealthCheck>("FinnHub", tags: ["ready"]);
 
 builder.Services.AddHttpClient("FinnHub", client =>
     {
@@ -118,7 +118,13 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseCors();
 
-app.Map("/", () => $"'{applicationName}' ({version}) is running.");
+app.Map("/", () => new
+{
+    application = applicationName,
+    version,
+    environment = app.Environment.EnvironmentName,
+    status = "running"
+});
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {

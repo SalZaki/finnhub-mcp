@@ -4,24 +4,27 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
 
 namespace MCP.FinnHub.Server.SSE.Application;
 
-[ExcludeFromCodeCoverage]
 public sealed class Result<T>
 {
+    [JsonPropertyName("is_success")]
     public bool IsSuccess { get; private init; }
 
+    [JsonPropertyName("data")]
     public T? Data { get; private init; }
 
+    [JsonPropertyName("error_message")]
     public string? ErrorMessage { get; private init; }
 
-    public ResultErrorType ErrorType { get; private init; }
+    [JsonPropertyName("error_type")]
+    public string? ErrorType { get; private init; }
 
     public Result<T> Success(T data) => new()
     {
@@ -35,6 +38,6 @@ public sealed class Result<T>
         {
             IsSuccess = false,
             ErrorMessage = errorMessage,
-            ErrorType = errorType
+            ErrorType = errorType.ToString(),
         };
 }

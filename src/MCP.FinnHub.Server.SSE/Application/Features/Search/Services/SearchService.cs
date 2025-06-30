@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -30,7 +30,7 @@ public sealed class SearchService(
     private readonly JsonSerializerOptions _options = new()
     {
         WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
@@ -52,29 +52,32 @@ public sealed class SearchService(
 
         var requestUri = this.BuildRequestUri(searchEndpoint, query);
 
-        logger.LogInformation("Requesting search symbols from FinnHub: {RequestUri}", requestUri);
+        logger.LogInformation("Requesting search symbols from FinnHub Api: {RequestUri}", requestUri);
 
         try
         {
-            var symbols = await this.ExecuteSearchRequestAsync(requestUri, cancellationToken);
-            logger.LogInformation("Retrieved {Count} symbols from FinnHub", symbols.Count);
-            return new Result<IReadOnlyList<StockSymbol>>().Success(symbols);
+            var stockSymbols = await this.ExecuteSearchRequestAsync(requestUri, cancellationToken);
+            logger.LogInformation("Retrieved {Count} symbols from FinnHub Api", stockSymbols.Count);
+
+            return stockSymbols.Count > 0
+                ? new Result<IReadOnlyList<StockSymbol>>().Success(stockSymbols)
+                : new Result<IReadOnlyList<StockSymbol>>().Failure("No search symbol(s) found.", ResultErrorType.NotFound);
         }
         catch (HttpRequestException ex)
         {
-            logger.LogError(ex, "HTTP request to FinnHub failed for query: {Query}", query.Query);
+            logger.LogError(ex, "HTTP request to FinnHub Api failed for query: {Query}", query.Query);
             return new Result<IReadOnlyList<StockSymbol>>()
                 .Failure("Service temporarily unavailable", ResultErrorType.ServiceUnavailable);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
-            logger.LogWarning(ex, "Request to FinnHub timed out for query: {Query}", query.Query);
+            logger.LogWarning(ex, "Request to FinnHub Api timed out for query: {Query}", query.Query);
             return new Result<IReadOnlyList<StockSymbol>>()
                 .Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (JsonException ex)
         {
-            logger.LogError(ex, "Failed to deserialize response from FinnHub for query: {Query}", query.Query);
+            logger.LogError(ex, "Failed to deserialize response from FinnHub Api for query: {Query}", query.Query);
             return new Result<IReadOnlyList<StockSymbol>>()
                 .Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
@@ -93,20 +96,20 @@ public sealed class SearchService(
             ?.Url;
     }
 
-    private string BuildRequestUri(string searchEndpoint, SymbolSearchQuery qeury)
+    private string BuildRequestUri(string searchEndpoint, SymbolSearchQuery symbolSearchQuery)
     {
         var uriBuilder = new StringBuilder()
             .Append(this._finnHubOptions.BaseUrl.TrimEnd('/'))
             .Append('/')
             .Append(searchEndpoint.TrimStart('/'))
             .Append("?q=")
-            .Append(Uri.EscapeDataString(qeury.Query));
+            .Append(Uri.EscapeDataString(symbolSearchQuery.Query));
 
-        if (!string.IsNullOrWhiteSpace(qeury.Exchange))
+        if (!string.IsNullOrWhiteSpace(symbolSearchQuery.Exchange))
         {
             uriBuilder
                 .Append("&exchange=")
-                .Append(Uri.EscapeDataString(qeury.Exchange));
+                .Append(Uri.EscapeDataString(symbolSearchQuery.Exchange));
         }
 
         return uriBuilder.ToString();
@@ -124,16 +127,25 @@ public sealed class SearchService(
 
         var content = await response.Content.ReadAsStringAsync(cancellationToken);
 
-        if (string.IsNullOrWhiteSpace(content))
-        {
-            logger.LogWarning("Received empty response from FinnHub");
+        var searchSymbolResult = JsonSerializer.Deserialize<SearchSymbolResult>(content, this._options);
 
-            return [];
+        if (searchSymbolResult is not { Count: > 0 })
+        {
+            logger.LogWarning("Received empty response from FinnHub Api");
+            return Array.Empty<StockSymbol>().AsReadOnly();
         }
 
-        var symbols = JsonSerializer.Deserialize<List<StockSymbol>>(content, this._options);
-
-        return symbols?.AsReadOnly() ?? Array.Empty<StockSymbol>().AsReadOnly();
+        return searchSymbolResult
+            .Result
+            .Select(x => new StockSymbol
+            {
+                Symbol = x.Symbol,
+                Description = x.Description,
+                DisplaySymbol = x.DisplaySymbol,
+                Type = x.Type
+            })
+            .ToList()
+            .AsReadOnly();
     }
 
     public void Dispose()
@@ -143,7 +155,7 @@ public sealed class SearchService(
             return;
         }
 
-        this._httpClient?.Dispose();
         this._disposed = true;
+        this._httpClient?.Dispose();
     }
 }

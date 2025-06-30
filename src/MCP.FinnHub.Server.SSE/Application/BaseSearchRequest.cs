@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -12,6 +12,10 @@ namespace MCP.FinnHub.Server.SSE.Application;
 
 public abstract class BaseSearchQuery
 {
+    public required string QueryId { get; init; }
+
+    public required string Query { get; init; }
+
     public int Limit { get; init; } = 10;
 
     public virtual void Validate()

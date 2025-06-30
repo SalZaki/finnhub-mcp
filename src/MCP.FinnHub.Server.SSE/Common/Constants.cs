@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -37,33 +37,35 @@ public static class Constants
             }
 
             public const string Description =
-                @"Search for best-matching symbols based on your query. You can input anything from a stock ticker, security name, ISIN, or CUSIP.
+                """
+                Search for best-matching symbols based on your query. You can input anything from a stock ticker, security name, ISIN, or CUSIP.
 
-## Example Queries:
-- query='apple', exchange='US'
-- query='US5949181045'
-- query='AAPL'
+                ## Example Queries:
+                - query='apple', exchange='US'
+                - query='US5949181045'
+                - query='AAPL'
 
-## Request Parameters:
-- query (string, required): Symbol, Company Name, ISIN, or CUSIP
-- exchange (string, optional): Exchange code (e.g., 'US', 'TO', etc.)
+                ## Request Parameters:
+                - query (string, required): Symbol, Company Name, ISIN, or CUSIP
+                - exchange (string, optional): Exchange code (e.g., 'US', 'TO', etc.)
 
-## Response Fields:
-- count (int): Number of matching results
-- result (array):
-  - symbol (string): Unique symbol used in other endpoints
-  - display_symbol (string): Formatted version of the symbol
-  - description (string): Full company name or asset description
-  - type (string): Type of security (e.g., 'Common Stock', 'ETF')
-  - confidence_score (float, 0.0 to 1.0): AI-inferred match quality
-  - is_exact_match (bool): Whether the symbol matches query exactly
+                ## Response Fields:
+                - count (int): Number of matching results
+                - result (array):
+                  - symbol (string): Unique symbol used in other endpoints
+                  - display_symbol (string): Formatted version of the symbol
+                  - description (string): Full company name or asset description
+                  - type (string): Type of security (e.g., 'Common Stock', 'ETF')
+                  - confidence_score (float, 0.0 to 1.0): AI-inferred match quality
+                  - is_exact_match (bool): Whether the symbol matches query exactly
 
-## Notes:
-- Results are fuzzy-ranked using AI heuristics and string similarity
-- Financial Instrument Global Identifier
-- Supports symbol lookup across exchanges
-- Intended for use in financial tools, ai agents, and UIs
-";
+                ## Notes:
+                - Results are fuzzy-ranked using AI heuristics and string similarity
+                - Financial Instrument Global Identifier
+                - Supports symbol lookup across exchanges
+                - Intended for use in financial tools, ai agents, and UIs
+
+                """;
         }
     }
 }
