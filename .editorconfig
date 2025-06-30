@@ -365,7 +365,7 @@ csharp_style_expression_bodied_local_functions = false:silent
 [*.cs]
 max_line_length = 120
 
-file_header_template = ---------------------------------------------------------------------------------------------------------------------\n <copyright>\n   This file is part of  FinnHub MCP project and is licensed under the MIT License.\n   See the LICENSE file in the project root for full license information.\n </copyright>\n <summary>\n   Add summary.\n </summary>\n---------------------------------------------------------------------------------------------------------------------
+file_header_template = ---------------------------------------------------------------------------------------------------------------------\n <copyright>\n   This file is part of  FinnHub MCP project and is licensed under the MIT License.\n   See the LICENSE file in the project root for full license information.\n </copyright>\n <summary>\n   // TODO Add summary\n </summary>\n---------------------------------------------------------------------------------------------------------------------
 
 [*.Tests.cs]
 dotnet_diagnostic.CS1591.severity = none

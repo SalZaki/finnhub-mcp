@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -45,7 +45,7 @@ public sealed class SearchServiceTests : IDisposable
         this._serializerOptions = new JsonSerializerOptions
         {
             WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
         };
 
@@ -64,6 +64,7 @@ public sealed class SearchServiceTests : IDisposable
             ]
         });
     }
+
     /// <summary>
     /// Configures a mock <see cref="HttpClient"/> with a provided response delegate.
     /// </summary>
@@ -84,25 +85,26 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsStockSymbols_WhenApiCallIsSuccessful()
     {
         // Arrange
-        var query = new SymbolSearchQuery { Query = "AAPL" };
+        var query = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
-        var expectedSymbols = new List<StockSymbol>
+        var searchSymbolResult = new SearchSymbolResult
         {
-            new()
-            {
-                Currency = "USD",
-                Description = "Apple Inc",
-                DisplaySymbol = "AAPL",
-                Figi = "BBG000B9Y5X2",
-                Mic = "XNAS",
-                Symbol = "AAPL",
-                Type = "Common Stock"
-            }
+            Count = 1,
+            Result =
+            [
+                new StockSymbol
+                {
+                    Description = "Apple Inc",
+                    DisplaySymbol = "AAPL",
+                    Symbol = "AAPL",
+                    Type = "Common Stock"
+                }
+            ]
         };
 
         this.SetupMockHttpClient(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(JsonSerializer.Serialize(expectedSymbols, this._serializerOptions))
+            Content = new StringContent(JsonSerializer.Serialize(searchSymbolResult, this._serializerOptions))
         }));
 
         using var service = new SearchService(this._httpClientFactory, this._finnHubOptions, this._logger);
@@ -116,10 +118,7 @@ public sealed class SearchServiceTests : IDisposable
         Assert.Equal(1, actualResult.Data?.Count);
         Assert.Equal("AAPL", actualResult.Data?[0].Symbol);
         Assert.Equal("Apple Inc", actualResult.Data?[0].Description);
-        Assert.Equal("USD", actualResult.Data?[0].Currency);
         Assert.Equal("AAPL", actualResult.Data?[0].DisplaySymbol);
-        Assert.Equal("BBG000B9Y5X2", actualResult.Data?[0].Figi);
-        Assert.Equal("XNAS", actualResult.Data?[0].Mic);
         Assert.Equal("Common Stock", actualResult.Data?[0].Type);
     }
 
@@ -132,11 +131,12 @@ public sealed class SearchServiceTests : IDisposable
         // Arrange
         var request = new SymbolSearchQuery
         {
+            QueryId = "test",
             Query = "AAPL",
             Exchange = "NASDAQ"
         };
 
-        var expectedSymbols = new List<StockSymbol>();
+        var searchSymbolResult = new SearchSymbolResult();
         Uri? capturedUri = null;
 
         this.SetupMockHttpClient(requestMessage =>
@@ -144,7 +144,7 @@ public sealed class SearchServiceTests : IDisposable
             capturedUri = requestMessage.RequestUri;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(JsonSerializer.Serialize(expectedSymbols))
+                Content = new StringContent(JsonSerializer.Serialize(searchSymbolResult))
             });
         });
 
@@ -166,9 +166,9 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ExcludesExchangeParameter_WhenExchangeIsNotProvided()
     {
         // Arrange
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
-        var expectedSymbols = new List<StockSymbol>();
+        var searchSymbolResult = new SearchSymbolResult();
         Uri? capturedUri = null;
 
         this.SetupMockHttpClient(requestMessage =>
@@ -176,7 +176,7 @@ public sealed class SearchServiceTests : IDisposable
             capturedUri = requestMessage.RequestUri;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent(JsonSerializer.Serialize(expectedSymbols))
+                Content = new StringContent(JsonSerializer.Serialize(searchSymbolResult))
             });
         });
 
@@ -219,11 +219,13 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsEmptyList_WhenQueryIsEmpty(string query)
     {
         // Arrange
-        var request = new SymbolSearchQuery { Query = query };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = query };
+
+        var searchSymbolResult = new SearchSymbolResult();
 
         this.SetupMockHttpClient(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent(JsonSerializer.Serialize(new List<StockSymbol>()))
+            Content = new StringContent(JsonSerializer.Serialize(searchSymbolResult))
         }));
 
         using var service = new SearchService(this._httpClientFactory, this._finnHubOptions, this._logger);
@@ -233,8 +235,10 @@ public sealed class SearchServiceTests : IDisposable
 
         // Assert
         Assert.NotNull(result);
-        Assert.True(result.IsSuccess);
-        Assert.Equal(0, result.Data?.Count);
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Data);
+        Assert.Equal("NotFound", result.ErrorType);
+        Assert.Contains("No search symbol(s) found.", result.ErrorMessage);
     }
 
     /// <summary>
@@ -260,7 +264,7 @@ public sealed class SearchServiceTests : IDisposable
             ]
         });
 
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
         using var service = new SearchService(this._httpClientFactory, inactiveOptions, this._logger);
 
         // Act
@@ -271,7 +275,7 @@ public sealed class SearchServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.False(result.IsSuccess);
         Assert.Contains("Search service is not available", result.ErrorMessage);
-        Assert.Equivalent(result.ErrorType, ResultErrorType.ServiceUnavailable);
+        Assert.Equivalent(result.ErrorType, nameof(ResultErrorType.ServiceUnavailable));
     }
 
     /// <summary>
@@ -289,7 +293,7 @@ public sealed class SearchServiceTests : IDisposable
             EndPoints = []
         });
 
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         using var service = new SearchService(this._httpClientFactory, noEndpointOptions, this._logger);
 
@@ -301,7 +305,7 @@ public sealed class SearchServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.False(result.IsSuccess);
         Assert.Contains("Search service is not available", result.ErrorMessage);
-        Assert.Equivalent(result.ErrorType, ResultErrorType.ServiceUnavailable);
+        Assert.Equivalent(result.ErrorType, nameof(ResultErrorType.ServiceUnavailable));
     }
 
     /// <summary>
@@ -311,7 +315,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsServiceUnavailable_WhenHttpRequestFails()
     {
         // Arrange
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => throw new HttpRequestException());
 
@@ -325,7 +329,7 @@ public sealed class SearchServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.False(result.IsSuccess);
         Assert.Contains("Service temporarily unavailable", result.ErrorMessage);
-        Assert.Equivalent(result.ErrorType, ResultErrorType.ServiceUnavailable);
+        Assert.Equivalent(result.ErrorType, nameof(ResultErrorType.ServiceUnavailable));
     }
 
     /// <summary>
@@ -335,7 +339,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsRequestTimeout_WhenRequestTimesOut()
     {
         // Arrange
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => throw new TaskCanceledException("Simulated timeout", new TimeoutException()));
 
@@ -349,7 +353,7 @@ public sealed class SearchServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.False(result.IsSuccess);
         Assert.Contains("Request timed out", result.ErrorMessage);
-        Assert.Equivalent(result.ErrorType, ResultErrorType.Timeout);
+        Assert.Equivalent(result.ErrorType, nameof(ResultErrorType.Timeout));
     }
 
     /// <summary>
@@ -359,7 +363,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsInvalidResponse_WhenResponseIsInvalidResponse()
     {
         // Arrange
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
@@ -376,7 +380,7 @@ public sealed class SearchServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.False(result.IsSuccess);
         Assert.Contains("Invalid response from service", result.ErrorMessage);
-        Assert.Equivalent(result.ErrorType, ResultErrorType.InvalidResponse);
+        Assert.Equivalent(result.ErrorType, nameof(ResultErrorType.InvalidResponse));
     }
 
     /// <summary>
@@ -386,11 +390,13 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsEmptyList_WhenResponseIsEmpty()
     {
         // Arrange
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
+
+        var searchSymbolResult = new SearchSymbolResult();
 
         this.SetupMockHttpClient(_ => Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
         {
-            Content = new StringContent("")
+            Content = new StringContent(JsonSerializer.Serialize(searchSymbolResult))
         }));
 
         using var service = new SearchService(this._httpClientFactory, this._finnHubOptions, this._logger);
@@ -399,10 +405,10 @@ public sealed class SearchServiceTests : IDisposable
         var result = await service.SearchSymbolsAsync(request);
 
         // Assert
-        Assert.IsType<Result<IReadOnlyList<StockSymbol>>>(result);
-        Assert.NotNull(result);
-        Assert.True(result.IsSuccess);
-        Assert.Equal(0, result.Data?.Count);
+        Assert.False(result.IsSuccess);
+        Assert.Null(result.Data);
+        Assert.Equal("NotFound", result.ErrorType);
+        Assert.Contains("No search symbol(s) found.", result.ErrorMessage);
     }
 
     /// <summary>
@@ -412,16 +418,18 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_IncludesApiKeyInHeaders()
     {
         // Arrange
-        var request = new SymbolSearchQuery { Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         HttpRequestHeaders? capturedHeaders = null;
+
+        var searchSymbolResult = new SearchSymbolResult();
 
         this.SetupMockHttpClient(requestMessage =>
         {
             capturedHeaders = requestMessage.Headers;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("[]")
+                Content = new StringContent(JsonSerializer.Serialize(searchSymbolResult))
             });
         });
 
@@ -433,7 +441,7 @@ public sealed class SearchServiceTests : IDisposable
         // Assert
         Assert.IsType<Result<IReadOnlyList<StockSymbol>>>(result);
         Assert.NotNull(result);
-        Assert.True(result.IsSuccess);
+        Assert.False(result.IsSuccess);
         Assert.NotNull(capturedHeaders);
         Assert.True(capturedHeaders.Contains("X-Finnhub-Token"));
         Assert.Contains("test-api-key", capturedHeaders.GetValues("X-Finnhub-Token"));
@@ -448,18 +456,21 @@ public sealed class SearchServiceTests : IDisposable
         // Arrange
         var request = new SymbolSearchQuery
         {
+            QueryId = "test",
             Query = "TEST & SYMBOLS",
             Exchange = "NASDAQ+NYSE"
         };
 
         Uri? capturedUri = null;
 
+        var searchSymbolResult = new SearchSymbolResult();
+
         this.SetupMockHttpClient(requestMessage =>
         {
             capturedUri = requestMessage.RequestUri;
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = new StringContent("[]")
+                Content = new StringContent(JsonSerializer.Serialize(searchSymbolResult))
             });
         });
 
@@ -471,7 +482,7 @@ public sealed class SearchServiceTests : IDisposable
         // Assert
         Assert.IsType<Result<IReadOnlyList<StockSymbol>>>(result);
         Assert.NotNull(result);
-        Assert.True(result.IsSuccess);
+        Assert.False(result.IsSuccess);
         var requestQuery = capturedUri?.Query;
         Assert.Contains("TEST%20%26%20SYMBOLS", requestQuery);
         Assert.Contains("NASDAQ%2BNYSE", requestQuery);

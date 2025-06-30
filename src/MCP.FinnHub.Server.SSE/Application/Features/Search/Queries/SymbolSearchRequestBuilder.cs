@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -46,6 +46,7 @@ public sealed class SymbolSearchQueryBuilder
 
         var request = new SymbolSearchQuery
         {
+            QueryId = Guid.NewGuid().ToString("N")[..10],
             Query = this._query,
             Exchange = this._exchange,
             Limit = this._limit

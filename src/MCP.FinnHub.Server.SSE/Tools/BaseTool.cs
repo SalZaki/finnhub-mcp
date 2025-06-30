@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -17,7 +17,7 @@ public abstract class BaseTool : McpServerTool
     private readonly JsonSerializerOptions _options = new()
     {
         WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 

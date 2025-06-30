@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -17,8 +17,8 @@ namespace MCP.FinnHub.Server.SSE.Tools.Search;
 
 public sealed class SearchSymbolsTool(
     ISearchService searchService,
-    ILogger<SearchSymbolsTool> logger) :
-    BaseSearchTool
+    ILogger<SearchSymbolsTool> logger)
+    : BaseSearchTool
 {
     private static readonly Lazy<JsonElement> s_serializedSchema = new(() =>
         JsonSerializer.SerializeToElement(s_toolSchema));
@@ -87,36 +87,30 @@ public sealed class SearchSymbolsTool(
 
             return this.CreateSuccessResponse(results);
         }
-
         catch (ArgumentOutOfRangeException ex)
         {
             logger.LogWarning(ex, "Parameter out of range in '{Tool}': {Message}", this.ProtocolTool.Name, ex.Message);
             return this.CreateValidationErrorResponse(ex.ParamName ?? "unknown", ex.Message);
         }
-
         catch (ArgumentException ex)
         {
             logger.LogWarning(ex, "Validation error in '{Tool}': {Message}", this.ProtocolTool.Name, ex.Message);
             return this.CreateValidationErrorResponse(ex.ParamName ?? "unknown", ex.Message);
         }
-
         catch (OperationCanceledException)
         {
-            logger.LogInformation("Search operation was cancelled for '{Tool}'.", this.ProtocolTool.Name);
+            logger.LogInformation("Search operation was canceled for '{Tool}'.", this.ProtocolTool.Name);
             return this.CreateOperationErrorResponse("search", "Search operation was cancelled.");
         }
-
         catch (Exception ex)
         {
             logger.LogError(ex, "An exception occurred running '{Tool}'.", this.ProtocolTool.Name);
             throw;
         }
-
         finally
         {
             stopwatch.Stop();
-            logger.LogTrace("Finished executing '{Tool}' in {ElapsedMs}ms.", this.ProtocolTool.Name,
-                stopwatch.ElapsedMilliseconds);
+            logger.LogTrace("Finished executing '{Tool}' in {ElapsedMs}ms.", this.ProtocolTool.Name, stopwatch.ElapsedMilliseconds);
         }
     }
 }

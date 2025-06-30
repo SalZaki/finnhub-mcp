@@ -4,7 +4,7 @@
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 //  <summary>
-//    Add summary.
+//    // TODO Add summary
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
@@ -12,6 +12,7 @@ namespace MCP.FinnHub.Server.SSE.Application;
 
 public enum ResultErrorType
 {
+    NotFound,
     Unknown,
     InvalidQuery,
     ServiceUnavailable,

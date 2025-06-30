@@ -8,22 +8,11 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
+namespace MCP.FinnHub.Server.SSE.Models;
 
-namespace MCP.FinnHub.Server.SSE.Options;
-
-[ExcludeFromCodeCoverage]
-public sealed class FinnHubOptions
+public sealed class SearchSymbolResult
 {
-    [Required]
-    public string ApiKey { get; init; } = string.Empty;
+    public int Count { get; init; }
 
-    [Required]
-    public string BaseUrl { get; init; } = string.Empty;
-
-    [Range(1, 60)]
-    public int TimeoutSeconds { get; init; } = 10;
-
-    public List<FinnHubEndPoint> EndPoints { get; init; } = [];
+    public List<StockSymbol> Result { get; init; } = [];
 }
