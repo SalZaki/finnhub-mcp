@@ -166,7 +166,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ExcludesExchangeParameter_WhenExchangeIsNotProvided()
     {
         // Arrange
-        var request = new SymbolSearchQuery {  QueryId = "test", Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         var searchSymbolResult = new SearchSymbolResult();
         Uri? capturedUri = null;
@@ -219,7 +219,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsEmptyList_WhenQueryIsEmpty(string query)
     {
         // Arrange
-        var request = new SymbolSearchQuery {  QueryId = "test", Query = query };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = query };
 
         var searchSymbolResult = new SearchSymbolResult();
 
@@ -264,7 +264,7 @@ public sealed class SearchServiceTests : IDisposable
             ]
         });
 
-        var request = new SymbolSearchQuery {  QueryId = "test", Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
         using var service = new SearchService(this._httpClientFactory, inactiveOptions, this._logger);
 
         // Act
@@ -293,7 +293,7 @@ public sealed class SearchServiceTests : IDisposable
             EndPoints = []
         });
 
-        var request = new SymbolSearchQuery {  QueryId = "test", Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         using var service = new SearchService(this._httpClientFactory, noEndpointOptions, this._logger);
 
@@ -315,7 +315,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsServiceUnavailable_WhenHttpRequestFails()
     {
         // Arrange
-        var request = new SymbolSearchQuery {  QueryId = "test", Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => throw new HttpRequestException());
 
@@ -339,7 +339,7 @@ public sealed class SearchServiceTests : IDisposable
     public async Task SearchSymbolsAsync_ReturnsRequestTimeout_WhenRequestTimesOut()
     {
         // Arrange
-        var request = new SymbolSearchQuery {  QueryId = "test", Query = "AAPL" };
+        var request = new SymbolSearchQuery { QueryId = "test", Query = "AAPL" };
 
         this.SetupMockHttpClient(_ => throw new TaskCanceledException("Simulated timeout", new TimeoutException()));
 
