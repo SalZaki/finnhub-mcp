@@ -1,0 +1,6 @@
+@FinnHub.MCP.Server.SSE_HostAddress = http://localhost:5101
+
+GET {{FinnHub.MCP.Server.SSE_HostAddress}}/
+Accept: application/json
+
+###

@@ -32,7 +32,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: 📦 Restore dependencies
-        run: dotnet restore ./mcp-finnhub.sln
+        run: dotnet restore ./finnhub-mcp.sln
 
       - name: 🏗️ Build solution
         run: dotnet build -p:CurrentYear=$(date +'%Y') --no-restore --configuration Release
@@ -70,28 +70,28 @@ jobs:
 
       - name: 🧪 Run unit tests with coverage
         run: |
-          dotnet test ./test/MCP.FinnHub.Server.SSE.Tests.Unit/MCP.FinnHub.Server.SSE.Tests.Unit.csproj \
+          dotnet test ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/FinnHub.MCP.Server.SSE.Tests.Unit.csproj \
           --configuration Release \
           --collect:'XPlat Code Coverage' \
           --verbosity normal \
           -p:CollectCoverage=true \
           -p:CoverletOutputFormat=cobertura \
           -p:ExcludeByAttribute=GeneratedCodeAttribute \
-          -p:CoverletOutput=./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults
+          -p:CoverletOutput=./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults
 
       - name: 📂 Show test result files
-        run: ls -R ./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults
+        run: ls -R ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults/coverage.cobertura.xml
+          files: ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults/coverage.cobertura.xml
           flags: unit-tests
-          name: codecov-mcp-finnhub
+          name: codecov-finnhub-mcp
 
       - name: 📁 Upload test results
         uses: actions/upload-artifact@v4
         with:
            name: test-results
-           path: ./test/MCP.FinnHub.Server.SSE.Tests.Unit/TestResults/
+           path: ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults/

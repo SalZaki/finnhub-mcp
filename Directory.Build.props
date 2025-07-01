@@ -1,7 +1,7 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" Condition="Exists($([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../')))" />
   <PropertyGroup>
-    <PackageProjectUrl>https://github.com/SalZaki/mcp-finnhub.git</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/SalZaki/finnhub-mcp.git</PackageProjectUrl>
     <Company>Sal Zaki</Company>
     <Copyright>Copyright © $(CurrentYear) $(Company)</Copyright>
     <Authors>$(Company)</Authors>
@@ -11,6 +11,6 @@
     <Version>1.0.0</Version>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);CS1591</WarningsNotAsErrors>
-    <RepositoryUrl>https://github.com/SalZaki/mcp-finnhub</RepositoryUrl>
+    <RepositoryUrl>https://github.com/SalZaki/finnhub-mcp</RepositoryUrl>
   </PropertyGroup>
 </Project>
