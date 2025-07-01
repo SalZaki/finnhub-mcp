@@ -32,7 +32,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: 📦 Restore dependencies
-        run: dotnet restore ./mcp-finnhub.sln
+        run: dotnet restore ./finnhub-mcp.sln
 
       - name: 🏗️ Build solution
         run: dotnet build -p:CurrentYear=$(date +'%Y') --no-restore --configuration Release
@@ -88,7 +88,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./test/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults/coverage.cobertura.xml
           flags: unit-tests
-          name: codecov-mcp-finnhub
+          name: codecov-finnhub-mcp
 
       - name: 📁 Upload test results
         uses: actions/upload-artifact@v4

@@ -13,7 +13,7 @@
     </Description>
     <NeutralLanguage>en-GB</NeutralLanguage>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    <RepositoryUrl>https://github.com/salzaki/mcp-finnhub</RepositoryUrl>
+    <RepositoryUrl>https://github.com/salzaki/finnhub-mcp</RepositoryUrl>
   </PropertyGroup>
   <ItemGroup Label="Packages">
     <PackageReference Include="ModelContextProtocol" />
