@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>FinnHub.MCP.Server.Application</RootNamespace>
+    <AssemblyTitle>FinnHub.MCP.Server.Application</AssemblyTitle>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Title>FinnHub MCP Server Application</Title>
+  </PropertyGroup>
+  <ItemGroup Label="Packages">
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+  </ItemGroup>
+</Project>

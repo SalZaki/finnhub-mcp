@@ -8,21 +8,14 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-namespace FinnHub.MCP.Server.SSE.Application;
+using FinnHub.MCP.Server.Application.Common;
+using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 
-public abstract class BaseSearchQuery
+namespace FinnHub.MCP.Server.Application.Search.Services;
+
+public interface ISearchService
 {
-    public required string QueryId { get; init; }
-
-    public required string Query { get; init; }
-
-    public int Limit { get; init; } = 10;
-
-    public virtual void Validate()
-    {
-        if (this.Limit is < 1 or > 100)
-        {
-            throw new ArgumentOutOfRangeException(nameof(this.Limit), this.Limit, "Limit must be between 1 and 100.");
-        }
-    }
+    Task<Result<SearchSymbolResponse>> SearchSymbolAsync(
+        SearchSymbolQuery query,
+        CancellationToken cancellationToken = default);
 }

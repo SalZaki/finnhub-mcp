@@ -8,43 +8,43 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-namespace FinnHub.MCP.Server.SSE.Application.Features.Search.Queries;
+namespace FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 
-public sealed class SymbolSearchQueryBuilder
+public sealed class SearchSymbolQueryBuilder
 {
     private string? _query;
     private string? _exchange;
     private int _limit = 10;
 
-    public SymbolSearchQueryBuilder WithQuery(string query)
+    public SearchSymbolQueryBuilder WithQuery(string query)
     {
         this._query = query;
 
         return this;
     }
 
-    public SymbolSearchQueryBuilder WithExchange(string exchange)
+    public SearchSymbolQueryBuilder WithExchange(string exchange)
     {
         this._exchange = exchange;
 
         return this;
     }
 
-    public SymbolSearchQueryBuilder WithLimit(int limit)
+    public SearchSymbolQueryBuilder WithLimit(int limit)
     {
         this._limit = limit;
 
         return this;
     }
 
-    public SymbolSearchQuery Build()
+    public SearchSymbolQuery Build()
     {
         if (string.IsNullOrWhiteSpace(this._query))
         {
             throw new InvalidOperationException("Query is required");
         }
 
-        var request = new SymbolSearchQuery
+        var request = new SearchSymbolQuery
         {
             QueryId = Guid.NewGuid().ToString("N")[..10],
             Query = this._query,

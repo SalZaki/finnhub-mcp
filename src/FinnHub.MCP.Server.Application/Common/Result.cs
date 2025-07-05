@@ -10,7 +10,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace FinnHub.MCP.Server.SSE.Application;
+namespace FinnHub.MCP.Server.Application.Common;
 
 public sealed class Result<T>
 {

@@ -8,14 +8,21 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-namespace FinnHub.MCP.Server.SSE.Application;
+namespace FinnHub.MCP.Server.Application.Search;
 
-public enum ResultErrorType
+public abstract class BaseSearchQuery
 {
-    NotFound,
-    Unknown,
-    InvalidQuery,
-    ServiceUnavailable,
-    Timeout,
-    InvalidResponse
+    public required string QueryId { get; init; }
+
+    public required string Query { get; init; }
+
+    public int Limit { get; init; } = 10;
+
+    public virtual void Validate()
+    {
+        if (this.Limit is < 1 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(this.Limit), this.Limit, "Limit must be between 1 and 100.");
+        }
+    }
 }

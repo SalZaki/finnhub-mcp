@@ -8,14 +8,21 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.SSE.Application.Features.Search.Queries;
-using FinnHub.MCP.Server.SSE.Models;
+namespace FinnHub.MCP.Server.Application.Search;
 
-namespace FinnHub.MCP.Server.SSE.Application.Features.Search.Services;
-
-public interface ISearchService
+public abstract class BaseSearchResponse
 {
-    Task<Result<IReadOnlyList<StockSymbol>>> SearchSymbolsAsync(
-        SymbolSearchQuery query,
-        CancellationToken cancellationToken = default);
+    public string Query { get; init; } = string.Empty;
+
+    public TimeSpan SearchDuration { get; init; }
+
+    public DateTime SearchTimestamp { get; init; }
+
+    public abstract bool HasResults { get; }
+
+    public abstract int TotalCount { get; }
+
+    public string Source { get; init; } = string.Empty;
+
+    public bool IsFromCache { get; init; }
 }

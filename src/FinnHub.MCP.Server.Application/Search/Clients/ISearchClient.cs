@@ -8,11 +8,11 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-namespace FinnHub.MCP.Server.SSE.Models;
+using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 
-public sealed class SearchSymbolResult
+namespace FinnHub.MCP.Server.Application.Search.Clients;
+
+public interface ISearchClient : IDisposable
 {
-    public int Count { get; init; }
-
-    public List<StockSymbol> Result { get; init; } = [];
+    Task<SearchSymbolResponse> SearchSymbolAsync(SearchSymbolQuery query, CancellationToken cancellationToken);
 }

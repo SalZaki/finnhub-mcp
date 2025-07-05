@@ -8,9 +8,9 @@
 //  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-namespace FinnHub.MCP.Server.SSE.Application.Features.Search.Queries;
+namespace FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 
-public sealed class SymbolSearchQuery : BaseSearchQuery
+public sealed class SearchSymbolQuery : BaseSearchQuery
 {
     public string? Exchange { get; init; }
 
@@ -32,18 +32,18 @@ public sealed class SymbolSearchQuery : BaseSearchQuery
         }
     }
 
-    public static SymbolSearchQuery Create(string queryId, string query, int limit = 10)
+    public static SearchSymbolQuery Create(string queryId, string query, int limit = 10)
     {
-        return new SymbolSearchQuery { QueryId = queryId, Query = query, Limit = limit };
+        return new SearchSymbolQuery { QueryId = queryId, Query = query, Limit = limit };
     }
 
-    public static SymbolSearchQuery ForExchange(string queryId, string query, string exchange, int limit = 10)
+    public static SearchSymbolQuery ForExchange(string queryId, string query, string exchange, int limit = 10)
     {
-        return new SymbolSearchQuery { QueryId = queryId, Query = query, Exchange = exchange, Limit = limit };
+        return new SearchSymbolQuery { QueryId = queryId, Query = query, Exchange = exchange, Limit = limit };
     }
 
-    public static SymbolSearchQuery ForType(string queryId, string query, int limit = 10)
+    public static SearchSymbolQuery ForType(string queryId, string query, int limit = 10)
     {
-        return new SymbolSearchQuery { QueryId = queryId, Query = query, Limit = limit };
+        return new SearchSymbolQuery { QueryId = queryId, Query = query, Limit = limit };
     }
 }

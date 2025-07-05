@@ -10,7 +10,7 @@
 
 using System.Net;
 
-namespace FinnHub.MCP.Server.SSE.Tests.Unit;
+namespace FinnHub.MCP.Server.Application.Tests.Unit;
 
 public class MockHttpMessageHandler(Func<HttpRequestMessage, Task<HttpResponseMessage>> handlerFunc)
     : HttpMessageHandler

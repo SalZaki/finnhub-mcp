@@ -5,7 +5,7 @@
       <Nullable>enable</Nullable>
       <IsPackable>false</IsPackable>
       <IsTestProject>true</IsTestProject>
-      <RootNamespace>FinnHub.MCP.Server.SSE.Tests.Unit</RootNamespace>
+      <RootNamespace>FinnHub.MCP.Server.Application.Tests.Unit</RootNamespace>
     </PropertyGroup>
     <ItemGroup>       
       <PackageReference Include="coverlet.collector" />
@@ -15,6 +15,6 @@
       <PackageReference Include="NSubstitute" />
     </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\FinnHub.MCP.Server.SSE\FinnHub.MCP.Server.SSE.csproj" />
+    <ProjectReference Include="..\..\src\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
   </ItemGroup>
 </Project>

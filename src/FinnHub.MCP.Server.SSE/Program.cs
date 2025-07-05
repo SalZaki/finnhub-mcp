@@ -11,13 +11,10 @@
 using System.Net.Http.Headers;
 using System.Reflection;
 using DotNetEnv;
-using FinnHub.MCP.Server.SSE.Application.Features.HealthCheck;
-using FinnHub.MCP.Server.SSE.Application.Features.Search.Services;
+using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.SSE.Common;
 using FinnHub.MCP.Server.SSE.Options;
 using FinnHub.MCP.Server.SSE.Tools.Search;
-using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 var assembly = Assembly.GetEntryAssembly();
 var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"finnhub.mcp.server.{Guid.NewGuid()}.sse";
@@ -73,10 +70,6 @@ builder.Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddHealthChecks()
-    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: ["live"])
-    .AddCheck<FinnHubHealthCheck>("FinnHub", tags: ["ready"]);
-
 builder.Services.AddHttpClient("FinnHub", client =>
     {
         client.BaseAddress = new Uri(builder.Configuration["FinnHub:BaseUrl"] ?? "https://finnhub.io/api/v1");
@@ -124,56 +117,6 @@ app.Map("/", () => new
     version,
     environment = app.Environment.EnvironmentName,
     status = "running"
-});
-
-app.MapHealthChecks("/health/live", new HealthCheckOptions
-{
-    Predicate = check => check.Tags.Contains("live"),
-    ResultStatusCodes =
-    {
-        [HealthStatus.Healthy] = StatusCodes.Status200OK,
-        [HealthStatus.Degraded] = StatusCodes.Status200OK,
-        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
-    },
-    ResponseWriter = async (context, report) =>
-    {
-        context.Response.ContentType = "application/json";
-        var response = new
-        {
-            status = report.Status.ToString(),
-            timestamp = DateTime.UtcNow
-        };
-        await context.Response.WriteAsJsonAsync(response);
-    }
-});
-
-app.MapHealthChecks("/health/ready", new HealthCheckOptions
-{
-    Predicate = check => check.Tags.Contains("ready"),
-    ResultStatusCodes =
-    {
-        [HealthStatus.Healthy] = StatusCodes.Status200OK,
-        [HealthStatus.Degraded] = StatusCodes.Status200OK,
-        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
-    },
-    ResponseWriter = async (context, report) =>
-    {
-        context.Response.ContentType = "application/json";
-        var response = new
-        {
-            status = report.Status.ToString(),
-            checks = report.Entries.Select(entry => new
-            {
-                name = entry.Key,
-                status = entry.Value.Status.ToString(),
-                description = entry.Value.Description,
-                duration = entry.Value.Duration
-            }),
-            totalDuration = report.TotalDuration,
-            timestamp = DateTime.UtcNow
-        };
-        await context.Response.WriteAsJsonAsync(response);
-    }
 });
 
 app.MapMcp();
