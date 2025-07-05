@@ -3,21 +3,18 @@
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
-//  <summary>
-//    // TODO Add summary
-//  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.SSE.Application.Features.Search.Queries;
-using FinnHub.MCP.Server.SSE.Application.Features.Search.Services;
+using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
+using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.SSE.Common;
 using Json.Schema;
 
 namespace FinnHub.MCP.Server.SSE.Tools.Search;
 
-public sealed class SearchSymbolsTool(
+public sealed class SearchSymbolTool(
     ISearchService searchService,
-    ILogger<SearchSymbolsTool> logger)
+    ILogger<SearchSymbolTool> logger)
     : BaseSearchTool
 {
     private static readonly Lazy<JsonElement> s_serializedSchema = new(() =>
@@ -75,15 +72,15 @@ public sealed class SearchSymbolsTool(
 
             logger.LogDebug("Executing search with query: '{Query}', exchange: '{Exchange}', limit: {Limit}", query, exchange, limit);
 
-            var symbolSearchQuery = new SymbolSearchQueryBuilder()
+            var symbolSearchQuery = new SearchSymbolQueryBuilder()
                 .WithQuery(query)
                 .WithExchange(exchange)
                 .WithLimit(limit)
                 .Build();
 
-            var results = await searchService.SearchSymbolsAsync(symbolSearchQuery, cancellationToken);
+            var results = await searchService.SearchSymbolAsync(symbolSearchQuery, cancellationToken);
 
-            logger.LogInformation("Search completed successfully. Found {Count} results in {ElapsedMs}ms", results.Data?.Count, stopwatch.ElapsedMilliseconds);
+            logger.LogInformation("Search completed successfully. Found {Count} results in {ElapsedMs}ms", results.Data?.TotalCount, stopwatch.ElapsedMilliseconds);
 
             return this.CreateSuccessResponse(results);
         }

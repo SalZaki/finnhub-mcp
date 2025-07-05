@@ -25,4 +25,7 @@
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="JsonSchema.Net" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
+  </ItemGroup>
 </Project>

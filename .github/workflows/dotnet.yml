@@ -70,23 +70,23 @@ jobs:
 
       - name: 🧪 Run unit tests with coverage
         run: |
-          dotnet test ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/FinnHub.MCP.Server.SSE.Tests.Unit.csproj \
+          dotnet test ./tests/FinnHub.MCP.Server.Application.Tests.Unit/FinnHub.MCP.Server.Application.Tests.Unit.csproj \
           --configuration Release \
           --collect:'XPlat Code Coverage' \
           --verbosity normal \
           -p:CollectCoverage=true \
           -p:CoverletOutputFormat=cobertura \
           -p:ExcludeByAttribute=GeneratedCodeAttribute \
-          -p:CoverletOutput=./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults
+          -p:CoverletOutput=./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults
 
       - name: 📂 Show test result files
-        run: ls -R ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults
+        run: ls -R ./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults/coverage.cobertura.xml
+          files: ./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults/coverage.cobertura.xml
           flags: unit-tests
           name: codecov-finnhub-mcp
 
@@ -94,4 +94,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
            name: test-results
-           path: ./tests/FinnHub.MCP.Server.SSE.Tests.Unit/TestResults/
+           path: ./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults/

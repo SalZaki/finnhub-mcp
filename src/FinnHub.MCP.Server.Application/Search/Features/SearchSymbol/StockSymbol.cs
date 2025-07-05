@@ -3,15 +3,12 @@
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
-//  <summary>
-//    // TODO Add summary
-//  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 
-namespace FinnHub.MCP.Server.SSE.Models;
+namespace FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 
 /// <summary>
 /// Represents a symbol search result returned by the MCP server, enriched for AI agent discovery and semantic tooling.

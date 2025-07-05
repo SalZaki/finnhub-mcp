@@ -3,19 +3,16 @@
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
-//  <summary>
-//    // TODO Add summary
-//  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
-namespace FinnHub.MCP.Server.SSE.Application;
+using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 
-public enum ResultErrorType
+namespace FinnHub.MCP.Server.Application.Search.Services;
+
+public interface ISearchService
 {
-    NotFound,
-    Unknown,
-    InvalidQuery,
-    ServiceUnavailable,
-    Timeout,
-    InvalidResponse
+    Task<Result<SearchSymbolResponse>> SearchSymbolAsync(
+        SearchSymbolQuery query,
+        CancellationToken cancellationToken = default);
 }
