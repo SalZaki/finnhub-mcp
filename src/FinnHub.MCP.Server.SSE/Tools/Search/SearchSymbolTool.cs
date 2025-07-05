@@ -3,9 +3,6 @@
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
-//  <summary>
-//    // TODO Add summary
-//  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
@@ -15,9 +12,9 @@ using Json.Schema;
 
 namespace FinnHub.MCP.Server.SSE.Tools.Search;
 
-public sealed class SearchSymbolsTool(
+public sealed class SearchSymbolTool(
     ISearchService searchService,
-    ILogger<SearchSymbolsTool> logger)
+    ILogger<SearchSymbolTool> logger)
     : BaseSearchTool
 {
     private static readonly Lazy<JsonElement> s_serializedSchema = new(() =>

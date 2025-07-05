@@ -3,9 +3,6 @@
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
-//  <summary>
-//    Unit tests for the SearchService class, which integrates with the FinnHub API.
-//  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
 using FinnHub.MCP.Server.Application.Search.Clients;
@@ -123,7 +120,8 @@ public sealed class SearchServiceTests
 
         // Assert
         Assert.True(result.IsSuccess);
-        Assert.Equal(2, result.Data!.TotalCount);
+        Assert.NotNull(result.Data);
+        Assert.Equal(2, result.Data.TotalCount);
         Assert.Equal(2, result.Data.Symbols.Count);
         Assert.True(result.Data.HasResults);
     }

@@ -3,15 +3,12 @@
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
-//  <summary>
-//    // TODO Add summary
-//  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Text.Json;
-using FinnHub.MCP.Server.Application.Common;
-using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
+using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Clients;
+using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Search.Services;
@@ -31,7 +28,7 @@ public sealed class SearchService(
         {
             var response = await searchClient.SearchSymbolAsync(query, cancellationToken);
 
-            logger.Log(LogLevel.Information, $"Retrieved {response.TotalCount} symbols from FinnHub Api");
+            logger.Log(LogLevel.Information, "Retrieved {ResponseTotalCount} symbols for query: {Query}", response.TotalCount, query);
 
             return response.HasResults
                 ? new Result<SearchSymbolResponse>().Success(response)

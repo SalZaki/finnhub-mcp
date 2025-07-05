@@ -3,9 +3,6 @@
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
-//  <summary>
-//    // TODO Add summary
-//  </summary>
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net.Http.Headers;
@@ -41,7 +38,7 @@ builder.Services
     .ValidateOnStart();
 
 builder.Services.AddSingleton<ISearchService, SearchService>();
-builder.Services.AddSingleton<SearchSymbolsTool>();
+builder.Services.AddSingleton<SearchSymbolTool>();
 
 var mcpServerOptionsBuilder = builder.Services.AddOptions<McpServerOptions>();
 
@@ -58,7 +55,7 @@ mcpServerOptionsBuilder.Configure<IServiceProvider>((mcpServerOptions, servicePr
     {
         Tools = new ToolsCapability
         {
-            ToolCollection = [serviceProvider.GetRequiredService<SearchSymbolsTool>()]
+            ToolCollection = [serviceProvider.GetRequiredService<SearchSymbolTool>()]
         }
     };
 });
