@@ -8,7 +8,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
-namespace FinnHub.MCP.Server.SSE.Options;
+namespace FinnHub.MCP.Server.Application.Options;
 
 /// <summary>
 /// Represents the configuration options for integrating with the FinnHub API service.
