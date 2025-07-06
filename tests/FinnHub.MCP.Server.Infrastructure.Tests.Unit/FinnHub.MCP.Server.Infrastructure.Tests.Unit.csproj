@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
+    <ProjectReference Include="..\..\src\FinnHub.MCP.Server.Infrastructure\FinnHub.MCP.Server.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

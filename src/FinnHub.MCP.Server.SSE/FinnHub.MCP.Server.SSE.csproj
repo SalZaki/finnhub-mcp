@@ -23,8 +23,11 @@
     <PackageReference Include="DotNetEnv" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
     <PackageReference Include="JsonSchema.Net" />
+    <PackageReference Include="Polly" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
+    <ProjectReference Include="..\FinnHub.MCP.Server.Infrastructure\FinnHub.MCP.Server.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

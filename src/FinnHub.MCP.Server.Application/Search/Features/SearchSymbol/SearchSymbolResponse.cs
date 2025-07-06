@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
@@ -46,6 +47,7 @@ namespace FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 /// }
 /// </code>
 /// </example>
+[ExcludeFromCodeCoverage]
 public sealed class SearchSymbolResponse : BaseSearchResponse
 {
     /// <summary>

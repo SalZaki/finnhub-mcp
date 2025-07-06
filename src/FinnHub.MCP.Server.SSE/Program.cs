@@ -5,12 +5,12 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.Net.Http.Headers;
 using System.Reflection;
 using DotNetEnv;
+using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
+using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.SSE.Common;
-using FinnHub.MCP.Server.SSE.Options;
 using FinnHub.MCP.Server.SSE.Tools.Search;
 
 var assembly = Assembly.GetEntryAssembly();
@@ -36,6 +36,8 @@ builder.Services
     .Bind(builder.Configuration.GetSection("FinnHub"))
     .ValidateDataAnnotations()
     .ValidateOnStart();
+
+builder.Services.RegisterInfrastructure();
 
 builder.Services.AddSingleton<ISearchService, SearchService>();
 builder.Services.AddSingleton<SearchSymbolTool>();
@@ -66,13 +68,6 @@ builder.Services
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-builder.Services.AddHttpClient("FinnHub", client =>
-    {
-        client.BaseAddress = new Uri(builder.Configuration["FinnHub:BaseUrl"] ?? "https://finnhub.io/api/v1");
-        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-        client.Timeout = TimeSpan.FromSeconds(30);
-    });
 
 builder.Services.AddCors(options =>
 {

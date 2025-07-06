@@ -16,6 +16,7 @@
     <PackageVersion Include="DotNetEnv" Version="3.1.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="8.1.2" />
     <PackageVersion Include="JsonSchema.Net" Version="7.3.4" />
+    <PackageVersion Include="Polly" Version="8.6.1" />
   </ItemGroup>
 
   <ItemGroup Label="Microsoft">
