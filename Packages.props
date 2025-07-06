@@ -7,5 +7,6 @@
     <MicrosoftOptionsVersion>8.0.0</MicrosoftOptionsVersion>
     <SwashbuckleVersion>6.9.0</SwashbuckleVersion>
     <ApiVersion>8.1.0</ApiVersion>
+    <MicrosoftExtensionsVersion>9.0.6</MicrosoftExtensionsVersion>
   </PropertyGroup>
 </Project>

@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+<PropertyGroup>
+  <TargetFramework>net8.0</TargetFramework>
+  <ImplicitUsings>enable</ImplicitUsings>
+  <Nullable>enable</Nullable>
+  <RootNamespace>FinnHub.MCP.Server.Infrastructure</RootNamespace>
+  <AssemblyTitle>FinnHub.MCP.Server.Infrastructure</AssemblyTitle>
+  <ImplicitUsings>enable</ImplicitUsings>
+  <Nullable>enable</Nullable>
+  <Title>FinnHub MCP Server Infrastructure</Title>
+</PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
+  </ItemGroup>
+  <ItemGroup Label="Packages">
+    <PackageReference Include="Microsoft.Extensions.Options" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.Extensions.Http" />
+  </ItemGroup>
+</Project>
