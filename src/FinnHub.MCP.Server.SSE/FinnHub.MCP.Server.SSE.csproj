@@ -22,7 +22,6 @@
     <PackageReference Include="Swashbuckle.AspNetCore" />
     <PackageReference Include="DotNetEnv" />
     <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
-    <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
     <PackageReference Include="JsonSchema.Net" />
   </ItemGroup>
   <ItemGroup>

@@ -72,8 +72,7 @@ builder.Services.AddHttpClient("FinnHub", client =>
         client.BaseAddress = new Uri(builder.Configuration["FinnHub:BaseUrl"] ?? "https://finnhub.io/api/v1");
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         client.Timeout = TimeSpan.FromSeconds(30);
-    })
-    .AddStandardResilienceHandler();
+    });
 
 builder.Services.AddCors(options =>
 {

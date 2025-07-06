@@ -70,7 +70,7 @@ public interface ISearchClient
     /// Thrown when the query parameters are invalid (handled by query validation).
     /// </exception>
     /// <exception cref="OperationCanceledException">
-    /// Thrown when the operation is cancelled via the <paramref name="cancellationToken"/>.
+    /// Thrown when the operation is canceled via the <paramref name="cancellationToken"/>.
     /// </exception>
     Task<SearchSymbolResponse> SearchSymbolAsync(SearchSymbolQuery query, CancellationToken cancellationToken);
 }
