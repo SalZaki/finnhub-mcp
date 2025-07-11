@@ -207,7 +207,7 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
-            this. _logger.LogWarning("Symbol search operation was cancelled: {RequestUri}", requestUri);
+            this._logger.LogWarning("Symbol search operation was cancelled: {RequestUri}", requestUri);
             throw new SearchSymbolCancelledException($"Symbol search cancelled: {requestUri}");
         }
     }
@@ -281,7 +281,7 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
         return await this.DeserializeResponseAsync(contentStream, requestUri, cancellationToken).ConfigureAwait(false);
     }
 
-     /// <summary>
+    /// <summary>
     /// Handles HTTP responses with non-success status codes by reading the body and logging an appropriate message.
     /// </summary>
     /// <param name="response">The response with error status.</param>

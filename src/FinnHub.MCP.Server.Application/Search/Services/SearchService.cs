@@ -5,7 +5,6 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.Text.Json;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;

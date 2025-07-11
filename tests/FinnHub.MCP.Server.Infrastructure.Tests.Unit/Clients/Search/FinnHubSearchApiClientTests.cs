@@ -252,7 +252,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
             Result = []
         };
 
-        var jsonResponse =  JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
+        var jsonResponse = JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         });
@@ -308,7 +308,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     public async Task SearchSymbolAsync_WithUnauthorizedResponse_ThrowsHttpRequestException()
     {
         // Arrange
-        var query = new SearchSymbolQuery {Query = "AAPL", QueryId = Guid.NewGuid().ToString()};
+        var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
         this._messageHandler.SetResponse(HttpStatusCode.Unauthorized, "Unauthorized");
 
         // Act & Assert
@@ -320,7 +320,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     public async Task SearchSymbolAsync_WithInvalidJson_ThrowsJsonException()
     {
         // Arrange
-        var query = new SearchSymbolQuery {Query = "AAPL", QueryId = Guid.NewGuid().ToString()};
+        var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
         this._messageHandler.SetResponse(HttpStatusCode.OK, "invalid_json");
 
         // Act & Assert
@@ -332,7 +332,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     public async Task SearchSymbolAsync_WithNullSymbolFields_HandlesNullValues()
     {
         // Arrange
-        var query = new SearchSymbolQuery {Query = "TEST", QueryId = Guid.NewGuid().ToString()};
+        var query = new SearchSymbolQuery { Query = "TEST", QueryId = Guid.NewGuid().ToString() };
         var expectedResponse = new FinnHubSearchResponse
         {
             Count = 1,
