@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Net;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
@@ -176,7 +177,7 @@ public sealed class SearchServiceTests
         var query = new SearchSymbolQuery { QueryId = "test", Query = "AAPL" };
         this._searchClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("Network error"));
+            .ThrowsAsync(new SearchSymbolHttpException("Service temporarily unavailable", HttpStatusCode.ServiceUnavailable));
 
         // Act
         var result = await this._service.SearchSymbolAsync(query, CancellationToken.None);
@@ -195,7 +196,7 @@ public sealed class SearchServiceTests
     {
         // Arrange
         var query = new SearchSymbolQuery { QueryId = "test", Query = "AAPL" };
-        var timeoutException = new TaskCanceledException("Operation timed out", new TimeoutException());
+        var timeoutException = new SearchSymbolTimeoutException("Request timed out", new TimeoutException());
 
         this._searchClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())

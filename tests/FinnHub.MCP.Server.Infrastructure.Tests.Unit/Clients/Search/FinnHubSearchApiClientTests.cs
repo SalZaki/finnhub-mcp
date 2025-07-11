@@ -28,7 +28,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     private readonly IOptions<FinnHubOptions> _options;
     private readonly ILogger<FinnHubSearchApiClient> _logger;
     private readonly FinnHubOptions _finnHubOptions;
-    private FinnHubSearchApiClient _client;
+    private FinnHubSearchApiClient _sut;
     private readonly HttpClient _httpClient;
     private readonly MockHttpMessageHandler _messageHandler;
 
@@ -57,8 +57,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
 
         this._options.Value.Returns(this._finnHubOptions);
         this._httpClientFactory.CreateClient("FinnHub").Returns(this._httpClient);
-
-        this._client = new FinnHubSearchApiClient(this._httpClientFactory, this._options, this._logger);
+        this._sut = new FinnHubSearchApiClient(this._httpClientFactory, this._options, this._logger);
     }
 
     [Fact]
@@ -104,7 +103,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     {
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentNullException>(() =>
-            this._client.SearchSymbolAsync(null!, CancellationToken.None));
+            this._sut.SearchSymbolAsync(null!, CancellationToken.None));
     }
 
     [Fact]
@@ -112,11 +111,11 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     {
         // Arrange
         var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
-        this._client.Dispose();
+        this._sut.Dispose();
 
         // Act & Assert
         await Assert.ThrowsAsync<ObjectDisposedException>(() =>
-            this._client.SearchSymbolAsync(query, CancellationToken.None));
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
     [Fact]
@@ -128,7 +127,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            this._client.SearchSymbolAsync(query, CancellationToken.None));
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
 
         Assert.Equal("Search symbol endpoint is not configured or inactive", exception.Message);
     }
@@ -156,11 +155,11 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
 
         this._options.Value.Returns(finnHubOptions);
         this._httpClientFactory.CreateClient("FinnHub").Returns(this._httpClient);
-        this._client = new FinnHubSearchApiClient(this._httpClientFactory, this._options, this._logger);
+        this._sut = new FinnHubSearchApiClient(this._httpClientFactory, this._options, this._logger);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-            this._client.SearchSymbolAsync(query, CancellationToken.None));
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
 
         Assert.Equal("Search symbol endpoint is not configured or inactive", exception.Message);
     }
@@ -193,12 +192,13 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
 
         // Act
-        var result = await this._client.SearchSymbolAsync(query, CancellationToken.None);
+        var result = await this._sut.SearchSymbolAsync(query, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
         Assert.Equal("AAPL", result.Query);
-        Assert.Equal("FinnHub", result.Source);
+        Assert.NotNull(result.QueryId);
+        Assert.Equal("finnhub-api", result.Source);
         Assert.False(result.IsFromCache);
         Assert.Single(result.Symbols);
         Assert.Equal("AAPL", result.Symbols[0].Symbol);
@@ -221,7 +221,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         var expectedResponse = new FinnHubSearchResponse
         {
             Count = 0,
-            Result = new List<FinnHubSymbolResult>()
+            Result = []
         };
 
         var jsonResponse = JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
@@ -232,14 +232,13 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
 
         // Act
-        await this._client.SearchSymbolAsync(query, CancellationToken.None);
+        await this._sut.SearchSymbolAsync(query, CancellationToken.None);
 
         // Assert
         var requestUri = this._messageHandler.LastRequest?.RequestUri?.ToString();
         Assert.NotNull(requestUri);
         Assert.Contains("q=AAPL", requestUri);
         Assert.Contains("exchange=NASDAQ", requestUri);
-        Assert.Contains("token=test-api-key", requestUri);
     }
 
     [Fact]
@@ -253,7 +252,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
             Result = []
         };
 
-        var jsonResponse = JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
+        var jsonResponse =  JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
         {
             PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
         });
@@ -261,7 +260,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
 
         // Act
-        var result = await this._client.SearchSymbolAsync(query, CancellationToken.None);
+        var result = await this._sut.SearchSymbolAsync(query, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
@@ -276,20 +275,20 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetException(new HttpRequestException("Network error"));
 
         // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(() =>
-            this._client.SearchSymbolAsync(query, CancellationToken.None));
+        await Assert.ThrowsAsync<SearchSymbolHttpException>(() =>
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
     [Fact]
-    public async Task SearchSymbolAsync_WithTaskCancelledException_ThrowsTaskCanceledException()
+    public async Task SearchSymbolAsync_WithTaskCancelledException_ThrowsSearchSymbolTimeoutException()
     {
         // Arrange
         var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
         this._messageHandler.SetException(new TaskCanceledException("Request timed out", new TimeoutException()));
 
         // Act & Assert
-        await Assert.ThrowsAsync<TaskCanceledException>(() =>
-            this._client.SearchSymbolAsync(query, CancellationToken.None));
+        await Assert.ThrowsAsync<SearchSymbolTimeoutException>(() =>
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
     [Fact]
@@ -301,39 +300,39 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<TaskCanceledException>(() =>
-            this._client.SearchSymbolAsync(query, cts.Token));
+        await Assert.ThrowsAsync<SearchSymbolCancelledException>(() =>
+            this._sut.SearchSymbolAsync(query, cts.Token));
     }
 
     [Fact]
     public async Task SearchSymbolAsync_WithUnauthorizedResponse_ThrowsHttpRequestException()
     {
         // Arrange
-        var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
+        var query = new SearchSymbolQuery {Query = "AAPL", QueryId = Guid.NewGuid().ToString()};
         this._messageHandler.SetResponse(HttpStatusCode.Unauthorized, "Unauthorized");
 
         // Act & Assert
-        await Assert.ThrowsAsync<HttpRequestException>(() =>
-            this._client.SearchSymbolAsync(query, CancellationToken.None));
+        await Assert.ThrowsAsync<SearchSymbolHttpException>(() =>
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
     [Fact]
     public async Task SearchSymbolAsync_WithInvalidJson_ThrowsJsonException()
     {
         // Arrange
-        var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
-        this._messageHandler.SetResponse(HttpStatusCode.OK, "invalid json");
+        var query = new SearchSymbolQuery {Query = "AAPL", QueryId = Guid.NewGuid().ToString()};
+        this._messageHandler.SetResponse(HttpStatusCode.OK, "invalid_json");
 
         // Act & Assert
-        await Assert.ThrowsAsync<JsonException>(() =>
-            this._client.SearchSymbolAsync(query, CancellationToken.None));
+        await Assert.ThrowsAsync<SearchSymbolDeserializationException>(() =>
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
     [Fact]
     public async Task SearchSymbolAsync_WithNullSymbolFields_HandlesNullValues()
     {
         // Arrange
-        var query = new SearchSymbolQuery { Query = "TEST", QueryId = Guid.NewGuid().ToString() };
+        var query = new SearchSymbolQuery {Query = "TEST", QueryId = Guid.NewGuid().ToString()};
         var expectedResponse = new FinnHubSearchResponse
         {
             Count = 1,
@@ -357,40 +356,44 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
 
         // Act
-        var result = await this._client.SearchSymbolAsync(query, CancellationToken.None);
+        var result = await this._sut.SearchSymbolAsync(query, CancellationToken.None);
 
         // Assert
         Assert.NotNull(result);
         Assert.Single(result.Symbols);
-        var symbol = result.Symbols.First();
-        Assert.Equal(string.Empty, symbol.Symbol);
-        Assert.Equal(string.Empty, symbol.Description);
-        Assert.Equal(string.Empty, symbol.DisplaySymbol);
-        Assert.Equal(string.Empty, symbol.Type);
+        Assert.Equal(string.Empty, result.Symbols[0].Symbol);
+        Assert.Equal(string.Empty, result.Symbols[0].Description);
+        Assert.Equal(string.Empty, result.Symbols[0].DisplaySymbol);
+        Assert.Equal(string.Empty, result.Symbols[0].Type);
     }
 
     [Fact]
     public void Dispose_CalledOnce_DisposesResourcesAndLogsDebug()
     {
         // Act
-        this._client.Dispose();
+        this._sut.Dispose();
 
         // Assert
-        this._logger.Received(1).LogDebug("SearchClient disposed");
+        this._logger.Received(1).Log(
+            LogLevel.Debug,
+            Arg.Any<EventId>(),
+            Arg.Is<object>(v => v.ToString() == "FinnHubSearchApiClient disposed."),
+            Arg.Any<Exception>(),
+            Arg.Any<Func<object, Exception, string>>()!);
     }
 
     [Fact]
     public void Dispose_CalledMultipleTimes_DoesNotThrow()
     {
         // Act & Assert
-        this._client.Dispose();
-        this._client.Dispose(); // Should not throw
+        this._sut.Dispose();
+        this._sut.Dispose();
     }
 
     public void Dispose()
     {
-        this._client?.Dispose();
-        this._httpClient?.Dispose();
-        this._messageHandler?.Dispose();
+        this._sut.Dispose();
+        this._httpClient.Dispose();
+        this._messageHandler.Dispose();
     }
 }

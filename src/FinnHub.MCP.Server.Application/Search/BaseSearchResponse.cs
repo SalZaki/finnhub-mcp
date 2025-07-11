@@ -47,6 +47,9 @@ public abstract class BaseSearchResponse
     [JsonPropertyName("query")]
     public string Query { get; init; } = string.Empty;
 
+    [JsonPropertyName("query_id")]
+    public string QueryId { get; init; } = string.Empty;
+
     /// <summary>
     /// Gets the duration of time taken to execute the search operation.
     /// </summary>
