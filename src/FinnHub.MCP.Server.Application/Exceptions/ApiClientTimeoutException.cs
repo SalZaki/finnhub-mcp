@@ -8,9 +8,12 @@
 namespace FinnHub.MCP.Server.Application.Exceptions;
 
 /// <summary>
-/// Base class for all exceptions originating from the FinnHub MCP Server.
+/// Exception thrown when an API request exceeds the configured timeout duration.
 /// </summary>
-/// <param name="message">The error message describing the exception.</param>
-/// <param name="inner">Optional inner exception for chaining.</param>
-public abstract class FinnHubMcpServerException(string message, Exception? inner = null)
-    : ApplicationException(message, inner);
+/// <param name="message">A message describing the timeout condition.</param>
+/// <param name="innerException">The underlying timeout exception, if any.</param>
+public sealed class ApiClientTimeoutException(string message, Exception? innerException = null)
+    : ApiClientException(message, innerException)
+{
+    public override string ErrorCode => "API_CLIENT_TIMEOUT";
+}

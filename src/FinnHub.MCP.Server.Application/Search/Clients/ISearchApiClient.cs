@@ -13,11 +13,11 @@ namespace FinnHub.MCP.Server.Application.Search.Clients;
 /// Defines the contract for search client implementations that provide financial symbol search functionality.
 /// </summary>
 /// <remarks>
-/// This interface abstracts the search functionality to allow for different implementations
-/// (e.g., FinnHub API client, mock client for testing, cached client). Implementations should
-/// handle external API communication, error handling, and data transformation.
+/// This interface abstracts the search functionality to allow for different implementations (e.g., FinnHub API client,
+/// mock client for testing, cached client). Implementations should handle external API communication, error handling,
+/// and data transformation.
 /// </remarks>
-public interface ISearchClient
+public interface ISearchApiClient
 {
     /// <summary>
     /// Searches for financial symbols based on the provided query parameters.
@@ -38,39 +38,8 @@ public interface ISearchClient
     /// <item><description>Proper cancellation support</description></item>
     /// </list>
     /// </remarks>
-    /// <example>
-    /// <code>
-    /// var query = new SearchSymbolQuery
-    /// {
-    ///     QueryId = "search-001",
-    ///     Query = "AAPL",
-    ///     Exchange = "NASDAQ",
-    ///     Limit = 10
-    /// };
-    ///
-    /// var response = await searchClient.SearchSymbolAsync(query, cancellationToken);
-    ///
-    /// if (response.IsSuccess)
-    /// {
-    ///     foreach (var symbol in response.Data.Symbols)
-    ///     {
-    ///         Console.WriteLine($"{symbol.Symbol} - {symbol.Description}");
-    ///     }
-    /// }
-    /// else
-    /// {
-    ///     Console.WriteLine($"Search failed: {response.ErrorMessage}");
-    /// }
-    /// </code>
-    /// </example>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="query"/> is <c>null</c>.
-    /// </exception>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the query parameters are invalid (handled by query validation).
-    /// </exception>
-    /// <exception cref="OperationCanceledException">
-    /// Thrown when the operation is canceled via the <paramref name="cancellationToken"/>.
-    /// </exception>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="query"/> is <c>null</c>.</exception>
+    /// <exception cref="ArgumentException">Thrown when the query parameters are invalid (handled by query validation).</exception>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled via the <paramref name="cancellationToken"/>.</exception>
     Task<SearchSymbolResponse> SearchSymbolAsync(SearchSymbolQuery query, CancellationToken cancellationToken);
 }

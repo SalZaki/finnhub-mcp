@@ -10,6 +10,7 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
@@ -23,10 +24,10 @@ namespace FinnHub.MCP.Server.Infrastructure.Clients.Search;
 /// Provides HTTP client implementation for searching financial symbols via the FinnHub API.
 /// </summary>
 /// <remarks>
-/// Implements <see cref="ISearchClient"/> to offer search functionality via FinnHub’s REST API.
+/// Implements <see cref="ISearchApiClient"/> to offer search functionality via FinnHub’s REST API.
 /// This includes endpoint configuration, error handling, deserialization, and logging.
 /// </remarks>
-public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
+public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
 {
     private readonly HttpClient _httpClient;
     private readonly FinnHubOptions _finnHubOptions;
@@ -63,12 +64,22 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
     }
 
     /// <summary>
-    ///
+    /// Searches for financial symbols asynchronously using the FinnHub API based on the provided query.
+    /// Handles endpoint resolution, request construction, execution, and response processing.
     /// </summary>
-    /// <param name="query"></param>
-    /// <param name="cancellationToken"></param>
-    /// <returns></returns>
-    /// <exception cref="SearchSymbolUnexpectedException"></exception>
+    /// <param name="query">The query parameters used to search symbols (e.g., keyword, exchange).</param>
+    /// <param name="cancellationToken">A token to monitor for cancellation requests.</param>
+    /// <returns>
+    /// A task representing the asynchronous operation, containing a <see cref="SearchSymbolResponse"/> with the results.
+    /// </returns>
+    /// <exception cref="ApiClientUnexpectedException">
+    /// Thrown when an unexpected error occurs, that is not part of the known failure cases.
+    /// </exception>
+    /// <exception cref="ArgumentException">Thrown when the configured endpoint is missing or invalid.</exception>
+    /// <exception cref="ApiClientHttpException">Thrown when the HTTP request fails or returns an error status code.</exception>
+    /// <exception cref="ApiClientTimeoutException">Thrown when the request exceeds the configured timeout.</exception>
+    /// <exception cref="ApiClientCancelledException">Thrown when the operation is explicitly canceled.</exception>
+    /// <exception cref="ApiClientDeserializationException">Thrown when the API response cannot be parsed.</exception>
     public async Task<SearchSymbolResponse> SearchSymbolAsync(
         SearchSymbolQuery query,
         CancellationToken cancellationToken = default)
@@ -89,20 +100,22 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
             var requestUri = this.BuildRequestUri(searchEndpoint, query);
             this._logger.LogInformation("Requesting search symbols from FinnHub API: {RequestUri}", requestUri);
 
-            var stockSymbols = await this.ExecuteSearchRequestAsync(requestUri, cancellationToken).ConfigureAwait(false);
+            var stockSymbols =
+                await this.ExecuteSearchRequestAsync(requestUri, cancellationToken).ConfigureAwait(false);
 
             return CreateSuccessResponse(query, stopwatch.Elapsed, searchTimestamp, stockSymbols);
         }
         catch (Exception ex) when (ex is not (
-                     SearchSymbolHttpException or
-                     SearchSymbolDeserializationException or
-                     SearchSymbolTimeoutException or
-                     SearchSymbolCancelledException or
-                     SearchSymbolUnexpectedException or
-                     ArgumentException))
+                                       ApiClientHttpException or
+                                       ApiClientException or
+                                       ApiClientDeserializationException or
+                                       ApiClientTimeoutException or
+                                       ApiClientCancelledException or
+                                       ApiClientUnexpectedException or
+                                       ArgumentException))
         {
             this._logger.LogError(ex, "Unexpected error during symbol search for query: {Query}", query.Query);
-            throw new SearchSymbolUnexpectedException($"Unexpected error during symbol search: {query.Query}", ex);
+            throw new ApiClientUnexpectedException($"Unexpected error during symbol search: {query.Query}", ex);
         }
     }
 
@@ -198,25 +211,26 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub API failed. URI: {RequestUri}", requestUri);
-            throw new SearchSymbolHttpException($"HTTP request to FinnHub API failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException($"HTTP request to FinnHub API failed: {requestUri}", HttpStatusCode.InternalServerError);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
             this._logger.LogError(ex, "Symbol search request timed out: {RequestUri}", requestUri);
-            throw new SearchSymbolTimeoutException($"Symbol search timed out: {requestUri}", ex);
+            throw new ApiClientTimeoutException($"Symbol search timed out: {requestUri}", ex);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             this._logger.LogWarning("Symbol search operation was cancelled: {RequestUri}", requestUri);
-            throw new SearchSymbolCancelledException($"Symbol search cancelled: {requestUri}");
+            throw new ApiClientCancelledException($"Symbol search cancelled: {requestUri}");
         }
     }
 
     /// <summary>
-    ///
+    /// Maps a <see cref="FinnHubSymbolResult"/> returned by the FinnHub API into a domain-level <see cref="StockSymbol"/>.
+    /// Ensures that all fields are non-null for safer consumption by clients.
     /// </summary>
-    /// <param name="finnHubSymbolResult">The raw result from the FinnHub API.</param>
-    /// <returns>A <see cref="StockSymbol"/> mapped result.</returns>
+    /// <param name="finnHubSymbolResult">The raw symbol result returned by the API.</param>
+    /// <returns>A normalized <see cref="StockSymbol"/> object with default fallbacks for null fields.</returns>
     private static StockSymbol MapToSymbolResult(FinnHubSymbolResult finnHubSymbolResult)
     {
         return new StockSymbol
@@ -264,8 +278,8 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
     /// <param name="requestUri">The originating request URI (for logging and debugging).</param>
     /// <param name="cancellationToken">The token used to monitor for cancellation requests.</param>
     /// <returns>A list of <see cref="FinnHubSymbolResult"/> if response is successful.</returns>
-    /// <exception cref="SearchSymbolHttpException">When the API response status is not successful.</exception>
-    /// <exception cref="SearchSymbolDeserializationException">When the API response cannot be parsed.</exception>
+    /// <exception cref="ApiClientHttpException">When the API response status is not successful.</exception>
+    /// <exception cref="ApiClientDeserializationException">When the API response cannot be parsed.</exception>
     private async Task<IReadOnlyList<FinnHubSymbolResult>> ProcessResponseAsync(
         HttpResponseMessage response,
         string requestUri,
@@ -287,7 +301,7 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
     /// <param name="response">The response with error status.</param>
     /// <param name="contentStream">The stream containing response body.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <exception cref="SearchSymbolHttpException">Thrown with enriched details about the error.</exception>
+    /// <exception cref="ApiClientHttpException">Thrown with enriched details about the error.</exception>
     private async Task HandleErrorResponseAsync(
         HttpResponseMessage response,
         Stream contentStream,
@@ -308,7 +322,7 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
             this._logger.LogError("Server error from FinnHub API: {StatusCode} - {Content}", statusCode, errorBody);
         }
 
-        throw new SearchSymbolHttpException(
+        throw new ApiClientHttpException(
             $"FinnHub API returned error status {statusCode}. See logs for more detail.",
             statusCode,
             errorBody);
@@ -321,19 +335,22 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
     /// <param name="requestUri">The request URI (used for logging context).</param>
     /// <param name="cancellationToken">The cancellation token.</param>
     /// <returns>A list of <see cref="FinnHubSymbolResult"/> or an empty list.</returns>
-    /// <exception cref="SearchSymbolDeserializationException">If deserialization fails.</exception>
+    /// <exception cref="ApiClientDeserializationException">If deserialization fails.</exception>
     private async Task<IReadOnlyList<FinnHubSymbolResult>> DeserializeResponseAsync(
         Stream contentStream,
         string requestUri,
         CancellationToken cancellationToken)
     {
+        var rawJson = string.Empty;
         try
         {
-            var response = await JsonSerializer
-                .DeserializeAsync<FinnHubSearchResponse>(contentStream, this._jsonOptions, cancellationToken)
-                .ConfigureAwait(false);
+            using var reader = new StreamReader(contentStream);
+            rawJson = await reader.ReadToEndAsync(cancellationToken);
 
-            if (response?.Count == 0 || response?.Result == null || response.Result.Count == 0)
+            var response = JsonSerializer.Deserialize<FinnHubSearchResponse>(
+                rawJson, this._jsonOptions);
+
+            if (response?.Result == null || response.Result.Count == 0)
             {
                 this._logger.LogInformation("FinnHub returned no results for request: {RequestUri}", requestUri);
                 return Array.Empty<FinnHubSymbolResult>().AsReadOnly();
@@ -352,8 +369,20 @@ public sealed class FinnHubSearchApiClient : ISearchClient, IDisposable
         }
         catch (JsonException ex)
         {
-            this._logger.LogError(ex, "Failed to deserialize FinnHub API response.");
-            throw new SearchSymbolDeserializationException("Invalid JSON returned from FinnHub API.", ex);
+            var correlationId = Activity.Current?.TraceId.ToString();
+            this._logger.LogError(
+                ex,
+                "Failed to deserialize FinnHub API response. URI: {RequestUri}, CorrelationId: {CorrelationId}",
+                requestUri,
+                correlationId);
+
+            throw new ApiClientDeserializationException(
+                "Invalid JSON returned from FinnHub API.",
+                rawJson, ex)
+            {
+                CorrelationId = correlationId,
+                SourceService = "finnhub-api"
+            };
         }
     }
 
