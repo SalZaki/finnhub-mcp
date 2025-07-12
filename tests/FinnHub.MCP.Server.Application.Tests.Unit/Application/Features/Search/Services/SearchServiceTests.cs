@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
+using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
@@ -21,8 +22,7 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Search.
 /// </summary>
 public sealed class SearchServiceTests
 {
-    private readonly ISearchClient _searchClient;
-    private readonly ILogger<SearchService> _logger;
+    private readonly ISearchApiClient _searchApiClient;
     private readonly SearchService _service;
 
     /// <summary>
@@ -30,9 +30,9 @@ public sealed class SearchServiceTests
     /// </summary>
     public SearchServiceTests()
     {
-        this._searchClient = Substitute.For<ISearchClient>();
-        this._logger = Substitute.For<ILogger<SearchService>>();
-        this._service = new SearchService(this._searchClient, this._logger);
+        this._searchApiClient = Substitute.For<ISearchApiClient>();
+        ILogger<SearchService> logger = Substitute.For<ILogger<SearchService>>();
+        this._service = new SearchService(this._searchApiClient, logger);
     }
 
     /// <summary>
@@ -62,7 +62,7 @@ public sealed class SearchServiceTests
             Source = "FinnHub"
         };
 
-        this._searchClient
+        this._searchApiClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Returns(searchSymbolResponse);
 
@@ -93,7 +93,7 @@ public sealed class SearchServiceTests
         Assert.Equal("FinnHub", actualResult.Data.Source);
 
         // Verify interactions
-        await this._searchClient.Received(1).SearchSymbolAsync(query, Arg.Any<CancellationToken>());
+        await this._searchApiClient.Received(1).SearchSymbolAsync(query, Arg.Any<CancellationToken>());
     }
 
     /// <summary>
@@ -112,7 +112,8 @@ public sealed class SearchServiceTests
         };
 
         var searchSymbolResponse = new SearchSymbolResponse { Symbols = expectedSymbols };
-        this._searchClient
+
+        this._searchApiClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Returns(searchSymbolResponse);
 
@@ -150,7 +151,7 @@ public sealed class SearchServiceTests
         var searchSymbolQuery = new SearchSymbolQuery { QueryId = "test", Query = query };
         var searchSymbolResponse = new SearchSymbolResponse { Symbols = [] };
 
-        this._searchClient
+        this._searchApiClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Returns(searchSymbolResponse);
 
@@ -164,7 +165,7 @@ public sealed class SearchServiceTests
         Assert.Equal("NotFound", result.ErrorType);
         Assert.Contains("No search symbol(s) found.", result.ErrorMessage);
 
-        await this._searchClient.Received(1).SearchSymbolAsync(searchSymbolQuery, Arg.Any<CancellationToken>());
+        await this._searchApiClient.Received(1).SearchSymbolAsync(searchSymbolQuery, Arg.Any<CancellationToken>());
     }
 
     /// <summary>
@@ -175,9 +176,10 @@ public sealed class SearchServiceTests
     {
         // Arrange
         var query = new SearchSymbolQuery { QueryId = "test", Query = "AAPL" };
-        this._searchClient
+
+        this._searchApiClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new SearchSymbolHttpException("Service temporarily unavailable", HttpStatusCode.ServiceUnavailable));
+            .ThrowsAsync(new ApiClientHttpException("Service temporarily unavailable", HttpStatusCode.ServiceUnavailable));
 
         // Act
         var result = await this._service.SearchSymbolAsync(query, CancellationToken.None);
@@ -196,9 +198,9 @@ public sealed class SearchServiceTests
     {
         // Arrange
         var query = new SearchSymbolQuery { QueryId = "test", Query = "AAPL" };
-        var timeoutException = new SearchSymbolTimeoutException("Request timed out", new TimeoutException());
+        var timeoutException = new ApiClientTimeoutException("Request timed out", new TimeoutException());
 
-        this._searchClient
+        this._searchApiClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Throws(timeoutException);
 
@@ -222,7 +224,7 @@ public sealed class SearchServiceTests
         using var cts = new CancellationTokenSource();
         await cts.CancelAsync();
 
-        this._searchClient
+        this._searchApiClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(callInfo => throw new OperationCanceledException(callInfo.ArgAt<CancellationToken>(1)));
 
@@ -252,7 +254,7 @@ public sealed class SearchServiceTests
             ]
         };
 
-        this._searchClient
+        this._searchApiClient
             .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Returns(async callInfo =>
             {

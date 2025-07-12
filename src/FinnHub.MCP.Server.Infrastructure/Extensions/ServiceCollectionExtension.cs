@@ -43,7 +43,7 @@ public static class ServiceCollectionExtension
             .AddPolicyHandler(GetRetryPolicy())
             .AddPolicyHandler(GetCircuitBreakerPolicy());
 
-        services.AddSingleton<ISearchClient, FinnHubSearchApiClient>();
+        services.AddSingleton<ISearchApiClient, FinnHubSearchApiClient>();
     }
 
     private static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy()

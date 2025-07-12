@@ -8,6 +8,7 @@
 
 using System.Net;
 using System.Text.Json;
+using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
@@ -275,7 +276,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetException(new HttpRequestException("Network error"));
 
         // Act & Assert
-        await Assert.ThrowsAsync<SearchSymbolHttpException>(() =>
+        await Assert.ThrowsAsync<ApiClientHttpException>(() =>
             this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
@@ -287,7 +288,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetException(new TaskCanceledException("Request timed out", new TimeoutException()));
 
         // Act & Assert
-        await Assert.ThrowsAsync<SearchSymbolTimeoutException>(() =>
+        await Assert.ThrowsAsync<ApiClientTimeoutException>(() =>
             this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
@@ -300,7 +301,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         await cts.CancelAsync();
 
         // Act & Assert
-        await Assert.ThrowsAsync<SearchSymbolCancelledException>(() =>
+        await Assert.ThrowsAsync<ApiClientCancelledException>(() =>
             this._sut.SearchSymbolAsync(query, cts.Token));
     }
 
@@ -312,7 +313,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetResponse(HttpStatusCode.Unauthorized, "Unauthorized");
 
         // Act & Assert
-        await Assert.ThrowsAsync<SearchSymbolHttpException>(() =>
+        await Assert.ThrowsAsync<ApiClientHttpException>(() =>
             this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
@@ -324,7 +325,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         this._messageHandler.SetResponse(HttpStatusCode.OK, "invalid_json");
 
         // Act & Assert
-        await Assert.ThrowsAsync<SearchSymbolDeserializationException>(() =>
+        await Assert.ThrowsAsync<ApiClientDeserializationException>(() =>
             this._sut.SearchSymbolAsync(query, CancellationToken.None));
     }
 
