@@ -66,7 +66,7 @@ public sealed class SearchSymbolQueryBuilder
     /// builder.WithExchange("NYSE");
     /// </code>
     /// </example>
-    public SearchSymbolQueryBuilder WithExchange(string exchange)
+    public SearchSymbolQueryBuilder WithExchange(string? exchange)
     {
         this._exchange = exchange;
 
