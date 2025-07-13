@@ -37,10 +37,14 @@ public sealed class SearchSymbolTool(
         .Properties(
             (Constants.Tools.SearchSymbols.Parameters.QueryName, new JsonSchemaBuilder()
                 .Type(SchemaValueType.String)
+                .Pattern(@"^[a-zA-Z0-9\s\-\._]{1,500}$")
+                .MaxLength(500)
                 .Required()
                 .Description(Constants.Tools.SearchSymbols.Parameters.QueryDescription)),
             (Constants.Tools.SearchSymbols.Parameters.ExchangeName, new JsonSchemaBuilder()
                 .Type(SchemaValueType.String)
+                .Pattern(@"^[A-Z0-9\-_]{1,50}$$")
+                .MaxLength(50)
                 .Description(Constants.Tools.SearchSymbols.Parameters.ExchangeDescription)
             ),
             (Constants.Tools.SearchSymbols.Parameters.LimitName, new JsonSchemaBuilder()
