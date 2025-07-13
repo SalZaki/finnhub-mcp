@@ -5,6 +5,8 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Text.RegularExpressions;
+
 namespace FinnHub.MCP.Server.SSE.Tools.Search;
 
 /// <summary>
@@ -24,8 +26,34 @@ namespace FinnHub.MCP.Server.SSE.Tools.Search;
 /// which can be caught and converted to standardized error responses using the base class methods.
 /// </para>
 /// </remarks>
-public abstract class BaseSearchTool : BaseTool
+public abstract partial class BaseSearchTool : BaseTool
 {
+    /// <summary>
+    /// Generates the compiled regular expression for validating search queries.
+    /// Allows: letters, digits, spaces, dashes, underscores, and periods. Max length: 500.
+    /// </summary>
+    /// <returns>A compiled regex used to validate search query strings.</returns>
+    [GeneratedRegex(@"^[a-zA-Z0-9\s\-_.]{1,500}$", RegexOptions.Compiled)]
+    private static partial Regex QueryRegex();
+
+    /// <summary>
+    /// Generates the compiled regular expression for validating exchange values.
+    /// Allows: uppercase letters, digits, dashes, underscores. Max length: 50.
+    /// </summary>
+    /// <returns>A compiled regex used to validate exchange strings.</returns>
+    [GeneratedRegex(@"^[A-Z0-9\-_]{1,50}$")]
+    private static partial Regex ExchangeRegex();
+
+    /// <summary>
+    /// Cached compiled regex for query string validation.
+    /// </summary>
+    private static readonly Regex s_querySanitizerRegex = QueryRegex();
+
+    /// <summary>
+    /// Cached compiled regex for exchange string validation.
+    /// </summary>
+    private static readonly Regex s_exchangeSanitizerRegex = ExchangeRegex();
+
     /// <summary>
     /// The default number of results to return when no limit is specified.
     /// This value provides a reasonable balance between completeness and performance.
@@ -69,7 +97,8 @@ public abstract class BaseSearchTool : BaseTool
     }
 
     /// <summary>
-    /// Retrieves and validates a string query parameter with customizable length constraints.
+    /// Retrieves, trims, and validates a string query parameter with customizable length constraints.
+    /// Input must match a safe allowlist regex: letters, numbers, spaces, dashes, underscores, and periods.
     /// </summary>
     /// <param name="args">Input arguments containing the query.</param>
     /// <param name="paramName">The name of the query parameter. Defaults to "query".</param>
@@ -77,24 +106,26 @@ public abstract class BaseSearchTool : BaseTool
     /// <param name="maxLength">Maximum allowed length. Defaults to 500.</param>
     /// <returns>The validated query string.</returns>
     /// <exception cref="ArgumentException">
-    /// Thrown when the query is missing, empty, or outside the specified length bounds.
+    /// Thrown if the query is missing, empty, outside allowed length, or contains unsafe characters.
     /// </exception>
-    /// <remarks>
-    /// Useful for validating user-provided search terms such as ticker symbols or company names.
-    /// </remarks>
-    /// <example>
-    /// var query = ValidateAndGetQuery(args); // default: 1–500 characters
-    /// var symbol = ValidateAndGetQuery(args, "symbol", 1, 50);
-    /// </example>
-    protected static string ValidateAndGetQuery(IReadOnlyDictionary<string, JsonElement>? args, string paramName = "query", int minLength = 1, int maxLength = 500)
+    protected static string ValidateAndGetQuery(
+        IReadOnlyDictionary<string, JsonElement>? args,
+        string paramName = "query",
+        int minLength = 1,
+        int maxLength = 500)
     {
         ValidateRequiredParameter(args, paramName);
 
-        var query = GetStringParameter(args, paramName);
+        var query = GetStringParameter(args, paramName).Trim();
+
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            throw new ArgumentException("Query cannot be empty or whitespace.", paramName);
+        }
 
         if (query.Length < minLength)
         {
-            throw new ArgumentException($"Query must be at least {minLength} character(s) long.", paramName);
+            throw new ArgumentException($"Query must be at least {minLength} characters long.", paramName);
         }
 
         if (query.Length > maxLength)
@@ -102,6 +133,42 @@ public abstract class BaseSearchTool : BaseTool
             throw new ArgumentException($"Query must be at most {maxLength} characters long.", paramName);
         }
 
+        if (!s_querySanitizerRegex.IsMatch(query))
+        {
+            throw new ArgumentException("Query contains invalid characters. Only letters, numbers, spaces, dashes (-), underscores (_) and periods (.) are allowed.", paramName);
+        }
+
         return query;
+    }
+
+    /// <summary>
+    /// Validates and sanitizes the optional exchange parameter.
+    /// Converts to uppercase and ensures the value is alphanumeric with dashes/underscores only.
+    /// </summary>
+    /// <param name="args">Input arguments dictionary.</param>
+    /// <param name="paramName">The exchange parameter name (defaults to "exchange").</param>
+    /// <returns>The sanitized exchange string or null if not provided.</returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown if exchange value is provided and contains disallowed characters or exceeds max length.
+    /// </exception>
+    protected static string? ValidateAndGetExchange(
+        IReadOnlyDictionary<string, JsonElement>? args,
+        string paramName = "exchange")
+    {
+        var exchange = GetStringParameter(args, paramName);
+
+        if (string.IsNullOrWhiteSpace(exchange))
+        {
+            return null;
+        }
+
+        exchange = exchange.Trim().ToUpperInvariant();
+
+        if (!s_exchangeSanitizerRegex.IsMatch(exchange))
+        {
+            throw new ArgumentException("Exchange must contain only A-Z, 0-9, dashes or underscores, max 50 chars.", paramName);
+        }
+
+        return exchange;
     }
 }

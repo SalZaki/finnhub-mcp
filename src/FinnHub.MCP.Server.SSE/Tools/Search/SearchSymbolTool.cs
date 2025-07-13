@@ -91,7 +91,7 @@ public sealed class SearchSymbolTool(
 
             var query = ValidateAndGetQuery(args);
             var limit = ValidateAndGetLimit(args);
-            var exchange = GetStringParameter(args, Constants.Tools.SearchSymbols.Parameters.ExchangeName);
+            var exchange = ValidateAndGetExchange(args);
 
             logger.LogDebug("Executing search with query: '{Query}', exchange: '{Exchange}', limit: {Limit}", query, exchange, limit);
 
