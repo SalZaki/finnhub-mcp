@@ -5,15 +5,13 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Text.Json;
+using FinnHub.MCP.Server.SSE.Tools.Search;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
+using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Search;
-
-using System.Text.Json;
-using Xunit;
-using FinnHub.MCP.Server.SSE.Tools.Search;
-
 public class BaseSearchToolTests
 {
     private static Dictionary<string, JsonElement> BuildArgs(string key, string value) =>
@@ -28,6 +26,7 @@ public class BaseSearchToolTests
     [InlineData("X-NYSE_2024", false)]
     [InlineData("", true)]
     [InlineData("   ", true)]
+    [InlineData("<tag>", true)]
     [InlineData("<script>", true)]
     [InlineData(null, true)]
     public void ValidateAndGetQuery_HandlesVariousInputs(string? input, bool shouldThrow)
