@@ -15,6 +15,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinnHub.MCP.Server.Infrastr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinnHub.MCP.Server.Infrastructure.Tests.Unit", "tests\FinnHub.MCP.Server.Infrastructure.Tests.Unit\FinnHub.MCP.Server.Infrastructure.Tests.Unit.csproj", "{D04CD22E-378A-42A7-BF8E-AC435D50D63C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FinnHub.MCP.Server.Tests.Unit", "tests\FinnHub.MCP.Server.Tests.Unit\FinnHub.MCP.Server.Tests.Unit.csproj", "{B39F92C8-A3FC-4026-938B-5EFEDD5E345E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +43,10 @@ Global
 		{D04CD22E-378A-42A7-BF8E-AC435D50D63C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D04CD22E-378A-42A7-BF8E-AC435D50D63C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D04CD22E-378A-42A7-BF8E-AC435D50D63C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B39F92C8-A3FC-4026-938B-5EFEDD5E345E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B39F92C8-A3FC-4026-938B-5EFEDD5E345E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B39F92C8-A3FC-4026-938B-5EFEDD5E345E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B39F92C8-A3FC-4026-938B-5EFEDD5E345E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{859E69D9-3195-4DFC-A463-107739C456F1} = {D728C487-FA3C-4698-B853-4FB8041E6374}
@@ -48,5 +54,6 @@ Global
 		{B052238C-9665-48CC-98D2-0E40F009E096} = {D728C487-FA3C-4698-B853-4FB8041E6374}
 		{AF1878FD-FCF5-48A3-BB87-DEAA56D5D0E6} = {D728C487-FA3C-4698-B853-4FB8041E6374}
 		{D04CD22E-378A-42A7-BF8E-AC435D50D63C} = {A7AF5572-5130-4729-9302-1DB158FB8A08}
+		{B39F92C8-A3FC-4026-938B-5EFEDD5E345E} = {A7AF5572-5130-4729-9302-1DB158FB8A08}
 	EndGlobalSection
 EndGlobal
