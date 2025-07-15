@@ -8,10 +8,10 @@
 using System.Diagnostics;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
-using FinnHub.MCP.Server.SSE.Common;
+using FinnHub.MCP.Server.Common;
 using Json.Schema;
 
-namespace FinnHub.MCP.Server.SSE.Tools.Search;
+namespace FinnHub.MCP.Server.Tools.Search;
 /// <summary>
 /// Tool implementation for searching financial symbols via the MCP server's search service.
 /// </summary>

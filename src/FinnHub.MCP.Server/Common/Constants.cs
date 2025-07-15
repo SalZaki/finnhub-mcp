@@ -5,7 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-namespace FinnHub.MCP.Server.SSE.Common;
+namespace FinnHub.MCP.Server.Common;
 
 /// <summary>
 /// Provides application-wide constants for the FinnHub MCP Server including server configuration,

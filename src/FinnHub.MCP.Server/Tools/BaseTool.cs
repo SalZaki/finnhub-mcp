@@ -7,7 +7,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace FinnHub.MCP.Server.SSE.Tools;
+namespace FinnHub.MCP.Server.Tools;
 
 /// <summary>
 /// Abstract base class for MCP Server tools that provides common functionality for parameter validation,

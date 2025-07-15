@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Text.Json;
-using FinnHub.MCP.Server.SSE.Tools.Search;
+using FinnHub.MCP.Server.Tools.Search;
 using Json.Schema;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;

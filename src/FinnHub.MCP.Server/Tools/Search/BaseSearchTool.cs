@@ -7,7 +7,7 @@
 
 using System.Text.RegularExpressions;
 
-namespace FinnHub.MCP.Server.SSE.Tools.Search;
+namespace FinnHub.MCP.Server.Tools.Search;
 
 /// <summary>
 /// Abstract base class for search-related MCP tools that provides common validation and parameter handling
