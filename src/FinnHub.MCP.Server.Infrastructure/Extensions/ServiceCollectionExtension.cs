@@ -33,13 +33,12 @@ public static class ServiceCollectionExtension
     /// <param name="services">The service collection to which services are added.</param>
     public static void RegisterInfrastructure(this IServiceCollection services)
     {
-        services.AddHttpClient<ISearchApiClient, FinnHubSearchApiClient>("FinnHub", (provider, client) =>
+        services.AddHttpClient<ISearchApiClient, FinnHubSearchApiClient>("FinnHub-Search-Client", (provider, client) =>
             {
                 var options = provider.GetRequiredService<IOptions<FinnHubOptions>>().Value;
 
                 client.BaseAddress = new Uri(options.BaseUrl);
-                client.DefaultRequestHeaders.Accept.Add(
-                    new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
                 client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("FinnHub-MCP-Server", "1.0"));
                 client.Timeout = TimeSpan.FromSeconds(30);
 

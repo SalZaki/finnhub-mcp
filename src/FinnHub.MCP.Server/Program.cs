@@ -62,9 +62,14 @@ mcpServerOptionsBuilder.Configure<IServiceProvider>((mcpServerOptions, servicePr
     };
 });
 
-builder.Services
-    .AddMcpServer()
-    .WithHttpTransport();
+if (args.Contains("--stdio"))
+{
+    builder.Services.AddMcpServer().WithStdioServerTransport();
+}
+else
+{
+    builder.Services.AddMcpServer().WithHttpTransport();
+}
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

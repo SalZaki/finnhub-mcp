@@ -25,7 +25,6 @@ namespace FinnHub.MCP.Server.Infrastructure.Tests.Unit.Clients.Search;
 /// </summary>
 public sealed class FinnHubSearchApiClientTests : IDisposable
 {
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IOptions<FinnHubOptions> _options;
     private readonly ILogger<FinnHubSearchApiClient> _logger;
     private readonly FinnHubOptions _finnHubOptions;
@@ -35,7 +34,6 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
 
     public FinnHubSearchApiClientTests()
     {
-        this._httpClientFactory = Substitute.For<IHttpClientFactory>();
         this._options = Substitute.For<IOptions<FinnHubOptions>>();
         this._logger = Substitute.For<ILogger<FinnHubSearchApiClient>>();
         this._messageHandler = new MockHttpMessageHandler();
@@ -57,8 +55,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         };
 
         this._options.Value.Returns(this._finnHubOptions);
-        this._httpClientFactory.CreateClient("FinnHub").Returns(this._httpClient);
-        this._sut = new FinnHubSearchApiClient(this._httpClientFactory, this._options, this._logger);
+        this._sut = new FinnHubSearchApiClient(this._httpClient, this._options, this._logger);
     }
 
     [Fact]
@@ -74,7 +71,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new FinnHubSearchApiClient(this._httpClientFactory, null!, this._logger));
+            new FinnHubSearchApiClient(this._httpClient, null!, this._logger));
     }
 
     [Fact]
@@ -82,7 +79,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new FinnHubSearchApiClient(this._httpClientFactory, this._options, null!));
+            new FinnHubSearchApiClient(this._httpClient, this._options, null!));
     }
 
     [Fact]
@@ -94,7 +91,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
 
         // Act & Assert
         var exception = Assert.Throws<ArgumentException>(() =>
-            new FinnHubSearchApiClient(this._httpClientFactory, nullOptions, this._logger));
+            new FinnHubSearchApiClient(this._httpClient, nullOptions, this._logger));
 
         Assert.Equal("FinnHub options cannot be null. (Parameter 'options')", exception.Message);
     }
@@ -155,8 +152,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         };
 
         this._options.Value.Returns(finnHubOptions);
-        this._httpClientFactory.CreateClient("FinnHub").Returns(this._httpClient);
-        this._sut = new FinnHubSearchApiClient(this._httpClientFactory, this._options, this._logger);
+        this._sut = new FinnHubSearchApiClient(this._httpClient, this._options, this._logger);
 
         // Act & Assert
         var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
