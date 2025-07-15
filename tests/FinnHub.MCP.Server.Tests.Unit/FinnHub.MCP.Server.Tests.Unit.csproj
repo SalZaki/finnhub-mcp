@@ -16,6 +16,6 @@
   <PackageReference Include="NSubstitute" />
 </ItemGroup>
 <ItemGroup>
-  <ProjectReference Include="..\..\src\FinnHub.MCP.Server.SSE\FinnHub.MCP.Server.SSE.csproj" />
+  <ProjectReference Include="..\..\src\FinnHub.MCP.Server\FinnHub.MCP.Server.csproj" />
 </ItemGroup>
 </Project>

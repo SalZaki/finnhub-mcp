@@ -2,14 +2,15 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <RootNamespace>FinnHub.MCP.Server.SSE</RootNamespace>
-    <AssemblyTitle>FinnHub.MCP.Server.SSE</AssemblyTitle>
+    <RootNamespace>FinnHub.MCP.Server</RootNamespace>
+    <AssemblyTitle>FinnHub.MCP.Server</AssemblyTitle>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Title>FinnHub MCP Server (SSE)</Title>
+    <Title>FinnHub MCP Server</Title>
     <Description>
-      A real-time financial data streaming server built with the official Model Context Protocol (MCP) C# SDK.
-      Integrates with the FinnHub API and provides Server-Sent Events (SSE) endpoints to stream live financial data.
+      A real-time financial data streaming server built with the official Model Context Protocol (MCP) C# SDK. 
+      Integrates with the FinnHub API and provides Server-Sent Events (SSE) and standard input/output (STDIO) transport 
+      to stream live financial data.
     </Description>
     <NeutralLanguage>en-GB</NeutralLanguage>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>

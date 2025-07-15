@@ -9,9 +9,9 @@ using System.Reflection;
 using DotNetEnv;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
+using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
-using FinnHub.MCP.Server.SSE.Common;
-using FinnHub.MCP.Server.SSE.Tools.Search;
+using FinnHub.MCP.Server.Tools.Search;
 
 var assembly = Assembly.GetEntryAssembly();
 var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"finnhub.mcp.server.{Guid.NewGuid()}.sse";
