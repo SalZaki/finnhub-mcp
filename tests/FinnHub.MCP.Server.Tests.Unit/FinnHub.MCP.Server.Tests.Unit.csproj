@@ -6,6 +6,7 @@
   <IsPackable>false</IsPackable>
   <IsTestProject>true</IsTestProject>
   <RootNamespace>FinnHub.MCP.Server.Tests.Unit</RootNamespace>
+  <AssemblyName>FinnHub.MCP.Server.Tests.Unit</AssemblyName>
 </PropertyGroup>
 <ItemGroup>
   <PackageReference Include="coverlet.collector" />

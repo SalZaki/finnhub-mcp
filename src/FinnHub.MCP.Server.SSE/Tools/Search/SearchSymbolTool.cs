@@ -30,6 +30,8 @@ public sealed class SearchSymbolTool(
     private static readonly Lazy<JsonElement> s_serializedSchema = new(() =>
         JsonSerializer.SerializeToElement(s_toolSchema));
 
+    internal static JsonSchema ToolSchema => s_toolSchema;
+
     /// <summary>
     /// Defines the JSON schema for tool inputs, including query, exchange, and result limit.
     /// </summary>

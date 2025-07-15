@@ -7,11 +7,13 @@
 
 using System.Text.Json;
 using FinnHub.MCP.Server.SSE.Tools.Search;
+using Json.Schema;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Search;
+
 public class BaseSearchToolTests
 {
     private static Dictionary<string, JsonElement> BuildArgs(string key, string value) =>
@@ -51,7 +53,8 @@ public class BaseSearchToolTests
     [InlineData("", false)]
     [InlineData("nasdaq", false)]
     [InlineData("X#INVALID", true)]
-    [InlineData("TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG", true)]
+    [InlineData("TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG_TOOLONG",
+        true)]
     public void ValidateAndGetExchange_HandlesVariousInputs(string? input, bool shouldThrow)
     {
         var args = BuildArgs("exchange", input ?? string.Empty);
@@ -74,21 +77,52 @@ public class BaseSearchToolTests
         }
     }
 
-    private sealed class BaseSearchToolTestImpl : BaseSearchTool
+    private static EvaluationOptions SchemaOptions => new()
     {
-        public static new string ValidateAndGetQuery(IReadOnlyDictionary<string, JsonElement>? args,
-            string paramName = "query", int min = 1, int max = 500) =>
-            BaseSearchTool.ValidateAndGetQuery(args, paramName, min, max);
+        OutputFormat = OutputFormat.List,
+        RequireFormatValidation = true
+    };
 
-        public static new string? ValidateAndGetExchange(IReadOnlyDictionary<string, JsonElement>? args,
-            string paramName = "exchange") =>
-            BaseSearchTool.ValidateAndGetExchange(args, paramName);
-
-        public override ValueTask<CallToolResponse> InvokeAsync(RequestContext<CallToolRequestParams> request, CancellationToken cancellationToken = new CancellationToken())
+    [Theory]
+    [InlineData("AAPL", "NASDAQ", true)]
+    [InlineData("  XOM  ", "X-NYSE", true)]
+    [InlineData("", "NYSE", false)]
+    [InlineData("<script>", "NYSE", false)]
+    [InlineData("AAPL", "nasdaq", false)]
+    [InlineData("AAPL", "NYSE!", false)]
+    public void ToolSchema_Validation_AlignsWithRuntime(string query, string exchange, bool expectedValid)
+    {
+        // Arrange: build input object as JsonElement
+        var input = JsonSerializer.SerializeToElement(new
         {
-            throw new NotImplementedException();
-        }
+            query,
+            exchange
+        });
 
-        public override Tool ProtocolTool => new();
+        // Act
+        var schema = SearchSymbolTool.ToolSchema;
+        var result = schema.Evaluate(input, SchemaOptions);
+
+        // Assert
+        Assert.Equal(expectedValid, result.IsValid);
     }
+}
+
+public sealed class BaseSearchToolTestImpl : BaseSearchTool
+{
+    public static new string ValidateAndGetQuery(IReadOnlyDictionary<string, JsonElement>? args,
+        string paramName = "query", int min = 1, int max = 500) =>
+        BaseSearchTool.ValidateAndGetQuery(args, paramName, min, max);
+
+    public static new string? ValidateAndGetExchange(IReadOnlyDictionary<string, JsonElement>? args,
+        string paramName = "exchange") =>
+        BaseSearchTool.ValidateAndGetExchange(args, paramName);
+
+    public override ValueTask<CallToolResponse> InvokeAsync(RequestContext<CallToolRequestParams> request,
+        CancellationToken cancellationToken = new CancellationToken())
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Tool ProtocolTool => new();
 }

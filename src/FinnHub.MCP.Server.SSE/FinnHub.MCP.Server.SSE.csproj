@@ -30,4 +30,9 @@
     <ProjectReference Include="..\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
     <ProjectReference Include="..\FinnHub.MCP.Server.Infrastructure\FinnHub.MCP.Server.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <Parameter>FinnHub.MCP.Server.Tests.Unit</Parameter>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>
