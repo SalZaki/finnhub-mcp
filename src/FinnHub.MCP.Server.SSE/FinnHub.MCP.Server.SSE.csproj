@@ -32,7 +32,7 @@
   </ItemGroup>
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <Parameter>FinnHub.MCP.Server.Tests.Unit</Parameter>
+      <_Parameter1>FinnHub.MCP.Server.Tests.Unit</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
 </Project>
