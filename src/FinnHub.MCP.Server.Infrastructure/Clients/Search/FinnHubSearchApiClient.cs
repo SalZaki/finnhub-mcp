@@ -38,19 +38,19 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
     /// <summary>
     /// Initializes a new instance of the <see cref="FinnHubSearchApiClient"/> class.
     /// </summary>
-    /// <param name="httpClientFactory">Factory to create named HTTP clients.</param>
+    /// <param name="httpClient">Named HTTP clients.</param>
     /// <param name="options">Configuration options for the FinnHub API.</param>
     /// <param name="logger">Logger for diagnostics and monitoring.</param>
     public FinnHubSearchApiClient(
-        IHttpClientFactory httpClientFactory,
+        HttpClient httpClient,
         IOptions<FinnHubOptions> options,
         ILogger<FinnHubSearchApiClient> logger)
     {
-        ArgumentNullException.ThrowIfNull(httpClientFactory);
+        ArgumentNullException.ThrowIfNull(httpClient);
         ArgumentNullException.ThrowIfNull(options);
         ArgumentNullException.ThrowIfNull(logger);
 
-        this._httpClient = httpClientFactory.CreateClient("FinnHub");
+        this._httpClient = httpClient;
         this._finnHubOptions = options.Value ?? throw new ArgumentException("FinnHub options cannot be null.", nameof(options));
         this._logger = logger;
 
