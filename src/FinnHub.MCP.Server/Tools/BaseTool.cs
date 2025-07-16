@@ -99,13 +99,13 @@ public abstract class BaseTool : McpServerTool
     }
 
     /// <summary>
-    /// Retrieves an integer parameter from the arguments dictionary with optional validation.
+    /// Gets an integer parameter from the arguments dictionary with optional validation.
     /// </summary>
     /// <param name="args">The arguments dictionary to retrieve the parameter from.</param>
     /// <param name="paramName">The name of the parameter to retrieve.</param>
     /// <param name="defaultValue">The default value to return if the parameter is not found or cannot be parsed.</param>
-    /// <param name="minValue">Optional minimum value for validation. If specified, values below this will throw an exception.</param>
-    /// <param name="maxValue">Optional maximum value for validation. If specified, values above this will throw an exception.</param>
+    /// <param name="minValue">Optional minimum value for validation. If specified the values below, this will throw an exception.</param>
+    /// <param name="maxValue">Optional maximum value for validation. If specified the values above, this will throw an exception.</param>
     /// <returns>The integer value of the parameter, or the default value if not found or unparseable.</returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when the parameter value is outside the specified min/max range.
@@ -146,7 +146,7 @@ public abstract class BaseTool : McpServerTool
     }
 
     /// <summary>
-    /// Retrieves a string parameter from the arguments dictionary.
+    /// Gets a string parameter from the arguments dictionary.
     /// </summary>
     /// <param name="args">The arguments dictionary to retrieve the parameter from.</param>
     /// <param name="paramName">The name of the parameter to retrieve.</param>
@@ -171,7 +171,7 @@ public abstract class BaseTool : McpServerTool
     }
 
     /// <summary>
-    /// Retrieves a boolean parameter from the arguments dictionary.
+    /// Gets a boolean parameter from the arguments dictionary.
     /// </summary>
     /// <param name="args">The arguments dictionary to retrieve the parameter from.</param>
     /// <param name="paramName">The name of the parameter to retrieve.</param>

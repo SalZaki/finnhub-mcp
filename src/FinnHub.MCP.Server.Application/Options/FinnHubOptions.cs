@@ -28,26 +28,6 @@ namespace FinnHub.MCP.Server.Application.Options;
 /// service can be properly initialized and used.
 /// </para>
 /// </remarks>
-/// <example>
-/// Example configuration in appsettings.json:
-/// <code>
-/// {
-///   "FinnHub": {
-///     "ApiKey": "your-api-key-here",
-///     "BaseUrl": "https://finnhub.io/api/v1",
-///     "TimeoutSeconds": 30,
-///     "EndPoints": [
-///       {
-///         "Name": "search-symbol",
-///         "Url": "https://finnhub.io/api/v1/search",
-///         "IsActive": true,
-///         "Description": "Search for stock symbols"
-///       }
-///     ]
-///   }
-/// }
-/// </code>
-/// </example>
 [ExcludeFromCodeCoverage]
 public sealed class FinnHubOptions
 {
@@ -105,7 +85,7 @@ public sealed class FinnHubOptions
     /// </summary>
     /// <value>
     /// An integer value between 1 and 60 seconds representing the HTTP request timeout.
-    /// The default value is 10 seconds if not specified in configuration.
+    /// The default value is 10 seconds if not specified in the configuration.
     /// </value>
     /// <remarks>
     /// <para>
@@ -137,7 +117,7 @@ public sealed class FinnHubOptions
     /// </value>
     /// <remarks>
     /// <para>
-    /// The endpoints collection defines which FinnHub API operations are available to the MCP server
+    /// The endpoint collection defines which FinnHub API operations are available to the MCP server
     /// and how they should be configured. Each endpoint can be individually activated or deactivated
     /// without affecting other endpoints, providing flexibility in API feature management.
     /// </para>
@@ -146,26 +126,5 @@ public sealed class FinnHubOptions
     /// making them available as tools within the MCP server framework.
     /// </para>
     /// </remarks>
-    /// <example>
-    /// Example endpoint configuration:
-    /// <code>
-    /// EndPoints = [
-    ///     new FinnHubEndPoint
-    ///     {
-    ///         Name = "search-symbol",
-    ///         Url = "https://finnhub.io/api/v1/search",
-    ///         IsActive = true,
-    ///         Description = "Search for stock symbols and company information"
-    ///     },
-    ///     new FinnHubEndPoint
-    ///     {
-    ///         Name = "stock-candles",
-    ///         Url = "https://finnhub.io/api/v1/stock/candle",
-    ///         IsActive = true,
-    ///         Description = "Get historical stock price data"
-    ///     }
-    /// ]
-    /// </code>
-    /// </example>
     public List<FinnHubEndPoint> EndPoints { get; init; } = [];
 }
