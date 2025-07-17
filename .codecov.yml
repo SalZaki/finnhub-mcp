@@ -1,0 +1,17 @@
+codecov:
+  notify:
+    after_n_builds: 1
+
+coverage:
+  status:
+    project:
+      default:
+        target: 0.2  # Require at least 20% coverage
+        threshold: 1%
+        informational: false
+        if_not_found: failure
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true
