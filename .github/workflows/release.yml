@@ -1,0 +1,109 @@
+﻿name: 🚀 Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+
+          - os: ubuntu-latest;
+            runtime: linux-x64;
+            artifact_name: finnhub-mcp-linux-x64
+
+          - os: windows-latest;
+            runtime: win-x64;
+            artifact_name: finnhub-mcp-win-x64.exe
+
+          - os: macos-latest;
+            runtime: osx-x64;
+            artifact_name: finnhub-mcp-osx-x64
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: 🧰 Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: 📦 Restore dependencies
+        run: dotnet restore ./finnhub-mcp.sln
+
+      - name: 🏗️ Build and publish
+        run: dotnet publish -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish
+
+      - name: 📁 Prepare artifact
+        run: |
+          mkdir -p artifacts
+          if [ "${{ matrix.runtime }}" == "win-x64" ]; then
+            mv publish/*.exe artifacts/${{ matrix.artifact_name }}
+          else
+            mv publish/$(ls publish | grep -v '\.dll\|\.pdb\|\.json') artifacts/${{ matrix.artifact_name }}
+          fi
+
+      - name: 📤 Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: artifacts/${{ matrix.artifact_name }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Download artifacts
+        uses: actions/download-artifact@v3
+
+      - name: 🔄 Generate Conventional Changelog
+        id: changelog
+        uses: requarks/changelog-action@v1.10.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.ref_name }}
+
+      - name: 📝 Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        if: steps.changelog.outputs.changes != ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.changelog.outputs.tag }}
+          release_name: 📦 ${{ steps.changelog.outputs.tag }}
+          body: ${{ steps.changelog.outputs.changes }}
+          draft: false
+          prerelease: false
+
+      - name: 📤 Upload Linux Binary
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/finnhub-mcp-linux-x64
+          asset_name: finnhub-mcp-linux-x64
+          asset_content_type: application/octet-stream
+
+      - name: 📤 Upload Windows Binary
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/finnhub-mcp-win-x64.exe
+          asset_name: finnhub-mcp-win-x64.exe
+          asset_content_type: application/octet-stream
+
+      - name: 📤 Upload macOS Binary
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: artifacts/finnhub-mcp-osx-x64
+          asset_name: finnhub-mcp-osx-x64
+          asset_content_type: application/octet-stream

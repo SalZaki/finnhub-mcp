@@ -23,13 +23,22 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
     Args = args
 });
 
-Env.TraversePath().Load();
+if (builder.Environment.IsDevelopment())
+{
+    Env.TraversePath().Load();
+}
 
 builder.Configuration
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables()
     .AddCommandLine(args);
+
+var apiKey = Environment.GetEnvironmentVariable("FINNHUB_API_KEY");
+if (!string.IsNullOrWhiteSpace(apiKey))
+{
+    builder.Configuration["FinnHub:ApiKey"] = apiKey;
+}
 
 builder.Services
     .AddOptions<FinnHubOptions>()

@@ -18,13 +18,14 @@ permissions:
   id-token: write
 
 jobs:
+
   build:
     name: 🛠️ Build Solution
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🧰 Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -70,28 +71,40 @@ jobs:
 
       - name: 🧪 Run unit tests with coverage
         run: |
-          dotnet test ./tests/FinnHub.MCP.Server.Application.Tests.Unit/FinnHub.MCP.Server.Application.Tests.Unit.csproj \
-          --configuration Release \
-          --collect:'XPlat Code Coverage' \
-          --verbosity normal \
-          -p:CollectCoverage=true \
-          -p:CoverletOutputFormat=cobertura \
-          -p:ExcludeByAttribute=GeneratedCodeAttribute \
-          -p:CoverletOutput=./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults
+          mkdir -p coverage
+          for project in \
+            ./tests/FinnHub.MCP.Server.Application.Tests.Unit/FinnHub.MCP.Server.Application.Tests.Unit.csproj \
+            ./tests/FinnHub.MCP.Server.Tests.Unit/FinnHub.MCP.Server.Tests.Unit.csproj \
+            ./tests/FinnHub.MCP.Server.Infrastructure.Tests.Unit/FinnHub.MCP.Server.Infrastructure.Tests.Unit.csproj
+          do
+            echo "Running tests for $project"
+            dotnet test $project \
+              --configuration Release \
+              --collect:'XPlat Code Coverage' \
+              --verbosity normal \
+              -p:CollectCoverage=true \
+              -p:CoverletOutputFormat=cobertura \
+              -p:ExcludeByAttribute=GeneratedCodeAttribute \
+              -p:MergeWith='./coverage/coverage.json' \
+              -p:CoverletOutput="./coverage/"
+          done
 
-      - name: 📂 Show test result files
-        run: ls -R ./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults
+      - name: 📂 Show coverage files
+        run: find ./coverage
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults/coverage.cobertura.xml
+          files: ./coverage/coverage.cobertura.xml
           flags: unit-tests
           name: codecov-finnhub-mcp
+          fail_ci_if_error: true
+          verbose: true
 
       - name: 📁 Upload test results
         uses: actions/upload-artifact@v4
         with:
-           name: test-results
-           path: ./tests/FinnHub.MCP.Server.Application.Tests.Unit/TestResults/
+          name: test-results
+          path: ./coverage/
+
