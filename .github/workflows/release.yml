@@ -1,60 +1,65 @@
-﻿name: 🚀 Release
+﻿name: Release
 
 on:
   push:
     tags:
-      - 'v*.*.*'
+      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
 
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-
-          - os: ubuntu-latest;
-            runtime: linux-x64;
+          - os: ubuntu-latest
+            runtime: linux-x64
             artifact_name: finnhub-mcp-linux-x64
-
-          - os: windows-latest;
-            runtime: win-x64;
+          - os: windows-latest
+            runtime: win-x64
             artifact_name: finnhub-mcp-win-x64.exe
-
-          - os: macos-latest;
-            runtime: osx-x64;
+          - os: macos-latest
+            runtime: osx-x64
             artifact_name: finnhub-mcp-osx-x64
 
-    steps:
-      - name: 📥 Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+    runs-on: ${{ matrix.os }}
 
-      - name: 🧰 Setup .NET SDK
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: 📦 Restore dependencies
-        run: dotnet restore ./finnhub-mcp.sln
+      - name: Restore dependencies
+        run: dotnet restore
 
-      - name: 🏗️ Build and publish
-        run: dotnet publish -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish
+      - name: Build and publish
+        run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish
 
-      - name: 📁 Prepare artifact
+      - name: Create artifact
+        shell: bash
         run: |
-          mkdir -p artifacts
+          cd ./publish
           if [ "${{ matrix.runtime }}" == "win-x64" ]; then
-            mv publish/*.exe artifacts/${{ matrix.artifact_name }}
+            # Find the .exe file and rename it
+            find . -name "*.exe" -type f -exec mv {} ${{ matrix.artifact_name }} \;
           else
-            mv publish/$(ls publish | grep -v '\.dll\|\.pdb\|\.json') artifacts/${{ matrix.artifact_name }}
+            # Find the main executable (should be the largest file without extension)
+            EXECUTABLE=$(find . -type f -executable ! -name "*.dll" ! -name "*.so" ! -name "*.dylib" ! -name "*.json" ! -name "*.pdb" | head -1)
+            if [ -n "$EXECUTABLE" ]; then
+              mv "$EXECUTABLE" ${{ matrix.artifact_name }}
+            else
+              # Fallback: look for files without extensions
+              EXECUTABLE=$(find . -type f ! -name "*.*" | head -1)
+              mv "$EXECUTABLE" ${{ matrix.artifact_name }}
+            fi
           fi
 
-      - name: 📤 Upload artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: artifacts/${{ matrix.artifact_name }}
+          path: ./publish/${{ matrix.artifact_name }}
 
   release:
     needs: build
