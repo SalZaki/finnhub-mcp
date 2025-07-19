@@ -43,7 +43,8 @@ if (!string.IsNullOrWhiteSpace(apiKey))
 builder.Services
     .AddOptions<FinnHubOptions>()
     .Bind(builder.Configuration.GetSection("FinnHub"))
-    .ValidateDataAnnotations()
+    .Validate(x => !string.IsNullOrEmpty(x.ApiKey), "API key must be provided")
+    .Validate(x => !string.IsNullOrEmpty(x.BaseUrl), "Base URL must be provided")
     .ValidateOnStart();
 
 builder.Services.RegisterInfrastructure();
