@@ -2,11 +2,29 @@
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 jobs:
+  release:
+    name: 📦 Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔖 Release Please
+        id: release
+        uses: google-github-actions/release-please-action@v4
+        with:
+          release-type: simple
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   build:
+    name: 🔧 Build & Upload Artifacts
+    needs: release
+    if: ${{ needs.release.outputs.release_created }}
     strategy:
       matrix:
         include:
@@ -37,7 +55,7 @@ jobs:
       - name: 🏗️ Build & Publish
         run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -o ./publish
 
-      - name: 🧼 Prepare artifact
+      - name: 🧼 Prepare Artifact
         shell: bash
         run: |
           cd ./publish
@@ -53,65 +71,10 @@ jobs:
               mv "$EXEC" ${{ matrix.artifact_name }}
             fi
           fi
-          mkdir -p ../artifacts
-          mv ${{ matrix.artifact_name }} ../artifacts/
 
-      - name: ⬆️ Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: 🚀 Upload Release Asset
+        uses: softprops/action-gh-release@v1
         with:
-          name: ${{ matrix.artifact_name }}
-          path: ./artifacts/${{ matrix.artifact_name }}
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: ⬇️ Download Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: 📝 Generate Changelog
-        id: changelog
-        uses: requarks/changelog-action@v1.10.2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: ${{ github.ref_name }}
-
-      - name: 🚀 Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        if: steps.changelog.outputs.changes != ''
+          files: ./publish/${{ matrix.artifact_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.changelog.outputs.tag }}
-          release_name: 📦 ${{ steps.changelog.outputs.tag }}
-          body: ${{ steps.changelog.outputs.changes }}
-          draft: false
-          prerelease: false
-
-      - name: 📤 Upload Linux Binary
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/finnhub-mcp-linux-x64/finnhub-mcp-linux-x64
-          asset_name: finnhub-mcp-linux-x64
-          asset_content_type: application/octet-stream
-
-      - name: 📤 Upload Windows Binary
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/finnhub-mcp-win-x64.exe/finnhub-mcp-win-x64.exe
-          asset_name: finnhub-mcp-win-x64.exe
-          asset_content_type: application/octet-stream
-
-      - name: 📤 Upload macOS Binary
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/finnhub-mcp-osx-x64/finnhub-mcp-osx-x64
-          asset_name: finnhub-mcp-osx-x64
-          asset_content_type: application/octet-stream
