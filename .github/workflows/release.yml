@@ -3,7 +3,7 @@
 on:
   push:
     tags:
-      - 'v*.*.*'  # Triggers on version tags like v1.0.0, v1.2.3, etc.
+      - 'v*.*.*'
 
 jobs:
   build:
@@ -23,60 +23,63 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@v4
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: 🧰 Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Restore dependencies
+      - name: 📦 Restore
         run: dotnet restore
 
-      - name: Build and publish
+      - name: 🏗️ Build & Publish
         run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -o ./publish
 
-      - name: Create artifact
+      - name: 🧼 Prepare artifact
         shell: bash
         run: |
           cd ./publish
           if [ "${{ matrix.runtime }}" == "win-x64" ]; then
-            # Find the .exe file and rename it
-            find . -name "*.exe" -type f -exec mv {} ${{ matrix.artifact_name }} \;
+            EXEC=$(find . -name "*.exe" -type f | head -1)
+            mv "$EXEC" ${{ matrix.artifact_name }}
           else
-            # Find the main executable (should be the largest file without extension)
-            EXECUTABLE=$(find . -type f -executable ! -name "*.dll" ! -name "*.so" ! -name "*.dylib" ! -name "*.json" ! -name "*.pdb" | head -1)
-            if [ -n "$EXECUTABLE" ]; then
-              mv "$EXECUTABLE" ${{ matrix.artifact_name }}
+            EXEC=$(find . -type f -perm -111 ! -name "*.dll" ! -name "*.so" ! -name "*.dylib" ! -name "*.json" ! -name "*.pdb" | head -1)
+            if [ -n "$EXEC" ]; then
+              mv "$EXEC" ${{ matrix.artifact_name }}
             else
-              # Fallback: look for files without extensions
-              EXECUTABLE=$(find . -type f ! -name "*.*" | head -1)
-              mv "$EXECUTABLE" ${{ matrix.artifact_name }}
+              EXEC=$(find . -type f ! -name "*.*" | head -1)
+              mv "$EXEC" ${{ matrix.artifact_name }}
             fi
           fi
+          mkdir -p ../artifacts
+          mv ${{ matrix.artifact_name }} ../artifacts/
 
-      - name: Upload artifact
+      - name: ⬆️ Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ./publish/${{ matrix.artifact_name }}
+          path: ./artifacts/${{ matrix.artifact_name }}
 
   release:
     needs: build
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Download artifacts
+      - name: ⬇️ Download Artifacts
         uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-      - name: 🔄 Generate Conventional Changelog
+      - name: 📝 Generate Changelog
         id: changelog
         uses: requarks/changelog-action@v1.10.2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.ref_name }}
 
-      - name: 📝 Create GitHub Release
+      - name: 🚀 Create Release
         id: create_release
         uses: actions/create-release@v1
         if: steps.changelog.outputs.changes != ''
@@ -93,7 +96,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/finnhub-mcp-linux-x64
+          asset_path: artifacts/finnhub-mcp-linux-x64/finnhub-mcp-linux-x64
           asset_name: finnhub-mcp-linux-x64
           asset_content_type: application/octet-stream
 
@@ -101,7 +104,7 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/finnhub-mcp-win-x64.exe
+          asset_path: artifacts/finnhub-mcp-win-x64.exe/finnhub-mcp-win-x64.exe
           asset_name: finnhub-mcp-win-x64.exe
           asset_content_type: application/octet-stream
 
@@ -109,6 +112,6 @@ jobs:
         uses: actions/upload-release-asset@v1
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: artifacts/finnhub-mcp-osx-x64
+          asset_path: artifacts/finnhub-mcp-osx-x64/finnhub-mcp-osx-x64
           asset_name: finnhub-mcp-osx-x64
           asset_content_type: application/octet-stream
