@@ -8,10 +8,6 @@
   <ImplicitUsings>enable</ImplicitUsings>
   <Nullable>enable</Nullable>
   <Title>FinnHub MCP Server Infrastructure</Title>
-  <PublishTrimmed>true</PublishTrimmed>
-  <TrimMode>link</TrimMode>
-  <EnableUnsafeBinaryFormatterSerialization>false</EnableUnsafeBinaryFormatterSerialization>
-  <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
 </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />

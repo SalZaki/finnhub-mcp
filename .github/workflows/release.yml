@@ -34,7 +34,7 @@ jobs:
         run: dotnet restore
 
       - name: Build and publish
-        run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -p:PublishTrimmed=true -o ./publish
+        run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -o ./publish
 
       - name: Create artifact
         shell: bash

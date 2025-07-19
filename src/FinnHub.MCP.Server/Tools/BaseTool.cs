@@ -5,7 +5,8 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
+using FinnHub.MCP.Server.Application.Models;
 
 namespace FinnHub.MCP.Server.Tools;
 
@@ -17,22 +18,12 @@ namespace FinnHub.MCP.Server.Tools;
 public abstract class BaseTool : McpServerTool
 {
     /// <summary>
-    /// JSON serialization options configured for consistent output formatting across all tools.
-    /// Uses snake_case_upper naming policy and excludes null values from serialization.
-    /// </summary>
-    private readonly JsonSerializerOptions _options = new()
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseUpper,
-        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-    };
-
-    /// <summary>
     /// Creates a standardized error response with the specified data.
     /// </summary>
     /// <param name="data">The error data to include in the response. This will be serialized to JSON.</param>
+    /// <param name="typeInfo">The source-generated <see cref="JsonTypeInfo{T}"/> for the payload type, used to enable AOT-safe and trimmed serialization.</param>
     /// <returns>A <see cref="CallToolResponse"/> with IsError set to true and the serialized data as content.</returns>
-    protected CallToolResponse CreateErrorResponse(object data)
+    protected static CallToolResponse CreateErrorResponse<T>(T data, JsonTypeInfo<T> typeInfo)
     {
         return new CallToolResponse
         {
@@ -41,8 +32,7 @@ public abstract class BaseTool : McpServerTool
                 new Content
                 {
                     Type = "text",
-                    Text = JsonSerializer.Serialize(data, this._options),
-
+                    Text = JsonSerializer.Serialize(data, typeInfo)
                 }
             ],
             IsError = true
@@ -53,8 +43,9 @@ public abstract class BaseTool : McpServerTool
     /// Creates a standardized success response with the specified data.
     /// </summary>
     /// <param name="data">The success data to include in the response. This will be serialized to JSON.</param>
+    /// <param name="typeInfo">The source-generated <see cref="JsonTypeInfo{T}"/> for the payload type, used to enable AOT-safe and trimmed serialization.</param>
     /// <returns>A <see cref="CallToolResponse"/> with IsError set to false and the serialized data as content.</returns>
-    protected CallToolResponse CreateSuccessResponse(object data)
+    protected static CallToolResponse CreateSuccessResponse<T>(T data, JsonTypeInfo<T> typeInfo)
     {
         return new CallToolResponse
         {
@@ -63,7 +54,7 @@ public abstract class BaseTool : McpServerTool
                 new Content
                 {
                     Type = "text",
-                    Text = JsonSerializer.Serialize(data, this._options)
+                    Text = JsonSerializer.Serialize(data, typeInfo)
                 }
             ],
             IsError = false
@@ -200,13 +191,14 @@ public abstract class BaseTool : McpServerTool
     /// <returns>A <see cref="CallToolResponse"/> formatted as a validation error with timestamp.</returns>
     protected CallToolResponse CreateValidationErrorResponse(string parameterName, string message)
     {
-        return this.CreateErrorResponse(new
+        var errorData = new ValidationErrorResponse
         {
-            error = "ValidationError",
-            parameter = parameterName,
-            message,
-            timestamp = DateTimeOffset.UtcNow
-        });
+            Parameter = parameterName,
+            Message = message,
+            TimestampUtc = DateTimeOffset.UtcNow,
+        };
+
+        return CreateErrorResponse(errorData, ToolJsonContext.Default.ValidationErrorResponse);
     }
 
     /// <summary>
@@ -216,16 +208,16 @@ public abstract class BaseTool : McpServerTool
     /// <param name="message">A descriptive error message explaining the operation failure.</param>
     /// <param name="exception">Optional exception that caused the failure. Currently not included in response but available for future use.</param>
     /// <returns>A <see cref="CallToolResponse"/> formatted as an operation error with timestamp.</returns>
-    protected CallToolResponse CreateOperationErrorResponse(string operation, string message, Exception? exception = null)
+    protected static CallToolResponse CreateOperationErrorResponse(string operation, string message, Exception? exception = null)
     {
-        var errorData = new
+        var errorData = new OperationErrorResponse
         {
-            error = "OperationError",
-            operation,
-            message,
-            timestamp = DateTimeOffset.UtcNow
+            Operation = operation,
+            Message = message,
+            TimestampUtc = DateTimeOffset.UtcNow,
+            ExceptionMessage = exception?.Message ?? string.Empty
         };
 
-        return this.CreateErrorResponse(errorData);
+        return CreateErrorResponse(errorData, ToolJsonContext.Default.OperationErrorResponse);
     }
 }

@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace FinnHub.MCP.Server.Application.Models;
@@ -37,6 +38,7 @@ namespace FinnHub.MCP.Server.Application.Models;
 /// }
 /// </code>
 /// </example>
+[ExcludeFromCodeCoverage]
 public sealed class Result<T>
 {
     /// <summary>

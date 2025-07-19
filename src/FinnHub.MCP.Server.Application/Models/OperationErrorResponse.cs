@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace FinnHub.MCP.Server.Application.Models;
@@ -12,6 +13,7 @@ namespace FinnHub.MCP.Server.Application.Models;
 /// <summary>
 /// Represents a response for a failed operation that wasn't caused by input validation.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class OperationErrorResponse : ErrorResponse
 {
     /// <inheritdoc/>
