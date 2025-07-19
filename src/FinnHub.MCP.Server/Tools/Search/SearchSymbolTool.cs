@@ -112,7 +112,7 @@ public sealed class SearchSymbolTool(
             logger.Log(LogLevel.Information, "Search completed successfully. Found {Count} results in {ElapsedMs}ms",
                 results.Data?.TotalCount, stopwatch.ElapsedMilliseconds);
 
-            return this.CreateSuccessResponse(results);
+            return CreateSuccessResponse(results, ToolJsonContext.Default.ResultSearchSymbolResponse);
         }
         catch (ArgumentOutOfRangeException ex)
         {
@@ -127,7 +127,7 @@ public sealed class SearchSymbolTool(
         catch (OperationCanceledException ex)
         {
             logger.Log(LogLevel.Error, ex, "Search operation was canceled for '{Tool}'.", this.ProtocolTool.Name);
-            return this.CreateOperationErrorResponse("search", "Search operation was cancelled.");
+            return CreateOperationErrorResponse("search", "Search operation was cancelled.", ex);
         }
         catch (Exception ex)
         {
