@@ -9,12 +9,12 @@ using System.Diagnostics;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
+using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -32,7 +32,6 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
     private readonly HttpClient _httpClient;
     private readonly FinnHubOptions _finnHubOptions;
     private readonly ILogger<FinnHubSearchApiClient> _logger;
-    private readonly JsonSerializerOptions _jsonOptions;
     private bool _disposed;
 
     /// <summary>
@@ -53,14 +52,6 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
         this._httpClient = httpClient;
         this._finnHubOptions = options.Value ?? throw new ArgumentException("FinnHub options cannot be null.", nameof(options));
         this._logger = logger;
-
-        this._jsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-            PropertyNameCaseInsensitive = true
-        };
     }
 
     /// <summary>
@@ -347,8 +338,7 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
             using var reader = new StreamReader(contentStream);
             rawJson = await reader.ReadToEndAsync(cancellationToken);
 
-            var response = JsonSerializer.Deserialize<FinnHubSearchResponse>(
-                rawJson, this._jsonOptions);
+            var response = JsonSerializer.Deserialize(rawJson, FinnHubJsonContext.Default.FinnHubSearchResponse);
 
             if (response?.Result == null || response.Result.Count == 0)
             {
