@@ -7,7 +7,18 @@
   "packages": {
     ".": {
       "release-type": "dotnet",
-      "include-component-in-tag": false
+      "include-component-in-tag": false,
+      "changelog-sections": [
+        {"type": "feat", "section": "✨ Features", "hidden": false},
+        {"type": "fix", "section": "🐛 Bug Fixes", "hidden": false},
+        {"type": "perf", "section": "⚡ Performance", "hidden": false},
+        {"type": "refactor", "section": "♻️ Refactoring", "hidden": false},
+        {"type": "build", "section": "🔧 Build System", "hidden": false},
+        {"type": "ci", "section": "👷 CI/CD", "hidden": false},
+        {"type": "chore", "section": "🧹 Chores", "hidden": true},
+        {"type": "docs", "section": "📚 Documentation", "hidden": true},
+        {"type": "test", "section": "🧪 Tests", "hidden": true}
+      ]
     }
   }
 }
