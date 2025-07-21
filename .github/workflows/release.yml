@@ -4,11 +4,23 @@ on:
   push:
     branches:
       - main
+      - release/
+    paths-ignore:
+      - '.github/**'
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
 
 jobs:
   release:
     name: 📦 Create GitHub Release
     runs-on: ubuntu-latest
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      upload_url: ${{ steps.release.outputs.upload_url }}
 
     steps:
       - name: 📥 Checkout
@@ -16,10 +28,11 @@ jobs:
 
       - name: 🔖 Release Please
         id: release
-        uses: google-github-actions/release-please-action@v4
+        uses: googleapis/release-please-action@v4
         with:
           release-type: simple
           token: ${{ secrets.GITHUB_TOKEN }}
+          config-file: .release-please-config.json
 
   build:
     name: 🔧 Build & Upload Artifacts
