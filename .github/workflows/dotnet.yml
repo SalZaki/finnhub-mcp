@@ -83,19 +83,19 @@ jobs:
               --verbosity normal \
               -p:CollectCoverage=true \
               -p:CoverletOutputFormat=cobertura \
-              -p:CoverletOutput=./coverage/ \
-              -p:MergeWith=./coverage/coverage.json \
-              -p:ExcludeByAttribute=GeneratedCodeAttribute
+              -p:ExcludeByAttribute=GeneratedCodeAttribute \
+              -p:MergeWith='./coverage/coverage.json' \
+              -p:CoverletOutput="./coverage/"
           done
 
       - name: 📂 Show coverage files
-        run: find ./coverage
+        run: find ./coverage -name '*.cobertura.xml'
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage.cobertura.xml
+          files: ./coverage/**/*.cobertura.xml
           flags: unit-tests
           name: codecov-finnhub-mcp
           fail_ci_if_error: true
