@@ -80,7 +80,6 @@ jobs:
             echo "Running tests for $project"
             dotnet test $project \
               --configuration Release \
-              --no-build \
               --verbosity normal \
               -p:CollectCoverage=true \
               -p:CoverletOutputFormat=cobertura \
