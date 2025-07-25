@@ -62,47 +62,69 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: 🧰 Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
+      - name: 📦 Restore dependencies
+        run: dotnet restore ./finnhub-mcp.sln
+
       - name: 🧪 Run unit tests with coverage
         run: |
+          mkdir -p TestResults
           mkdir -p coverage
-          for project in \
-            ./tests/FinnHub.MCP.Server.Application.Tests.Unit/FinnHub.MCP.Server.Application.Tests.Unit.csproj \
-            ./tests/FinnHub.MCP.Server.Tests.Unit/FinnHub.MCP.Server.Tests.Unit.csproj \
-            ./tests/FinnHub.MCP.Server.Infrastructure.Tests.Unit/FinnHub.MCP.Server.Infrastructure.Tests.Unit.csproj
-          do
-            echo "Running tests for $project"
-            dotnet test $project \
-              --configuration Release \
-              --verbosity normal \
-              -p:CollectCoverage=true \
-              -p:CoverletOutputFormat=cobertura \
-              -p:ExcludeByAttribute=GeneratedCodeAttribute \
-              -p:MergeWith='./coverage/coverage.json' \
-              -p:CoverletOutput="./coverage/"
-          done
 
-      - name: 📂 Show coverage files
-        run: find ./coverage -name '*.cobertura.xml'
+          # Run all tests with coverage and collect results
+          dotnet test ./finnhub-mcp.sln \
+            --configuration Release \
+            --verbosity normal \
+            --logger "trx;LogFileName=test-results.trx" \
+            --results-directory ./TestResults \
+            --collect:"XPlat Code Coverage" \
+            --settings coverlet.runsettings \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
+            -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByAttribute=GeneratedCodeAttribute
+
+      - name: 📂 Move coverage files
+        run: |
+          # Find and move coverage files to a consistent location
+          find ./TestResults -name "coverage.cobertura.xml" -exec cp {} ./coverage/ \;
+          # Also copy any .trx files
+          find ./TestResults -name "*.trx" -exec cp {} ./coverage/ \;
+
+      - name: 📂 Show coverage and test files
+        run: |
+          echo "Coverage files:"
+          find ./coverage -name "*.xml" -o -name "*.trx"
+          echo "TestResults directory:"
+          find ./TestResults -type f
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/**/*.cobertura.xml
+          files: ./coverage/coverage.cobertura.xml
           flags: unit-tests
           name: codecov-finnhub-mcp
           fail_ci_if_error: true
           verbose: true
 
+      - name: 📊 Publish test results
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: .NET Tests
+          path: ./TestResults/*.trx
+          reporter: dotnet-trx
+
       - name: 📁 Upload test results
         uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: test-results
-          path: ./coverage/
+          path: |
+            ./TestResults/
+            ./coverage/
