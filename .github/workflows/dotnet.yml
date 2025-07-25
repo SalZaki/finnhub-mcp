@@ -90,25 +90,29 @@ jobs:
 
       - name: 📂 Process coverage files
         run: |
-          # Create coverage directory
+          # Create coverage directory (lowercase)
           mkdir -p ./Coverage
 
-          # Find all coverage files in GUID directories and rename them uniquely
+          # Debug: Show the actual structure
+          echo "TestResults directory structure:"
+          find ./TestResults -name "coverage.cobertura.xml" -ls
+
+          # Find all coverage files and copy them
           counter=1
-          for file in $(find ./TestResults -path "*/*/coverage.cobertura.xml"); do
-            # Extract the GUID directory name for identification
-            guid=$(basename $(dirname "$file"))
-            cp "$file" "./coverage/coverage-${guid}.cobertura.xml"
-            echo "Copied $file to ./coverage/coverage-${guid}.cobertura.xml"
+          for file in $(find ./TestResults -name "coverage.cobertura.xml"); do
+            # Extract a unique identifier from the path
+            dir_name=$(dirname "$file" | sed 's|.*/||')
+            cp "$file" "./Coverage/coverage-${counter}-${dir_name}.cobertura.xml"
+            echo "Copied $file to ./Coverage/coverage-${counter}-${dir_name}.cobertura.xml"
             ((counter++))
           done
 
           # Copy test results file
-          find ./TestResults -name "*.trx" -exec cp {} ./coverage/ \;
+          find ./TestResults -name "*.trx" -exec cp {} ./Coverage/ \;
 
           # Show what we have
           echo "Files in coverage directory:"
-          ls -la ./coverage/
+          ls -la ./Coverage/
 
       - name: 📂 Show coverage and test files
         run: |
@@ -121,7 +125,7 @@ jobs:
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/*.cobertura.xml
+          files: ./Coverage/*.cobertura.xml
           flags: unit-tests
           name: codecov-finnhub-mcp
           fail_ci_if_error: true
