@@ -75,7 +75,7 @@ jobs:
       - name: 🧪 Run unit tests with coverage
         run: |
           mkdir -p TestResults
-          mkdir -p coverage
+          mkdir -p Coverage
 
           # Run all tests with coverage and collect results
           dotnet test ./finnhub-mcp.sln \
@@ -88,25 +88,40 @@ jobs:
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByAttribute=GeneratedCodeAttribute
 
-      - name: 📂 Move coverage files
+      - name: 📂 Process coverage files
         run: |
-          # Find and move coverage files to a consistent location
-          find ./TestResults -name "coverage.cobertura.xml" -exec cp {} ./coverage/ \;
-          # Also copy any .trx files
+          # Create coverage directory
+          mkdir -p ./Coverage
+
+          # Find all coverage files in GUID directories and rename them uniquely
+          counter=1
+          for file in $(find ./TestResults -path "*/*/coverage.cobertura.xml"); do
+            # Extract the GUID directory name for identification
+            guid=$(basename $(dirname "$file"))
+            cp "$file" "./coverage/coverage-${guid}.cobertura.xml"
+            echo "Copied $file to ./coverage/coverage-${guid}.cobertura.xml"
+            ((counter++))
+          done
+
+          # Copy test results file
           find ./TestResults -name "*.trx" -exec cp {} ./coverage/ \;
+
+          # Show what we have
+          echo "Files in coverage directory:"
+          ls -la ./coverage/
 
       - name: 📂 Show coverage and test files
         run: |
           echo "Coverage files:"
-          find ./coverage -name "*.xml" -o -name "*.trx"
-          echo "TestResults directory:"
+          find ./Coverage -name "*.xml" -o -name "*.trx"
+          echo "TestResults files:"
           find ./TestResults -type f
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage.cobertura.xml
+          files: ./coverage/*.cobertura.xml
           flags: unit-tests
           name: codecov-finnhub-mcp
           fail_ci_if_error: true
@@ -136,4 +151,4 @@ jobs:
           name: test-results
           path: |
             ./TestResults/
-            ./coverage/
+            ./Coverage/
