@@ -112,6 +112,15 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+      - name: 📤 Upload test results to Codecov
+        uses: codecov/test-results-action@v1
+        if: always()
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./TestResults/*.trx
+          flags: unit-tests
+          name: codecov-test-results-finnhub-mcp
+
       - name: 📊 Publish test results
         uses: dorny/test-reporter@v1
         if: always()
