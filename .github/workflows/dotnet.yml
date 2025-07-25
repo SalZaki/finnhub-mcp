@@ -75,7 +75,7 @@ jobs:
       - name: 🧪 Run unit tests with coverage
         run: |
           mkdir -p TestResults
-          mkdir -p coverage
+          mkdir -p Coverage
 
           # Run all tests with coverage and collect results
           dotnet test ./finnhub-mcp.sln \
@@ -88,25 +88,44 @@ jobs:
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=cobertura \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.ExcludeByAttribute=GeneratedCodeAttribute
 
-      - name: 📂 Move coverage files
+      - name: 📂 Process coverage files
         run: |
-          # Find and move coverage files to a consistent location
-          find ./TestResults -name "coverage.cobertura.xml" -exec cp {} ./coverage/ \;
-          # Also copy any .trx files
-          find ./TestResults -name "*.trx" -exec cp {} ./coverage/ \;
+          # Create coverage directory (lowercase)
+          mkdir -p ./Coverage
+
+          # Debug: Show the actual structure
+          echo "TestResults directory structure:"
+          find ./TestResults -name "coverage.cobertura.xml" -ls
+
+          # Find all coverage files and copy them
+          counter=1
+          for file in $(find ./TestResults -name "coverage.cobertura.xml"); do
+            # Extract a unique identifier from the path
+            dir_name=$(dirname "$file" | sed 's|.*/||')
+            cp "$file" "./Coverage/coverage-${counter}-${dir_name}.cobertura.xml"
+            echo "Copied $file to ./Coverage/coverage-${counter}-${dir_name}.cobertura.xml"
+            ((counter++))
+          done
+
+          # Copy test results file
+          find ./TestResults -name "*.trx" -exec cp {} ./Coverage/ \;
+
+          # Show what we have
+          echo "Files in coverage directory:"
+          ls -la ./Coverage/
 
       - name: 📂 Show coverage and test files
         run: |
           echo "Coverage files:"
-          find ./coverage -name "*.xml" -o -name "*.trx"
-          echo "TestResults directory:"
+          find ./Coverage -name "*.xml" -o -name "*.trx"
+          echo "TestResults files:"
           find ./TestResults -type f
 
       - name: 📤 Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: ./coverage/coverage.cobertura.xml
+          files: ./Coverage/*.cobertura.xml
           flags: unit-tests
           name: codecov-finnhub-mcp
           fail_ci_if_error: true
@@ -136,4 +155,4 @@ jobs:
           name: test-results
           path: |
             ./TestResults/
-            ./coverage/
+            ./Coverage/
