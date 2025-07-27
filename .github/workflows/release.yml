@@ -51,6 +51,9 @@ jobs:
           - os: macos-latest
             runtime: osx-x64
             artifact_name: finnhub-mcp-osx-x64
+          - os: macos-latest
+            runtime: osx-arm64
+            artifact_name: finnhub-mcp-osx-arm64
 
     runs-on: ${{ matrix.os }}
 
