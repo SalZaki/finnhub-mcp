@@ -87,8 +87,9 @@ jobs:
           fi
 
       - name: 🚀 Upload Release Asset
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.release.outputs.tag_name }}
           files: ./publish/${{ matrix.artifact_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
