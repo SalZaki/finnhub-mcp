@@ -1,11 +1,24 @@
-# FinnHub MCP Server
 
-![Build Status](https://github.com/SalZaki/finnhub-mcp/actions/workflows/dotnet.yml/badge.svg)
+![FinnHub ](assets/github-banner.png)
+
+<h4>
+
+![Build Status](https://github.com/salzaki/finnhub-mcp/actions/workflows/dotnet.yml/badge.svg)
 ![codecov](https://codecov.io/gh/salzaki/finnhub-mcp/branch/main/graph/badge.svg)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)](https://dotnet.microsoft.com/download/dotnet/8.0)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)
+![Architecture](https://img.shields.io/badge/Architecture-Clean-green)
+![MCP](https://img.shields.io/badge/AI-MCP-purple)
+
+[![GitHub issues with bug label](https://img.shields.io/github/issues-raw/salzaki/finnhub-mcp/bug?label=bugs&logo=github&color=red)](https://github.com/platformplatform/PlatformPlatform/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+
+</h4>
 
 **⚠️ This repository is under active development. The service will be live soon. Stay tuned! ⚠️**
+
+# 👋 Welcome to FinnHub MCP Server
+
+## 🎯 Project Overview
 
 A robust **Model Context Protocol (MCP) Server** that integrates with **[Finnhub](https://finnhub.io/)**'s institutional-grade financial data APIs. Provides both Server-Sent Events (SSE) and Standard Input/Output (STDIO) transport protocols for streaming live financial data with modern .NET practices and Finnhub API best practices.
 
@@ -282,7 +295,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Discussions**: [GitHub Discussions](https://github.com/SalZaki/finnhub-mcp/discussions)
 - **Documentation**: [Wiki](https://github.com/SalZaki/finnhub-mcp/wiki)
 - **Finnhub Support**: [Finnhub Documentation](https://finnhub.io/docs/api)
-
----
-
-**Made with ❤️ by [Sal Zaki](https://github.com/SalZaki)**
