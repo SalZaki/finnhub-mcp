@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.5.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.4.0...v1.5.0) (2025-07-29)
+
+
+### Features
+
+* **config:** resolve appsettings.json path relative to binary directory ([97e6959](https://github.com/SalZaki/finnhub-mcp/commit/97e695999f544f84fe1ab43d87f775aa7283ca62))
+* **config:** resolve appsettings.json path relative to binary directory ([0ea9cb7](https://github.com/SalZaki/finnhub-mcp/commit/0ea9cb734c325bc4ca6f88aa5a98bb0730cb7b36))
+
 ## [1.4.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.3.0...v1.4.0) (2025-07-29)
 
 
