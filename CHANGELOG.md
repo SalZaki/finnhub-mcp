@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.2.0...v1.3.0) (2025-07-29)
+
+
+### Features
+
+* **ci:** update release, readme and banner image ([873e770](https://github.com/SalZaki/finnhub-mcp/commit/873e77044e6df4a47b5c4c1cf5cb7ccb19bde1fd))
+* **ci:** update release, readme and banner image ([4574441](https://github.com/SalZaki/finnhub-mcp/commit/457444107c1a5e8e68ea546c229fc6bea2af5979))
+
 ## [1.2.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.1.0...v1.2.0) (2025-07-27)
 
 
