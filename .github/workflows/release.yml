@@ -69,8 +69,14 @@ jobs:
       - name: 📦 Restore
         run: dotnet restore
 
-      - name: 🏗️ Build & Publish
-        run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:PublishSingleFile=true -o ./publish
+      - name: 🏗️ Publish
+        run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj \
+            -c Release -r ${{ matrix.runtime }} \
+            --self-contained true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -p:PublishSingleFile=true \
+            -o ./publish
 
       - name: 🧼 Prepare Artifact
         shell: bash
@@ -93,6 +99,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release.outputs.tag_name }}
-          files: ./publish/${{ matrix.artifact_name }}
+          files: |
+            ./publish/${{ matrix.artifact_name }}
+            ./publish/appsettings.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
