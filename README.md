@@ -1,5 +1,5 @@
 
-![FinnHub ](assets/github-banner.png)
+![FinnHub ](https://github.com/SalZaki/finnhub-mcp/blob/main/assets/github-banner.png)
 
 <h4>
 
@@ -10,7 +10,7 @@
 ![Architecture](https://img.shields.io/badge/Architecture-Clean-green)
 ![MCP](https://img.shields.io/badge/AI-MCP-purple)
 
-[![GitHub issues with bug label](https://img.shields.io/github/issues-raw/salzaki/finnhub-mcp/bug?label=bugs&logo=github&color=red)](https://github.com/platformplatform/PlatformPlatform/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+[![GitHub issues with bug label](https://img.shields.io/github/issues-raw/salzaki/finnhub-mcp/bug?label=bugs&logo=github&color=red)](https://github.com/salzaki/finnhub-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
 
 </h4>
 
