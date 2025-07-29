@@ -28,7 +28,11 @@ if (builder.Environment.IsDevelopment())
     Env.TraversePath().Load();
 }
 
+var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+var exeDirectory = exePath is not null ? Path.GetDirectoryName(exePath) : Directory.GetCurrentDirectory();
+
 builder.Configuration
+    .SetBasePath(exeDirectory!)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables()
