@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.3.0...v1.4.0) (2025-07-29)
+
+
+### Features
+
+* **ci:** push new release ([9d6daac](https://github.com/SalZaki/finnhub-mcp/commit/9d6daac95cfb469717965584a41b5e3614369b37))
+* **ci:** push new release ([3ec16f8](https://github.com/SalZaki/finnhub-mcp/commit/3ec16f83d0d84003f9eff067e3262c9300f25246))
+
+
+### Bug Fixes
+
+* **ci:** fix dotnet publish error ([2ea8ff1](https://github.com/SalZaki/finnhub-mcp/commit/2ea8ff1f22bf525e685e33ba118938d7ad578dd5))
+* **ci:** fix dotnet publish error ([13e6e2f](https://github.com/SalZaki/finnhub-mcp/commit/13e6e2f6c7756bc31480be176f26530115ad6ba0))
+
 ## [1.3.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.2.0...v1.3.0) (2025-07-29)
 
 
