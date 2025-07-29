@@ -9,6 +9,9 @@
     <Nullable>enable</Nullable>
     <Title>FinnHub MCP Server Application</Title>
   </PropertyGroup>
+  <ItemGroup>
+    <ExcludeFilesFromDeployment Include="**\*.pdb" />
+  </ItemGroup>
   <ItemGroup Label="Packages">
     <PackageReference Include="Microsoft.Extensions.Logging" />
   </ItemGroup>

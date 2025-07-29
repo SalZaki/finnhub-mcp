@@ -16,6 +16,9 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <RepositoryUrl>https://github.com/salzaki/finnhub-mcp</RepositoryUrl>
   </PropertyGroup>
+  <ItemGroup>
+    <ExcludeFilesFromDeployment Include="**\*.pdb" />
+  </ItemGroup>
   <ItemGroup Label="Packages">
     <PackageReference Include="ModelContextProtocol" />
     <PackageReference Include="ModelContextProtocol.AspNetCore" />

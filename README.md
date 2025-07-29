@@ -1,5 +1,5 @@
 
-![FinnHub ](https://github.com/SalZaki/finnhub-mcp/blob/main/assets/github-banner.png)
+![Finnhub-MCP-Server](https://github.com/SalZaki/finnhub-mcp/blob/main/assets/github-banner.png)
 
 <h4>
 
@@ -82,7 +82,7 @@ This server implements Finnhub's recommended best practices:
 ### 🔄 In Development
 - **Real-Time Quote Tool** — live prices for stock, forex & crypto
 - **Company Profile Tool** — detailed company information and metrics
-- **Basic Financials Tool** — key financial metrics and ratios
+- **Basic Financial Tool** — key financial metrics and ratios
 
 ### 📋 Planned Features
 - **Advanced Fundamentals Tool** — comprehensive financial statements
@@ -267,10 +267,6 @@ dotnet run --project tools/CodeAnalysis
 - **Monitoring**: [OpenTelemetry](https://opentelemetry.io/) for observability
 - **CI/CD**: GitHub Actions with automated testing and deployment
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details.
-
 ### Development Setup
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -281,11 +277,11 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License, see [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- [Finnhub.io](https://finnhub.io/) for providing excellent financial data APIs
+- [FinnHub.io](https://finnhub.io/) for providing excellent financial data APIs
 - [Model Context Protocol](https://github.com/modelcontextprotocol) for the MCP specification
 - The .NET community for excellent libraries and tools
 
