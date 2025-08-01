@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.6.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.5.0...v1.6.0) (2025-08-01)
+
+
+### Features
+
+* **app:** update release ([040db5e](https://github.com/SalZaki/finnhub-mcp/commit/040db5e4187bddb5692a5da7b0c88cc5f8936876))
+* **app:** update release and app start-up ([06f2027](https://github.com/SalZaki/finnhub-mcp/commit/06f2027b172e4f5c2ed16335b5b55c4606892343))
+* **app:** update release and app startup ([a09918f](https://github.com/SalZaki/finnhub-mcp/commit/a09918f2ddf52a190b5efb88b698f10cc9214883))
+
 ## [1.5.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.4.0...v1.5.0) (2025-07-29)
 
 
