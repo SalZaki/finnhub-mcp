@@ -1,17 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
     <RootNamespace>FinnHub.MCP.Server.Infrastructure</RootNamespace>
-    <AssemblyTitle>FinnHub.MCP.Server.Infrastructure</AssemblyTitle>
     <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Nullable>enable</Nullable>
     <Title>FinnHub MCP Server Infrastructure</Title>
+    <NeutralLanguage>en-GB</NeutralLanguage>
+    <PublishSymbols>false</PublishSymbols>
+    <DebugType>None</DebugType>
   </PropertyGroup>
-  <ItemGroup>
-    <ExcludeFilesFromDeployment Include="**\*.pdb" />
-  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
   </ItemGroup>
