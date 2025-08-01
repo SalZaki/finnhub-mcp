@@ -9,14 +9,15 @@
 ![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)
 ![Architecture](https://img.shields.io/badge/Architecture-Clean-green)
 ![MCP](https://img.shields.io/badge/AI-MCP-purple)
-
+![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)
 [![GitHub issues with bug label](https://img.shields.io/github/issues-raw/salzaki/finnhub-mcp/bug?label=bugs&logo=github&color=red)](https://github.com/salzaki/finnhub-mcp/issues?q=is%3Aissue+is%3Aopen+label%3Abug)
+![GitHub Repo stars](https://img.shields.io/github/stars/salzaki/finnhub-mcp?style=social)
 
 </h4>
 
 **⚠️ This repository is under active development. The service will be live soon. Stay tuned! ⚠️**
 
-# 👋 Welcome to FinnHub MCP Server
+# 👋 Welcome to Finnhub MCP Server
 
 ## 🎯 Project Overview
 

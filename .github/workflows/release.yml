@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - main
-      - release/
+      - release
     paths-ignore:
       - '.github/**'
+      - 'docs/**'
+      - 'assets/**'
   workflow_dispatch:
 
 permissions:
@@ -42,12 +44,38 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-            runtime: linux-x64
-            artifact_name: finnhub-mcp-linux-x64
+          - os: windows-latest
+            runtime: win-x86
+            artifact_name: finnhub-mcp-win-x86.exe
           - os: windows-latest
             runtime: win-x64
             artifact_name: finnhub-mcp-win-x64.exe
+          - os: windows-latest
+            runtime: win-arm
+            artifact_name: finnhub-mcp-win-arm.exe
+          - os: windows-latest
+            runtime: win-arm64
+            artifact_name: finnhub-mcp-win-arm64.exe
+
+          - os: ubuntu-latest
+            runtime: linux-x64
+            artifact_name: finnhub-mcp-linux-x64
+          - os: ubuntu-latest
+            runtime: linux-arm
+            artifact_name: finnhub-mcp-linux-arm
+          - os: ubuntu-latest
+            runtime: linux-arm64
+            artifact_name: finnhub-mcp-linux-arm64
+          - os: ubuntu-latest
+            runtime: linux-musl-x64
+            artifact_name: finnhub-mcp-linux-musl-x64
+          - os: ubuntu-latest
+            runtime: linux-musl-arm
+            artifact_name: finnhub-mcp-linux-musl-arm
+          - os: ubuntu-latest
+            runtime: linux-musl-arm64
+            artifact_name: finnhub-mcp-linux-musl-arm64
+
           - os: macos-latest
             runtime: osx-x64
             artifact_name: finnhub-mcp-osx-x64
@@ -67,10 +95,29 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: 📦 Restore
-        run: dotnet restore
+        run: dotnet restore ./finnhub-mcp.sln
 
-      - name: 🏗️ Publish
-        run: dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj -c Release -r ${{ matrix.runtime }} --self-contained true -p:DebugType=None -p:DebugSymbols=false -p:PublishSingleFile=true -o ./publish
+      - name: 🏗️ Build
+        run: |
+          VERSION_CLEAN=${{ needs.release.outputs.tag_name }} && VERSION_CLEAN=${VERSION_CLEAN#v}
+          dotnet build src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj \
+            -c Release \
+            --no-restore \
+            -p:Version=$VERSION_CLEAN
+
+      - name: 📦 Publish
+        run: |
+          VERSION_CLEAN=${{ needs.release.outputs.tag_name }} && VERSION_CLEAN=${VERSION_CLEAN#v}
+          dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj \
+            -c Release -r ${{ matrix.runtime }} \
+            --self-contained true \
+            --no-build \
+            --no-restore \
+            -p:Version=$VERSION_CLEAN \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -p:PublishSingleFile=true \
+            -o ./publish
 
       - name: 🧼 Prepare Artifact
         shell: bash

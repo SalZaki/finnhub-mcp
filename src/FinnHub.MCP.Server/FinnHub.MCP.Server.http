@@ -1,4 +1,4 @@
-@FinnHub.MCP.Server_HostAddress = http://localhost:5101
+@FinnHub.MCP.Server_HostAddress = http://localhost:8080
 
 GET {{FinnHub.MCP.Server_HostAddress}}/
 Accept: application/json
