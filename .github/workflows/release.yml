@@ -44,38 +44,23 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: windows-latest
-            runtime: win-x86
-            artifact_name: finnhub-mcp-win-x86.exe
+          # Windows - most common architectures
           - os: windows-latest
             runtime: win-x64
             artifact_name: finnhub-mcp-win-x64.exe
           - os: windows-latest
-            runtime: win-arm
-            artifact_name: finnhub-mcp-win-arm.exe
-          - os: windows-latest
             runtime: win-arm64
             artifact_name: finnhub-mcp-win-arm64.exe
 
+          # Linux - most common architectures
           - os: ubuntu-latest
             runtime: linux-x64
             artifact_name: finnhub-mcp-linux-x64
           - os: ubuntu-latest
-            runtime: linux-arm
-            artifact_name: finnhub-mcp-linux-arm
-          - os: ubuntu-latest
             runtime: linux-arm64
             artifact_name: finnhub-mcp-linux-arm64
-          - os: ubuntu-latest
-            runtime: linux-musl-x64
-            artifact_name: finnhub-mcp-linux-musl-x64
-          - os: ubuntu-latest
-            runtime: linux-musl-arm
-            artifact_name: finnhub-mcp-linux-musl-arm
-          - os: ubuntu-latest
-            runtime: linux-musl-arm64
-            artifact_name: finnhub-mcp-linux-musl-arm64
 
+          # macOS - both Intel and Apple Silicon
           - os: macos-latest
             runtime: osx-x64
             artifact_name: finnhub-mcp-osx-x64
@@ -123,7 +108,7 @@ jobs:
         shell: bash
         run: |
           cd ./publish
-          if [ "${{ matrix.runtime }}" == "win-x64" ]; then
+          if [[ "${{ matrix.runtime }}" == win-* ]]; then
             EXEC=$(find . -name "*.exe" -type f | head -1)
             mv "$EXEC" ${{ matrix.artifact_name }}
           else
