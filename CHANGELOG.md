@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.10.0...v1.10.1) (2025-08-02)
+
+
+### Bug Fixes
+
+* resolve executable detection in prepare artifact step ([ed77cd3](https://github.com/SalZaki/finnhub-mcp/commit/ed77cd3168a63dde10232ccb076450808158ff7c))
+* resolve executable detection in prepare artifact step ([37b484f](https://github.com/SalZaki/finnhub-mcp/commit/37b484f44a51bb6a9aeb833de2fad94447effb32))
+
 ## [1.10.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.9.0...v1.10.0) (2025-08-02)
 
 
