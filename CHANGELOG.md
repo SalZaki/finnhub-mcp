@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.9.0...v1.10.0) (2025-08-02)
+
+
+### Features
+
+* **ci:** : use POSIX-compatible executable detection in release.yml ([15beb0f](https://github.com/SalZaki/finnhub-mcp/commit/15beb0fb95e180d513fdc6aebda8cfd339c00498))
+* **ci:** : use POSIX-compatible executable detection in release.yml ([c6ff3eb](https://github.com/SalZaki/finnhub-mcp/commit/c6ff3eb7e1791463687a55b3792c50dd1f11e4b8))
+
 ## [1.9.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.8.0...v1.9.0) (2025-08-02)
 
 
