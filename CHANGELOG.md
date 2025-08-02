@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.8.0...v1.9.0) (2025-08-02)
+
+
+### Features
+
+* **ci:** disable PublishTrimmed and partial TrimMode in release pipeline ([7d8f2d3](https://github.com/SalZaki/finnhub-mcp/commit/7d8f2d358494d602d0036ea88304c078b1acf521))
+* **ci:** disable PublishTrimmed and partial TrimMode in release pipeline ([f6ef4ae](https://github.com/SalZaki/finnhub-mcp/commit/f6ef4ae85eebfecf926968c820ad48f64d13baa7))
+
 ## [1.8.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.7.0...v1.8.0) (2025-08-02)
 
 
