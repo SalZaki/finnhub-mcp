@@ -42,6 +42,7 @@ jobs:
     needs: release
     if: ${{ needs.release.outputs.release_created }}
     strategy:
+      fail-fast: false
       matrix:
         include:
           # Windows - most common architectures
@@ -73,6 +74,8 @@ jobs:
     steps:
       - name: 📥 Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: 🧰 Setup .NET
         uses: actions/setup-dotnet@v4
@@ -82,43 +85,93 @@ jobs:
       - name: 📦 Restore
         run: dotnet restore ./finnhub-mcp.sln
 
-      - name: 🏗️ Build
+      - name: 🔍 Verify Runtime Support
         run: |
-          VERSION_CLEAN=${{ needs.release.outputs.tag_name }} && VERSION_CLEAN=${VERSION_CLEAN#v}
-          dotnet build src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj \
-            -c Release \
-            --no-restore \
-            -p:Version=$VERSION_CLEAN
+          echo "Building for runtime: ${{ matrix.runtime }}"
+          echo "On OS: ${{ matrix.os }}"
+          dotnet --list-runtimes
 
       - name: 📦 Publish
         run: |
-          VERSION_CLEAN=${{ needs.release.outputs.tag_name }} && VERSION_CLEAN=${VERSION_CLEAN#v}
+          VERSION_CLEAN=${{ needs.release.outputs.tag_name }}
+          VERSION_CLEAN=${VERSION_CLEAN#v}
+          echo "Publishing version: $VERSION_CLEAN"
+
           dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj \
-            -c Release -r ${{ matrix.runtime }} \
+            -c Release \
+            -r ${{ matrix.runtime }} \
             --self-contained true \
-            --no-build \
             --no-restore \
             -p:Version=$VERSION_CLEAN \
+            -p:AssemblyVersion=$VERSION_CLEAN \
+            -p:FileVersion=$VERSION_CLEAN \
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -p:PublishSingleFile=true \
+            -p:PublishTrimmed=true \
+            -p:TrimMode=partial \
             -o ./publish
+        env:
+          DOTNET_CLI_TELEMETRY_OPTOUT: 1
+
+      - name: 📋 List Published Files
+        shell: bash
+        run: |
+          echo "Files in publish directory:"
+          ls -la ./publish/
 
       - name: 🧼 Prepare Artifact
         shell: bash
         run: |
           cd ./publish
+
+          # More robust executable detection
           if [[ "${{ matrix.runtime }}" == win-* ]]; then
+            # Windows: Look for .exe files
             EXEC=$(find . -name "*.exe" -type f | head -1)
-            mv "$EXEC" ${{ matrix.artifact_name }}
-          else
-            EXEC=$(find . -type f -perm -111 ! -name "*.dll" ! -name "*.so" ! -name "*.dylib" ! -name "*.json" ! -name "*.pdb" | head -1)
-            if [ -n "$EXEC" ]; then
-              mv "$EXEC" ${{ matrix.artifact_name }}
-            else
-              EXEC=$(find . -type f ! -name "*.*" | head -1)
-              mv "$EXEC" ${{ matrix.artifact_name }}
+            if [ -z "$EXEC" ]; then
+              echo "❌ No .exe file found in Windows build"
+              exit 1
             fi
+            echo "Found Windows executable: $EXEC"
+            mv "$EXEC" "${{ matrix.artifact_name }}"
+          else
+            # Unix: Look for executable files (no extension)
+            EXEC=$(find . -type f -executable ! -name "*.dll" ! -name "*.so" ! -name "*.dylib" ! -name "*.json" ! -name "*.pdb" ! -name "*.*" | head -1)
+            if [ -z "$EXEC" ]; then
+              # Fallback: look for files without extensions
+              EXEC=$(find . -type f ! -name "*.*" | head -1)
+            fi
+            if [ -z "$EXEC" ]; then
+              echo "❌ No executable found in Unix build"
+              ls -la
+              exit 1
+            fi
+            echo "Found Unix executable: $EXEC"
+            mv "$EXEC" "${{ matrix.artifact_name }}"
+            chmod +x "${{ matrix.artifact_name }}"
+          fi
+
+          echo "Final artifact: ${{ matrix.artifact_name }}"
+          ls -la "${{ matrix.artifact_name }}"
+
+      - name: ✅ Verify Artifact
+        shell: bash
+        run: |
+          cd ./publish
+          if [ ! -f "${{ matrix.artifact_name }}" ]; then
+            echo "❌ Artifact ${{ matrix.artifact_name }} not found"
+            exit 1
+          fi
+
+          # Get file size
+          SIZE=$(stat -c%s "${{ matrix.artifact_name }}" 2>/dev/null || stat -f%z "${{ matrix.artifact_name }}" 2>/dev/null || echo "unknown")
+          echo "✅ Artifact size: $SIZE bytes"
+
+          # Verify it's executable (Unix only)
+          if [[ "${{ matrix.runtime }}" != win-* ]] && [ ! -x "${{ matrix.artifact_name }}" ]; then
+            echo "❌ Artifact is not executable"
+            exit 1
           fi
 
       - name: 🚀 Upload Release Asset
@@ -130,3 +183,20 @@ jobs:
             ./publish/appsettings.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📊 Build Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "## Build Summary for ${{ matrix.runtime }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **OS**: ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Runtime**: ${{ matrix.runtime }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Artifact**: ${{ matrix.artifact_name }}" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f "./publish/${{ matrix.artifact_name }}" ]; then
+            SIZE=$(stat -c%s "./publish/${{ matrix.artifact_name }}" 2>/dev/null || stat -f%z "./publish/${{ matrix.artifact_name }}" 2>/dev/null || echo "unknown")
+            echo "- **Size**: $SIZE bytes" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+          fi
