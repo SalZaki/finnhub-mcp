@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.7.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.6.0...v1.7.0) (2025-08-02)
+
+
+### Features
+
+* **ci:** add supported runtime identifiers from build matrix ([2144625](https://github.com/SalZaki/finnhub-mcp/commit/21446257d589426ac3dfa6eb9b3fcadf122e7353))
+* **ci:** add supported runtime identifiers from build matrix ([c84f0fa](https://github.com/SalZaki/finnhub-mcp/commit/c84f0faf8b45aee61f520d8618859c01f5681cfa))
+
 ## [1.6.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.5.0...v1.6.0) (2025-08-01)
 
 
