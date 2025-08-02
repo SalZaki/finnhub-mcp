@@ -133,13 +133,28 @@ jobs:
             echo "Found Windows executable: $EXEC"
             mv "$EXEC" "${{ matrix.artifact_name }}"
           else
-            # macOS/Linux: Find the first executable file (POSIX-safe)
-            EXEC=$(find . -type f ! -name "*.dll" ! -name "*.so" ! -name "*.dylib" ! -name "*.json" ! -name "*.pdb" ! -name "*.*" | while read file; do
-              if [ -x "$file" ]; then
-                echo "$file"
+            # macOS/Linux: Find the first executable file
+            # The issue was here - the while loop was running in a subshell
+            # and the variable assignment wasn't preserved
+            EXEC=""
+
+            # Look for files without extensions that are executable
+            for file in *; do
+              if [ -f "$file" ] && [ -x "$file" ] && [[ "$file" != *.* ]]; then
+                EXEC="$file"
                 break
               fi
-            done)
+            done
+
+            # If no file without extension found, look for any executable
+            if [ -z "$EXEC" ]; then
+              for file in *; do
+                if [ -f "$file" ] && [ -x "$file" ]; then
+                  EXEC="$file"
+                  break
+                fi
+              done
+            fi
 
             if [ -z "$EXEC" ]; then
               echo "❌ No executable found in Unix build"
