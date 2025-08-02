@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.7.0...v1.8.0) (2025-08-02)
+
+
+### Features
+
+* **ci:** improve release workflow with better error handling ([63ff5b2](https://github.com/SalZaki/finnhub-mcp/commit/63ff5b2e9e5d05bdd3a7e3f78dfd70d4ffae4326))
+* **ci:** improve release workflow with better error handling ([e1e9cc7](https://github.com/SalZaki/finnhub-mcp/commit/e1e9cc7433f6ec14e94aaa4c4263e2423a74e0b1))
+
 ## [1.7.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.6.0...v1.7.0) (2025-08-02)
 
 
