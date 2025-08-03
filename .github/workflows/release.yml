@@ -42,7 +42,7 @@ jobs:
     needs: release
     if: ${{ needs.release.outputs.release_created }}
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         include:
           # Windows - most common architectures
@@ -83,15 +83,18 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: 📦 Restore
+        shell: bash
         run: dotnet restore ./finnhub-mcp.sln
 
       - name: 🔍 Verify Runtime Support
+        shell: bash
         run: |
           echo "Building for runtime: ${{ matrix.runtime }}"
           echo "On OS: ${{ matrix.os }}"
           dotnet --list-runtimes
 
       - name: 📦 Publish
+        shell: bash
         run: |
           VERSION_CLEAN=${{ needs.release.outputs.tag_name }}
           VERSION_CLEAN=${VERSION_CLEAN#v}
@@ -134,8 +137,6 @@ jobs:
             mv "$EXEC" "${{ matrix.artifact_name }}"
           else
             # macOS/Linux: Find the first executable file
-            # The issue was here - the while loop was running in a subshell
-            # and the variable assignment wasn't preserved
             EXEC=""
 
             # Look for files without extensions that are executable
