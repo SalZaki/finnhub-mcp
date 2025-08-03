@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.2](https://github.com/SalZaki/finnhub-mcp/compare/v1.10.1...v1.10.2) (2025-08-03)
+
+
+### Bug Fixes
+
+* **ci:** add bash shell to all build steps in release.yml ([3b6d4a6](https://github.com/SalZaki/finnhub-mcp/commit/3b6d4a69a07f4c5771cf27050c2510428f3bc03c))
+* **ci:** add bash shell to all build steps in release.yml ([0a176ba](https://github.com/SalZaki/finnhub-mcp/commit/0a176ba326663180337a14cc9af344c4bc747fc7))
+
 ## [1.10.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.10.0...v1.10.1) (2025-08-02)
 
 
