@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
+using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.AspNetCore.Mvc;
 
@@ -66,6 +67,7 @@ builder.Services.RegisterInfrastructure();
 
 builder.Services.AddSingleton<ISearchService, SearchService>();
 builder.Services.AddSingleton<SearchSymbolTool>();
+builder.Services.AddSingleton<ExchangesResource>();
 
 var mcpServerOptionsBuilder = builder.Services.AddOptions<McpServerOptions>();
 
@@ -83,6 +85,11 @@ mcpServerOptionsBuilder.Configure<IServiceProvider>((mcpServerOptions, servicePr
         Tools = new ToolsCapability
         {
             ToolCollection = [serviceProvider.GetRequiredService<SearchSymbolTool>()]
+
+        },
+        Resources = new ResourcesCapability
+        {
+            ResourceCollection = [serviceProvider.GetRequiredService<ExchangesResource>()]
         }
     };
 });
