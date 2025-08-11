@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.11.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.10.2...v1.11.0) (2025-08-11)
+
+
+### Features
+
+* **resource:** add exchange resource ([a3d1d4a](https://github.com/SalZaki/finnhub-mcp/commit/a3d1d4a13bda54d5dac725bb671564325b02cc8c))
+* **resource:** add exchange resource ([3249c80](https://github.com/SalZaki/finnhub-mcp/commit/3249c809e1bf9b05dc77910b15dfddc0d17e3a32))
+* **resource:** add GetAllExchanges feature ([dad8df0](https://github.com/SalZaki/finnhub-mcp/commit/dad8df023abc47a216e6af42cb61582cd81b905a))
+
 ## [1.10.2](https://github.com/SalZaki/finnhub-mcp/compare/v1.10.1...v1.10.2) (2025-08-03)
 
 
