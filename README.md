@@ -6,7 +6,7 @@
 ![Build Status](https://github.com/salzaki/finnhub-mcp/actions/workflows/dotnet.yml/badge.svg)
 ![codecov](https://codecov.io/gh/salzaki/finnhub-mcp/branch/main/graph/badge.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
-![.NET](https://img.shields.io/badge/.NET-10.0-blue.svg)
+![.NET](https://img.shields.io/badge/.NET-8.0-blue.svg)
 ![Architecture](https://img.shields.io/badge/Architecture-Clean-green)
 ![MCP](https://img.shields.io/badge/AI-MCP-purple)
 ![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)
