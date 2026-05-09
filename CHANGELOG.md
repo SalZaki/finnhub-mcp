@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.0...v1.11.1) (2026-05-09)
+
+
+### Reverts
+
+* "docs: align README with current codebase (.NET 10, port 8080, exchanges resource)" ([8aae699](https://github.com/SalZaki/finnhub-mcp/commit/8aae6994cf10f097a53d5af2194553c15de14e5a))
+
 ## [1.11.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.10.2...v1.11.0) (2025-08-11)
 
 
