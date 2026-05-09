@@ -14,8 +14,6 @@ using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.AspNetCore.Mvc;
-using ModelContextProtocol.Protocol;
-using ModelContextProtocol.Server;
 
 var assembly = Assembly.GetEntryAssembly();
 var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"finnhub-mcp-server-{Guid.NewGuid()}";

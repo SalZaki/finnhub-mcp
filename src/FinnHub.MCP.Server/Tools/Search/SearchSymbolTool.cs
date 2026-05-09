@@ -1,4 +1,4 @@
-// ---------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -11,7 +11,6 @@ using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Common;
-using ModelContextProtocol.Server;
 
 namespace FinnHub.MCP.Server.Tools.Search;
 

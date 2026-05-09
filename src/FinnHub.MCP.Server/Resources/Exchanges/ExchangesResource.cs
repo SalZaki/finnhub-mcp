@@ -1,4 +1,4 @@
-// ---------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -10,7 +10,6 @@ using System.Net.Mime;
 using FinnHub.MCP.Server.Application.Exchanges;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
 using FinnHub.MCP.Server.Application.Models;
-using ModelContextProtocol.Server;
 
 namespace FinnHub.MCP.Server.Resources.Exchanges;
 
