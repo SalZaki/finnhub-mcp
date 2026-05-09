@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.2](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.1...v1.11.2) (2026-05-09)
+
+
+### 👷 CI/CD
+
+* switch release-please to manifest mode so changelog-sections take effect ([d3a5a6a](https://github.com/SalZaki/finnhub-mcp/commit/d3a5a6a6954724f9abe477d7f16aa4b99220c074))
+* switch release-please to manifest mode so changelog-sections take effect ([76d1ed9](https://github.com/SalZaki/finnhub-mcp/commit/76d1ed9316609c626f543360fdd850b42965f6ba))
+
 ## [1.11.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.0...v1.11.1) (2026-05-09)
 
 
