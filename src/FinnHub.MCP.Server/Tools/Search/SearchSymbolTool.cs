@@ -1,143 +1,141 @@
-﻿// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.ComponentModel;
 using System.Diagnostics;
+using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Common;
-using Json.Schema;
+using ModelContextProtocol.Server;
 
 namespace FinnHub.MCP.Server.Tools.Search;
+
 /// <summary>
-/// Tool implementation for searching financial symbols via the MCP server's search service.
+/// MCP tool for searching financial symbols via the FinnHub search service.
 /// </summary>
-/// <remarks>
-/// This tool validates user input, constructs a <see cref="SearchSymbolQuery"/>, invokes the search service,
-/// and returns the results in a format compatible with SSE tooling.
-/// </remarks>
+[McpServerToolType]
 public sealed class SearchSymbolTool(
     ISearchService searchService,
     ILogger<SearchSymbolTool> logger)
-    : BaseSearchTool
 {
     /// <summary>
-    /// Lazily initialized serialized JSON schema used for tool input validation.
+    /// Executes a financial-symbol search against the FinnHub provider and returns
+    /// the matching instruments wrapped in an application-level <see cref="Result{T}"/>.
     /// </summary>
-    private static readonly Lazy<JsonElement> s_serializedSchema = new(() =>
-        JsonSerializer.SerializeToElement(s_toolSchema));
-
-    internal static JsonSchema ToolSchema => s_toolSchema;
-
-    /// <summary>
-    /// Defines the JSON schema for tool inputs, including query, exchange, and result limit.
-    /// </summary>
-    private static readonly JsonSchema s_toolSchema = new JsonSchemaBuilder()
-        .Properties(
-            (Constants.Tools.SearchSymbols.Parameters.QueryName, new JsonSchemaBuilder()
-                .Type(SchemaValueType.String)
-                .Pattern(@"^[a-zA-Z0-9\s\-\._]{1,500}$")
-                .MaxLength(500)
-                .Required()
-                .Description(Constants.Tools.SearchSymbols.Parameters.QueryDescription)),
-            (Constants.Tools.SearchSymbols.Parameters.ExchangeName, new JsonSchemaBuilder()
-                .Type(SchemaValueType.String)
-                .Pattern(@"^[A-Z0-9\-_]{1,50}$$")
-                .MaxLength(50)
-                .Description(Constants.Tools.SearchSymbols.Parameters.ExchangeDescription)
-            ),
-            (Constants.Tools.SearchSymbols.Parameters.LimitName, new JsonSchemaBuilder()
-                .Type(SchemaValueType.Integer)
-                .Description(Constants.Tools.SearchSymbols.Parameters.LimitDescription)
-                .Minimum(1)
-                .Maximum(100)
-            ))
-        .Type(SchemaValueType.Object)
-        .AdditionalProperties(false)
-        .Build();
-
-    /// <summary>
-    /// Gets metadata about the tool, including its name, description, input schema, and annotations.
-    /// </summary>
-    public override Tool ProtocolTool => new()
-    {
+    /// <remarks>
+    /// <para>
+    /// All inputs are validated and normalized via <see cref="SearchInputValidator"/>
+    /// before the underlying service is called. Validation failures throw
+    /// <see cref="ArgumentException"/> (or <see cref="ArgumentOutOfRangeException"/>
+    /// for the limit), which the MCP runtime surfaces to the caller as a tool error.
+    /// </para>
+    /// <para>
+    /// This is a read-only, idempotent operation: invoking it with the same arguments
+    /// yields the same logical result and produces no side effects on the provider.
+    /// </para>
+    /// </remarks>
+    /// <param name="query">
+    /// The search term — typically a ticker, company name, ISIN, or CUSIP. Must be
+    /// non-empty after trimming and contain only letters, digits, spaces, dashes,
+    /// underscores, or periods (max 500 chars).
+    /// </param>
+    /// <param name="exchange">
+    /// Optional uppercase exchange code (e.g. <c>"US"</c>, <c>"L"</c>). When supplied,
+    /// results are restricted to that venue. Must match <c>[A-Z0-9\-_]{1,50}</c>.
+    /// </param>
+    /// <param name="limit">
+    /// Optional cap on the number of results to return. Defaults to <c>10</c>; valid
+    /// range is <c>1..100</c> inclusive.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// Token used to cancel the in-flight search. Cancellation is propagated to the
+    /// HTTP layer and re-thrown to the caller.
+    /// </param>
+    /// <returns>
+    /// A <see cref="Result{T}"/> wrapping the matching <see cref="SearchSymbolResponse"/>.
+    /// On provider-level failures (timeout, transport, deserialization) the result
+    /// reports an error category instead of throwing.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="query"/> or <paramref name="exchange"/> fails
+    /// validation.
+    /// </exception>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <paramref name="limit"/> is outside the valid range.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// Thrown when the operation is cancelled via <paramref name="cancellationToken"/>.
+    /// </exception>
+    [McpServerTool(
         Name = Constants.Tools.SearchSymbols.Name,
-        Description = Constants.Tools.SearchSymbols.Description,
-        InputSchema = s_serializedSchema.Value,
-        Annotations = new ToolAnnotations
-        {
-            Title = Constants.Tools.SearchSymbols.Title,
-            ReadOnlyHint = true,
-            DestructiveHint = false,
-            IdempotentHint = true
-        }
-    };
-
-    /// <summary>
-    /// Executes the tool's logic by validating parameters, running the symbol search,
-    /// and generating a structured success or error response.
-    /// </summary>
-    /// <param name="request">The request context, including tool arguments and user metadata.</param>
-    /// <param name="cancellationToken">Token to observe for cancellation requests.</param>
-    /// <returns>A task that represents the asynchronous operation. The task result is the tool's response.</returns>
-    public override async ValueTask<CallToolResponse> InvokeAsync(
-        RequestContext<CallToolRequestParams> request,
+        Title = Constants.Tools.SearchSymbols.Title,
+        ReadOnly = true,
+        Idempotent = true,
+        Destructive = false,
+        OpenWorld = true)]
+    [Description(Constants.Tools.SearchSymbols.Description)]
+    public async Task<Result<SearchSymbolResponse>> SearchSymbolAsync(
+        [Description(Constants.Tools.SearchSymbols.Parameters.QueryDescription)]
+        string query,
+        [Description(Constants.Tools.SearchSymbols.Parameters.ExchangeDescription)]
+        string? exchange = null,
+        [Description(Constants.Tools.SearchSymbols.Parameters.LimitDescription)]
+        int? limit = null,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
+        var toolName = Constants.Tools.SearchSymbols.Name;
 
         try
         {
-            logger.LogTrace("Starting execution of '{Tool}'.", this.ProtocolTool.Name);
+            logger.LogTrace("Starting execution of '{Tool}'.", toolName);
 
-            var args = request.Params?.Arguments;
+            var validatedQuery = SearchInputValidator.ValidateQuery(query);
+            var validatedExchange = SearchInputValidator.ValidateExchange(exchange);
+            var validatedLimit = SearchInputValidator.ValidateLimit(limit);
 
-            var query = ValidateAndGetQuery(args);
-            var limit = ValidateAndGetLimit(args);
-            var exchange = ValidateAndGetExchange(args);
-
-            logger.LogDebug("Executing search with query: '{Query}', exchange: '{Exchange}', limit: {Limit}", query, exchange, limit);
+            logger.LogDebug(
+                "Executing search with query: '{Query}', exchange: '{Exchange}', limit: {Limit}",
+                validatedQuery, validatedExchange, validatedLimit);
 
             var symbolSearchQuery = new SearchSymbolQueryBuilder()
-                .WithQuery(query)
-                .WithExchange(exchange)
-                .WithLimit(limit)
+                .WithQuery(validatedQuery)
+                .WithExchange(validatedExchange)
+                .WithLimit(validatedLimit)
                 .Build();
 
             var results = await searchService.SearchSymbolAsync(symbolSearchQuery, cancellationToken);
 
-            logger.Log(LogLevel.Information, "Search completed successfully. Found {Count} results in {ElapsedMs}ms",
+            logger.LogInformation(
+                "Search completed successfully. Found {Count} results in {ElapsedMs}ms",
                 results.Data?.TotalCount, stopwatch.ElapsedMilliseconds);
 
-            return CreateSuccessResponse(results, ToolJsonContext.Default.ResultSearchSymbolResponse);
-        }
-        catch (ArgumentOutOfRangeException ex)
-        {
-            logger.Log(LogLevel.Error, ex, "Parameter out of range in '{Tool}': {Message}", this.ProtocolTool.Name, ex.Message);
-            return this.CreateValidationErrorResponse(ex.ParamName ?? "unknown", ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            logger.Log(LogLevel.Error, ex, "Validation error in '{Tool}': {Message}", this.ProtocolTool.Name, ex.Message);
-            return this.CreateValidationErrorResponse(ex.ParamName ?? "unknown", ex.Message);
+            return results;
         }
         catch (OperationCanceledException ex)
         {
-            logger.Log(LogLevel.Error, ex, "Search operation was canceled for '{Tool}'.", this.ProtocolTool.Name);
-            return CreateOperationErrorResponse("search", "Search operation was cancelled.", ex);
+            logger.LogError(ex, "Search operation was canceled for '{Tool}'.", toolName);
+            throw;
+        }
+        catch (ArgumentException ex)
+        {
+            logger.LogError(ex, "Validation error in '{Tool}': {Message}", toolName, ex.Message);
+            throw;
         }
         catch (Exception ex)
         {
-            logger.Log(LogLevel.Error, ex, "An exception occurred running '{Tool}'.", this.ProtocolTool.Name);
+            logger.LogError(ex, "An exception occurred running '{Tool}'.", toolName);
             throw;
         }
         finally
         {
             stopwatch.Stop();
-            logger.LogTrace("Finished executing '{Tool}' in {ElapsedMs}ms.", this.ProtocolTool.Name, stopwatch.ElapsedMilliseconds);
+            logger.LogTrace("Finished executing '{Tool}' in {ElapsedMs}ms.", toolName, stopwatch.ElapsedMilliseconds);
         }
     }
 }

@@ -11,6 +11,29 @@ using FinnHub.MCP.Server.Infrastructure.Dtos;
 
 namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 
+/// <summary>
+/// Source-generated <see cref="JsonSerializerContext"/> for FinnHub HTTP DTOs.
+/// </summary>
+/// <remarks>
+/// <para>
+/// Used by <c>FinnHubSearchApiClient</c> to deserialize provider responses without
+/// reflection-based metadata, keeping the infrastructure layer compatible with
+/// trimming and AOT publish modes.
+/// </para>
+/// <para>
+/// JSON conventions applied to every registered type:
+/// </para>
+/// <list type="bullet">
+///   <item><description>Property names are converted to <c>snake_case</c>.</description></item>
+///   <item><description>Output is indented (whitespace) for human-readable diagnostics.</description></item>
+///   <item><description>Properties whose value is <c>null</c> are omitted on serialization.</description></item>
+///   <item><description>Property-name matching during deserialization is case-insensitive.</description></item>
+/// </list>
+/// <para>
+/// Add new <see cref="JsonSerializableAttribute"/> entries here when a new
+/// FinnHub DTO needs to be (de)serialized.
+/// </para>
+/// </remarks>
 [ExcludeFromCodeCoverage]
 [JsonSourceGenerationOptions(
     PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseLower,

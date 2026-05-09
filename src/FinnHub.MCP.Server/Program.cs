@@ -14,6 +14,8 @@ using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.AspNetCore.Mvc;
+using ModelContextProtocol.Protocol;
+using ModelContextProtocol.Server;
 
 var assembly = Assembly.GetEntryAssembly();
 var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"finnhub-mcp-server-{Guid.NewGuid()}";
@@ -65,43 +67,28 @@ builder.Services
 
 builder.Services.RegisterInfrastructure();
 
-builder.Services.AddSingleton<ISearchService, SearchService>();
-builder.Services.AddSingleton<SearchSymbolTool>();
-builder.Services.AddSingleton<ExchangesResource>();
+builder.Services.AddTransient<ISearchService, SearchService>();
 
-var mcpServerOptionsBuilder = builder.Services.AddOptions<McpServerOptions>();
-
-mcpServerOptionsBuilder.Configure<IServiceProvider>((mcpServerOptions, serviceProvider) =>
+var mcpBuilder = builder.Services.AddMcpServer(options =>
 {
-    mcpServerOptions.ProtocolVersion = Constants.Server.ProtocolVersion;
-    mcpServerOptions.ServerInstructions = Constants.Server.Instructions;
-    mcpServerOptions.ServerInfo = new Implementation
+    options.ServerInstructions = Constants.Server.Instructions;
+    options.ServerInfo = new Implementation
     {
         Name = applicationName,
         Version = version
     };
-    mcpServerOptions.Capabilities = new ServerCapabilities
-    {
-        Tools = new ToolsCapability
-        {
-            ToolCollection = [serviceProvider.GetRequiredService<SearchSymbolTool>()]
-
-        },
-        Resources = new ResourcesCapability
-        {
-            ResourceCollection = [serviceProvider.GetRequiredService<ExchangesResource>()]
-        }
-    };
-});
+})
+.WithTools<SearchSymbolTool>()
+.WithResources<ExchangesResource>();
 
 if (isStdio)
 {
     builder.Logging.ClearProviders();
-    builder.Services.AddMcpServer().WithStdioServerTransport();
+    mcpBuilder.WithStdioServerTransport();
 }
 else
 {
-    builder.Services.AddMcpServer().WithHttpTransport();
+    mcpBuilder.WithHttpTransport();
 }
 
 builder.Services.AddEndpointsApiExplorer();

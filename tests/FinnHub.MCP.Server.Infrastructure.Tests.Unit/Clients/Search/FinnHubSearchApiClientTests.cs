@@ -105,18 +105,6 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     }
 
     [Fact]
-    public async Task SearchSymbolAsync_WithDisposedClient_ThrowsObjectDisposedException()
-    {
-        // Arrange
-        var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
-        this._sut.Dispose();
-
-        // Act & Assert
-        await Assert.ThrowsAsync<ObjectDisposedException>(() =>
-            this._sut.SearchSymbolAsync(query, CancellationToken.None));
-    }
-
-    [Fact]
     public async Task SearchSymbolAsync_WithNoActiveEndpoint_ThrowsArgumentException()
     {
         // Arrange
@@ -364,32 +352,8 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         Assert.Equal(string.Empty, result.Symbols[0].Type);
     }
 
-    [Fact]
-    public void Dispose_CalledOnce_DisposesResourcesAndLogsDebug()
-    {
-        // Act
-        this._sut.Dispose();
-
-        // Assert
-        this._logger.Received(1).Log(
-            LogLevel.Debug,
-            Arg.Any<EventId>(),
-            Arg.Is<object>(v => v.ToString() == "FinnHubSearchApiClient disposed."),
-            Arg.Any<Exception>(),
-            Arg.Any<Func<object, Exception, string>>()!);
-    }
-
-    [Fact]
-    public void Dispose_CalledMultipleTimes_DoesNotThrow()
-    {
-        // Act & Assert
-        this._sut.Dispose();
-        this._sut.Dispose();
-    }
-
     public void Dispose()
     {
-        this._sut.Dispose();
         this._httpClient.Dispose();
         this._messageHandler.Dispose();
     }

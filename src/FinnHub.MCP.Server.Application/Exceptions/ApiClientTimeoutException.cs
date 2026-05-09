@@ -15,5 +15,10 @@ namespace FinnHub.MCP.Server.Application.Exceptions;
 public sealed class ApiClientTimeoutException(string message, Exception? innerException = null)
     : ApiClientException(message, innerException)
 {
+    /// <summary>
+    /// Gets the stable identifier for this error category, signalling that the request
+    /// exceeded the configured timeout duration. Always returns <c>"API_CLIENT_TIMEOUT"</c>
+    /// and is suitable for retry-policy classification (typically a transient failure).
+    /// </summary>
     public override string ErrorCode => "API_CLIENT_TIMEOUT";
 }
