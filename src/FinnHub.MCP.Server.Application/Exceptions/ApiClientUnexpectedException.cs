@@ -16,5 +16,12 @@ namespace FinnHub.MCP.Server.Application.Exceptions;
 public sealed class ApiClientUnexpectedException(string message, Exception? innerException = null)
     : ApiClientException(message, innerException)
 {
+    /// <summary>
+    /// Gets the stable identifier for this error category, indicating an
+    /// unclassified failure that did not match any of the more specific
+    /// API client exception types. Always returns <c>"API_CLIENT_UNEXPECTED"</c>.
+    /// Treat occurrences of this code as a signal to investigate the inner
+    /// exception and, where possible, reclassify into a more specific type.
+    /// </summary>
     public override string ErrorCode => "API_CLIENT_UNEXPECTED";
 }

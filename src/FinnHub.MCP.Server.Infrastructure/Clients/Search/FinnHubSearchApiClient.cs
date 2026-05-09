@@ -27,12 +27,11 @@ namespace FinnHub.MCP.Server.Infrastructure.Clients.Search;
 /// Implements <see cref="ISearchApiClient"/> to offer search functionality via FinnHub’s REST API.
 /// This includes endpoint configuration, error handling, deserialization, and logging.
 /// </remarks>
-public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
+public sealed class FinnHubSearchApiClient : ISearchApiClient
 {
     private readonly HttpClient _httpClient;
     private readonly FinnHubOptions _finnHubOptions;
     private readonly ILogger<FinnHubSearchApiClient> _logger;
-    private bool _disposed;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FinnHubSearchApiClient"/> class.
@@ -76,7 +75,6 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ObjectDisposedException.ThrowIf(this._disposed, this);
 
         var stopwatch = Stopwatch.StartNew();
         var searchTimestamp = DateTime.UtcNow;
@@ -135,20 +133,6 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
         }
     }
 
-    /// <inheritdoc />
-    public void Dispose()
-    {
-        if (this._disposed)
-        {
-            return;
-        }
-
-        this._disposed = true;
-        this._httpClient.Dispose();
-
-        this._logger.Log(LogLevel.Debug, "FinnHubSearchApiClient disposed.");
-    }
-
     /// <summary>
     /// Executes the HTTP request to the FinnHub API and processes the response.
     /// </summary>
@@ -159,28 +143,11 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
         string requestUri,
         CancellationToken cancellationToken)
     {
-        using var requestMessage = this.CreateHttpRequest(requestUri);
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, requestUri);
 
         var response = await this.SendRequestAsync(requestMessage, requestUri, cancellationToken).ConfigureAwait(false);
 
         return await this.ProcessResponseAsync(response, requestUri, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Creates an HTTP request with the FinnHub API key.
-    /// </summary>
-    /// <param name="requestUri">The request URI.</param>
-    /// <returns>The configured <see cref="HttpRequestMessage"/>.</returns>
-    private HttpRequestMessage CreateHttpRequest(string requestUri)
-    {
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
-
-        if (!string.IsNullOrWhiteSpace(this._finnHubOptions.ApiKey))
-        {
-            request.Headers.Add("X-FinnHub-Token", this._finnHubOptions.ApiKey);
-        }
-
-        return request;
     }
 
     /// <summary>
@@ -299,7 +266,6 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient, IDisposable
         CancellationToken cancellationToken)
     {
         var statusCode = response.StatusCode;
-        contentStream.Position = 0;
 
         using var reader = new StreamReader(contentStream);
         var errorBody = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);

@@ -9,7 +9,7 @@
     <LangVersion>Latest</LangVersion>
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);CS1591</WarningsNotAsErrors>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RepositoryUrl>https://github.com/salzaki/finnhub-mcp</RepositoryUrl>
     <Version>1.0.0</Version>
     <AssemblyVersion>$(Version)</AssemblyVersion>

@@ -5,9 +5,8 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using System.Diagnostics.CodeAnalysis;
+using System.ComponentModel;
 using System.Net.Mime;
-using System.Text.Json.Serialization;
 using FinnHub.MCP.Server.Application.Exchanges;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
 using FinnHub.MCP.Server.Application.Models;
@@ -16,55 +15,40 @@ namespace FinnHub.MCP.Server.Resources.Exchanges;
 
 /// <summary>
 /// MCP resource that provides stock exchange listings from Finnhub.
-/// Uses <see cref="BaseResource.CreateResponse{T}"/> to serialize JSON data for clients.
 /// </summary>
-public sealed class ExchangesResource : BaseResource
+[McpServerResourceType]
+public sealed class ExchangesResource
 {
-    private static readonly ResourceTemplate s_template = new()
-    {
-        UriTemplate = "finnhub://resources/exchanges",
-        Name = "get‑exchanges",
-        Description = "Gets all the exchanges listed on Finnhub.",
-        MimeType = MediaTypeNames.Application.Json,
-        Annotations = new Annotations
-        {
-            Audience = [Role.Assistant, Role.User]
-        }
-    };
-
-    public override ResourceTemplate ProtocolResourceTemplate => s_template;
-
-    public override Resource? ProtocolResource => s_template.AsResource();
-
     /// <summary>
-    /// Handles a resource read request by returning a static list of exchanges.
+    /// Returns the catalog of stock exchanges available through the Finnhub provider,
+    /// wrapped in an application-level <see cref="Result{T}"/>.
     /// </summary>
-    /// <param name="request">
-    /// The <see cref="RequestContext{ReadResourceRequestParams}"/> containing
-    /// request metadata including the requested URI.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// A token to observe while waiting for the task to complete.
-    /// </param>
+    /// <remarks>
+    /// <para>
+    /// This is the read handler for the <c>finnhub://resources/exchanges</c> MCP
+    /// resource. Each entry exposes the exchange code, full name, country,
+    /// MIC code, time zone, trading hours, and a public information URL — enough
+    /// for clients to populate dropdowns or filter symbol searches by venue.
+    /// </para>
+    /// <para>
+    /// The current implementation returns a static stub (London Stock Exchange only)
+    /// pending wiring to the Finnhub <c>/stock/exchange</c> endpoint.
+    /// </para>
+    /// </remarks>
     /// <returns>
-    /// A <see cref="ValueTask{ReadResourceResult}"/> containing JSON-serialized
-    /// exchange data via <see cref="ReadResourceResult"/> and
-    /// <see cref="TextResourceContents"/>, or <c>null</c> in case of no response required.
+    /// A successful <see cref="Result{T}"/> containing an <see cref="ExchangesResponse"/>
+    /// with the available exchanges. The result is never a failure under the current
+    /// stubbed implementation, but consumers should still check <c>IsSuccess</c>
+    /// once the live provider call is wired up.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// If <paramref name="request"/>, its <c>Params</c>, or <c>Params.Uri</c> is <c>null</c>.
-    /// </exception>
-    public override ValueTask<ReadResourceResult?> ReadAsync(
-        RequestContext<ReadResourceRequestParams> request,
-        CancellationToken cancellationToken = default)
+    [McpServerResource(
+        UriTemplate = "finnhub://resources/exchanges",
+        Name = "get-exchanges",
+        Title = "Exchanges",
+        MimeType = MediaTypeNames.Application.Json)]
+    [Description("Gets all the exchanges listed on Finnhub.")]
+    public Result<ExchangesResponse> GetExchanges()
     {
-        ArgumentNullException.ThrowIfNull(request);
-        ArgumentNullException.ThrowIfNull(request.Params);
-        ArgumentNullException.ThrowIfNull(request.Params.Uri);
-        cancellationToken.ThrowIfCancellationRequested();
-
-        var uri = request.Params.Uri;
-
         // TODO: Replace stub data with real Finnhub API call logic.
         var responsePayload = new ExchangesResponse
         {
@@ -78,27 +62,13 @@ public sealed class ExchangesResource : BaseResource
                     CountryName = "United Kingdom",
                     MicCode = "XLON",
                     TimeZone = "Europe/London",
-                    TradingHours = "08:00‑16:30",
+                    TradingHours = "08:00-16:30",
                     Url = "https://www.tradinghours.com/exchanges/lse",
                     CloseDate = string.Empty
                 }
             ]
         };
 
-        var result = CreateResponse(
-            new Result<ExchangesResponse>().Success(responsePayload),
-            uri,
-            ResourceJsonContext.Default.ResultExchangesResponse);
-
-        return ValueTask.FromResult(result);
+        return new Result<ExchangesResponse>().Success(responsePayload);
     }
 }
-
-[ExcludeFromCodeCoverage]
-[JsonSourceGenerationOptions(
-    PropertyNamingPolicy = JsonKnownNamingPolicy.SnakeCaseUpper,
-    WriteIndented = true,
-    DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-    PropertyNameCaseInsensitive = true)]
-[JsonSerializable(typeof(Result<ExchangesResponse>))]
-public partial class ResourceJsonContext : JsonSerializerContext;

@@ -15,5 +15,10 @@ namespace FinnHub.MCP.Server.Application.Exceptions;
 public sealed class ApiClientCancelledException(string message, Exception? innerException = null)
     : ApiClientException(message, innerException)
 {
+    /// <summary>
+    /// Gets the stable identifier for this error category, used by clients and log
+    /// pipelines to correlate caller-initiated cancellations across the API surface.
+    /// Always returns <c>"API_CLIENT_CANCELLED"</c>.
+    /// </summary>
     public override string ErrorCode => "API_CLIENT_CANCELLED";
 }
