@@ -92,6 +92,22 @@ Roadmap and active design notes live in `.planning/`. Start with `.planning/ROAD
 
 Intermediate working files (discussion notes, research dumps, review scratch) are gitignored — if you need them they live locally only.
 
+## AI agent skills (gstack)
+
+This repo is compatible with [gstack](https://github.com/garrytan/gstack) — an optional Claude Code skill pack. Install is per-developer (`~/.claude/skills/gstack`); no repo dependency, no commits required.
+
+If you have gstack installed, prefer these skills for the relevant workflow:
+
+- `/review` — pre-merge diff review against the base branch
+- `/cso` — OWASP + STRIDE security audit (relevant for `FINNHUB_API_KEY` handling and the external HTTP boundary)
+- `/investigate` — systematic root-cause debugging
+- `/office-hours`, `/plan-ceo-review`, `/plan-eng-review` — feature planning before writing code
+- `/ship`, `/land-and-deploy` — PR creation, CI wait, post-merge verification
+
+Browser-driven skills (`/qa`, `/design-*`, `/canary`, `/benchmark`) don't generally apply — this server has no UI. `/qa` can still drive the HTTP transport for endpoint smoke tests.
+
+When any AI agent needs to browse, prefer gstack's `/browse` over `mcp__claude-in-chrome__*` tools if both are available.
+
 ## What not to do
 
 - Don't bypass `TreatWarningsAsErrors` by suppressing warnings.
