@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.11.3](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.2...v1.11.3) (2026-05-18)
+
+
+### 🐛 Bug Fixes
+
+* replace boilerplate server instructions with Finnhub guidance ([8cbf38d](https://github.com/SalZaki/finnhub-mcp/commit/8cbf38da54cea0941596d3dc521cf855d0aeccc1))
+* replace boilerplate server instructions with Finnhub guidance ([c692eb7](https://github.com/SalZaki/finnhub-mcp/commit/c692eb7528ee3c4c3028592b67236d0a5f573f82))
+
 ## [1.11.2](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.1...v1.11.2) (2026-05-09)
 
 
