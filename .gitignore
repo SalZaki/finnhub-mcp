@@ -51,3 +51,9 @@ x86/
 
 .env
 .env.local
+
+# Ignore intermediate working files, scratch, and ephemeral session state
+.planning/
+
+# AI agent local state
+.claude/
