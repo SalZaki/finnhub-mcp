@@ -26,10 +26,14 @@ public static class Constants
 
         /// <summary>
         /// Default instructions provided to AI models when interacting with this server.
-        /// Guides the model to assume C# as the default programming language and maintain
-        /// brief, professional responses.
+        /// Orients the model toward aggregation-first tools that default to token-efficient
+        /// summaries and toward intent-based tool discovery rather than full schema enumeration.
         /// </summary>
-        public const string Instructions = "If no programming language is specified, assume C#. Keep your responses brief and professional.";
+        public const string Instructions =
+            "This server exposes Finnhub financial data through aggregation-first tools that default to " +
+            "token-efficient summaries. When tool discovery is needed, use search-tools first to find the " +
+            "right tool by intent rather than enumerating the full schema set. Every tool accepts " +
+            "view: summary|standard|full to control response detail and fields for sparse projections.";
     }
 
     /// <summary>
