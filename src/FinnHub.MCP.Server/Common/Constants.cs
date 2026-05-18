@@ -37,6 +37,39 @@ public static class Constants
     }
 
     /// <summary>
+    /// Constants for the response envelope contract every tool participates in.
+    /// </summary>
+    public static class Envelope
+    {
+        /// <summary>
+        /// Hard ceiling on the estimated token count of a <c>summary</c>-view response.
+        /// Responses that exceed this are rebuilt by the tool invocation middleware
+        /// as a <c>BudgetExceeded</c> failure envelope.
+        /// </summary>
+        public const int SummaryTokenCeiling = 500;
+
+        /// <summary>
+        /// Hard ceiling on the estimated token count of a <c>standard</c>-view response.
+        /// </summary>
+        public const int StandardTokenCeiling = 2000;
+
+        /// <summary>
+        /// Description applied to every tool's <c>view</c> parameter so the consuming
+        /// model picks a tier deliberately.
+        /// </summary>
+        public const string ViewParameterDescription =
+            "Response detail level: summary (curated, ~500 tokens), standard (curated, ~2000 tokens), " +
+            "full (raw payload, no ceiling). Defaults to summary.";
+
+        /// <summary>
+        /// Description applied to every tool's <c>fields</c> parameter for sparse projection.
+        /// </summary>
+        public const string FieldsParameterDescription =
+            "Optional sparse projection. When set, only the named fields plus the envelope are returned. " +
+            "Unknown field names are rejected as a validation error.";
+    }
+
+    /// <summary>
     /// Contains tool-specific constants and configurations for all available MCP tools.
     /// </summary>
     public static class Tools
@@ -93,6 +126,26 @@ public static class Constants
                 /// Human-readable description of the exchange parameter with example values.
                 /// </summary>
                 public const string ExchangeDescription = "Optional exchange, e.g., US.";
+
+                /// <summary>
+                /// The parameter name for the response detail level.
+                /// </summary>
+                public const string ViewName = "view";
+
+                /// <summary>
+                /// Human-readable description of the view parameter.
+                /// </summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+
+                /// <summary>
+                /// The parameter name for sparse field projection.
+                /// </summary>
+                public const string FieldsName = "fields";
+
+                /// <summary>
+                /// Human-readable description of the fields parameter.
+                /// </summary>
+                public const string FieldsDescription = Envelope.FieldsParameterDescription;
             }
 
             /// <summary>
@@ -135,6 +188,7 @@ public static class Constants
                 - Supports symbol lookup across exchanges
                 - Intended for use in financial tools, ai agents, and UIs
 
+                Approx tokens: summary ~200, standard ~2000, full ~8000.
                 """;
         }
     }

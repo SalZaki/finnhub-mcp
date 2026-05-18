@@ -7,6 +7,8 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 
 namespace FinnHub.MCP.Server.Infrastructure.Serialization;
@@ -41,4 +43,8 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(FinnHubSearchResponse))]
+[JsonSerializable(typeof(ToolView))]
+[JsonSerializable(typeof(NextAction))]
+[JsonSerializable(typeof(RateLimitInfo))]
+[JsonSerializable(typeof(ToolResponseEnvelope<SearchSymbolResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;
