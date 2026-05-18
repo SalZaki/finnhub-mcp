@@ -169,6 +169,28 @@ Parameters:
 - `query` *(string, required)* — ticker, company name, ISIN, or CUSIP. 1–500 chars, letters/digits/space/`-`/`_`/`.` only.
 - `exchange` *(string, optional)* — uppercase exchange code matching `[A-Z0-9\-_]{1,50}`, e.g. `US`, `L`.
 - `limit` *(int, optional)* — 1–100, defaults to 10.
+- `view` *(string, optional)* — response detail level. One of `summary` (default, ~500-token ceiling), `standard` (~2000-token ceiling), `full` (no ceiling).
+- `fields` *(string[], optional)* — sparse projection over the documented response fields. Unknown field names are rejected as a validation error.
+
+### Tool response envelope
+
+Every MCP tool returns the same envelope shape so consuming models get a predictable contract and the server can enforce per-view token budgets without forcing every tool to reimplement the same accounting.
+
+| Field | Type | Purpose |
+|---|---|---|
+| `is_success` | bool | Operation succeeded. |
+| `data` | T \| null | Domain payload when successful. |
+| `error_message` | string \| null | Human-readable failure reason. |
+| `error_type` | string \| null | Categorised error (e.g. `NotFound`, `BudgetExceeded`). |
+| `view` | string | Echoes the requested view. |
+| `next_actions` | array | Server-suggested follow-up tool calls. |
+| `explanation` | string \| null | Short natural-language summary. |
+| `approx_tokens` | int | Estimated serialized token count, set by the middleware. |
+| `rate_limit` | object \| null | Upstream rate-limit snapshot (populated in a later phase). |
+| `sentiment_source` | string \| null | Source label for sentiment values. |
+| `premium` | bool | Whether the underlying upstream endpoint required a premium key. |
+
+A response that exceeds its declared view's token ceiling is rebuilt by the tool invocation middleware as a `BudgetExceeded` failure envelope; retry with a broader `view` or a sparser `fields` projection.
 
 ### Resource: `finnhub://resources/exchanges`
 
