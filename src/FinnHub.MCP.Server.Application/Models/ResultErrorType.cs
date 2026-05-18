@@ -73,5 +73,18 @@ public enum ResultErrorType
     /// contains invalid JSON, or doesn't conform to the expected schema. It typically
     /// indicates issues with the external service or API version mismatches.
     /// </remarks>
-    InvalidResponse
+    InvalidResponse,
+
+    /// <summary>
+    /// Indicates that a tool response exceeded the token budget declared by its
+    /// requested <see cref="ToolView"/> and was downgraded by the tool invocation
+    /// middleware to a failure envelope.
+    /// </summary>
+    /// <remarks>
+    /// Distinct from <see cref="InvalidResponse"/> so the consuming model can
+    /// distinguish a malformed upstream payload from a self-inflicted oversized
+    /// response. Recovery is typically to retry the call with a broader view
+    /// (<c>standard</c> or <c>full</c>) or with a sparser <c>fields</c> projection.
+    /// </remarks>
+    BudgetExceeded
 }
