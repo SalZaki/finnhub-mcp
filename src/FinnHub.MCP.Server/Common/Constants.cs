@@ -126,6 +126,26 @@ public static class Constants
                 /// Human-readable description of the exchange parameter with example values.
                 /// </summary>
                 public const string ExchangeDescription = "Optional exchange, e.g., US.";
+
+                /// <summary>
+                /// The parameter name for the response detail level.
+                /// </summary>
+                public const string ViewName = "view";
+
+                /// <summary>
+                /// Human-readable description of the view parameter.
+                /// </summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+
+                /// <summary>
+                /// The parameter name for sparse field projection.
+                /// </summary>
+                public const string FieldsName = "fields";
+
+                /// <summary>
+                /// Human-readable description of the fields parameter.
+                /// </summary>
+                public const string FieldsDescription = Envelope.FieldsParameterDescription;
             }
 
             /// <summary>
@@ -168,6 +188,7 @@ public static class Constants
                 - Supports symbol lookup across exchanges
                 - Intended for use in financial tools, ai agents, and UIs
 
+                Approx tokens: summary ~200, standard ~2000, full ~8000.
                 """;
         }
     }

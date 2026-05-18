@@ -5,7 +5,9 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Collections.Frozen;
 using System.Text.RegularExpressions;
+using FinnHub.MCP.Server.Application.Models;
 
 namespace FinnHub.MCP.Server.Tools.Search;
 
@@ -83,5 +85,75 @@ internal static partial class SearchInputValidator
         }
 
         return value;
+    }
+
+    /// <summary>
+    /// Field allowlist for the <c>fields</c> sparse-projection parameter on
+    /// <c>search-symbol</c>. Mirrors the documented response shape so unknown
+    /// field names are rejected as a validation error.
+    /// </summary>
+    /// <remarks>
+    /// P1 ships the validator only. The projection itself lands in P6 when
+    /// every aggregation tool gains uniform <c>fields</c> handling
+    /// (<c>SearchSymbolResponse</c> is a sealed class today, not a record,
+    /// so <c>with</c>-based projection is not available here).
+    /// </remarks>
+    private static readonly FrozenSet<string> s_knownFields = FrozenSet.Create(
+        StringComparer.Ordinal,
+        "count",
+        "result",
+        "symbol",
+        "display_symbol",
+        "description",
+        "type",
+        "confidence_score",
+        "is_exact_match");
+
+    [GeneratedRegex(@"^[a-z_][a-z0-9_]{0,63}$", RegexOptions.Compiled)]
+    private static partial Regex FieldNameRegex();
+
+    public static ToolView ValidateView(string? view)
+    {
+        if (string.IsNullOrWhiteSpace(view))
+        {
+            return ToolView.Summary;
+        }
+
+        return view.Trim().ToLowerInvariant() switch
+        {
+            "summary" => ToolView.Summary,
+            "standard" => ToolView.Standard,
+            "full" => ToolView.Full,
+            _ => throw new ArgumentException(
+                "View must be one of: summary, standard, full.",
+                nameof(view))
+        };
+    }
+
+    public static IReadOnlyList<string>? ValidateFields(IReadOnlyList<string>? fields)
+    {
+        if (fields is null || fields.Count == 0)
+        {
+            return null;
+        }
+
+        foreach (var field in fields)
+        {
+            if (string.IsNullOrWhiteSpace(field) || !FieldNameRegex().IsMatch(field))
+            {
+                throw new ArgumentException(
+                    $"Field name '{field}' is invalid. Field names must be snake-case (a-z, 0-9, underscore), max 64 chars.",
+                    nameof(fields));
+            }
+
+            if (!s_knownFields.Contains(field))
+            {
+                throw new ArgumentException(
+                    $"Unknown field '{field}'. Allowed: {string.Join(", ", s_knownFields)}.",
+                    nameof(fields));
+            }
+        }
+
+        return fields;
     }
 }

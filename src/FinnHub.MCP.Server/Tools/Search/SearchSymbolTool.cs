@@ -7,6 +7,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
@@ -24,7 +25,7 @@ public sealed class SearchSymbolTool(
 {
     /// <summary>
     /// Executes a financial-symbol search against the FinnHub provider and returns
-    /// the matching instruments wrapped in an application-level <see cref="Result{T}"/>.
+    /// the matching instruments wrapped in the standard tool response envelope.
     /// </summary>
     /// <remarks>
     /// <para>
@@ -38,31 +39,20 @@ public sealed class SearchSymbolTool(
     /// yields the same logical result and produces no side effects on the provider.
     /// </para>
     /// </remarks>
-    /// <param name="query">
-    /// The search term — typically a ticker, company name, ISIN, or CUSIP. Must be
-    /// non-empty after trimming and contain only letters, digits, spaces, dashes,
-    /// underscores, or periods (max 500 chars).
-    /// </param>
-    /// <param name="exchange">
-    /// Optional uppercase exchange code (e.g. <c>"US"</c>, <c>"L"</c>). When supplied,
-    /// results are restricted to that venue. Must match <c>[A-Z0-9\-_]{1,50}</c>.
-    /// </param>
-    /// <param name="limit">
-    /// Optional cap on the number of results to return. Defaults to <c>10</c>; valid
-    /// range is <c>1..100</c> inclusive.
-    /// </param>
-    /// <param name="cancellationToken">
-    /// Token used to cancel the in-flight search. Cancellation is propagated to the
-    /// HTTP layer and re-thrown to the caller.
-    /// </param>
+    /// <param name="query">The search term — ticker, company name, ISIN, or CUSIP.</param>
+    /// <param name="exchange">Optional uppercase exchange code (e.g. <c>"US"</c>).</param>
+    /// <param name="limit">Optional cap on the number of results (default 10, max 100).</param>
+    /// <param name="view">Response detail level. See <see cref="ToolView"/>.</param>
+    /// <param name="fields">Optional sparse field projection.</param>
+    /// <param name="cancellationToken">Token used to cancel the in-flight search.</param>
     /// <returns>
-    /// A <see cref="Result{T}"/> wrapping the matching <see cref="SearchSymbolResponse"/>.
-    /// On provider-level failures (timeout, transport, deserialization) the result
-    /// reports an error category instead of throwing.
+    /// A <see cref="ToolResponseEnvelope{T}"/> wrapping the matching
+    /// <see cref="SearchSymbolResponse"/>, with <c>next_actions</c> populated when
+    /// the top result is an exact match.
     /// </returns>
     /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="query"/> or <paramref name="exchange"/> fails
-    /// validation.
+    /// Thrown when <paramref name="query"/>, <paramref name="exchange"/>,
+    /// <paramref name="view"/>, or <paramref name="fields"/> fails validation.
     /// </exception>
     /// <exception cref="ArgumentOutOfRangeException">
     /// Thrown when <paramref name="limit"/> is outside the valid range.
@@ -78,13 +68,17 @@ public sealed class SearchSymbolTool(
         Destructive = false,
         OpenWorld = true)]
     [Description(Constants.Tools.SearchSymbols.Description)]
-    public async Task<Result<SearchSymbolResponse>> SearchSymbolAsync(
+    public async Task<ToolResponseEnvelope<SearchSymbolResponse>> SearchSymbolAsync(
         [Description(Constants.Tools.SearchSymbols.Parameters.QueryDescription)]
         string query,
         [Description(Constants.Tools.SearchSymbols.Parameters.ExchangeDescription)]
         string? exchange = null,
         [Description(Constants.Tools.SearchSymbols.Parameters.LimitDescription)]
         int? limit = null,
+        [Description(Constants.Tools.SearchSymbols.Parameters.ViewDescription)]
+        string? view = null,
+        [Description(Constants.Tools.SearchSymbols.Parameters.FieldsDescription)]
+        string[]? fields = null,
         CancellationToken cancellationToken = default)
     {
         var stopwatch = Stopwatch.StartNew();
@@ -97,10 +91,12 @@ public sealed class SearchSymbolTool(
             var validatedQuery = SearchInputValidator.ValidateQuery(query);
             var validatedExchange = SearchInputValidator.ValidateExchange(exchange);
             var validatedLimit = SearchInputValidator.ValidateLimit(limit);
+            var validatedView = SearchInputValidator.ValidateView(view);
+            _ = SearchInputValidator.ValidateFields(fields);
 
             logger.LogDebug(
-                "Executing search with query: '{Query}', exchange: '{Exchange}', limit: {Limit}",
-                validatedQuery, validatedExchange, validatedLimit);
+                "Executing search with query: '{Query}', exchange: '{Exchange}', limit: {Limit}, view: {View}",
+                validatedQuery, validatedExchange, validatedLimit, validatedView);
 
             var symbolSearchQuery = new SearchSymbolQueryBuilder()
                 .WithQuery(validatedQuery)
@@ -108,13 +104,17 @@ public sealed class SearchSymbolTool(
                 .WithLimit(validatedLimit)
                 .Build();
 
-            var results = await searchService.SearchSymbolAsync(symbolSearchQuery, cancellationToken);
+            var result = await searchService.SearchSymbolAsync(symbolSearchQuery, cancellationToken);
 
             logger.LogInformation(
                 "Search completed successfully. Found {Count} results in {ElapsedMs}ms",
-                results.Data?.TotalCount, stopwatch.ElapsedMilliseconds);
+                result.Data?.TotalCount, stopwatch.ElapsedMilliseconds);
 
-            return results;
+            return EnvelopeFactory.FromResult(
+                result,
+                validatedView,
+                nextActions: BuildNextActions(result, validatedQuery),
+                explanation: BuildExplanation(result, validatedQuery));
         }
         catch (OperationCanceledException ex)
         {
@@ -136,5 +136,57 @@ public sealed class SearchSymbolTool(
             stopwatch.Stop();
             logger.LogTrace("Finished executing '{Tool}' in {ElapsedMs}ms.", toolName, stopwatch.ElapsedMilliseconds);
         }
+    }
+
+    /// <summary>
+    /// Builds server-suggested follow-up tool calls when the top result clearly
+    /// matches the user's query — either by case-insensitive symbol equality or by
+    /// a high confidence score. The named tools (<c>get-company-profile</c>,
+    /// <c>get-price-summary</c>, <c>get-news-pulse</c>) are not yet registered;
+    /// they land in a later phase. The envelope is forward-compatible: clients
+    /// are expected to ignore unknown tool names in <c>next_actions</c>.
+    /// </summary>
+    private static IReadOnlyList<NextAction> BuildNextActions(
+        Result<SearchSymbolResponse> result,
+        string query)
+    {
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return [];
+        }
+
+        var exact = result.Data.Symbols.FirstOrDefault(s =>
+            !string.IsNullOrWhiteSpace(s.Symbol)
+            && (string.Equals(s.Symbol, query, StringComparison.OrdinalIgnoreCase)
+                || s.ConfidenceScore >= 0.95d));
+
+        if (exact is null)
+        {
+            return [];
+        }
+
+        var args = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["symbol"] = exact.Symbol
+        };
+
+        return
+        [
+            new NextAction("get-company-profile", args, "fetch profile, sector, and market-cap context"),
+            new NextAction("get-price-summary", args, "summary stats for the latest range"),
+            new NextAction("get-news-pulse", args, "sentiment and top headlines")
+        ];
+    }
+
+    private static string BuildExplanation(Result<SearchSymbolResponse> result, string query)
+    {
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return $"No matches for '{query}'.";
+        }
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"Found {result.Data.TotalCount} match(es) for '{query}'.");
     }
 }
