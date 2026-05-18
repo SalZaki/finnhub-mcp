@@ -9,8 +9,10 @@ using System.Reflection;
 using DotNetEnv;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
+using FinnHub.MCP.Server.Application.Tokens;
 using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
+using FinnHub.MCP.Server.Middleware;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.AspNetCore.Mvc;
@@ -66,6 +68,7 @@ builder.Services
 builder.Services.RegisterInfrastructure();
 
 builder.Services.AddTransient<ISearchService, SearchService>();
+builder.Services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
 
 var mcpBuilder = builder.Services.AddMcpServer(options =>
 {
@@ -76,7 +79,7 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
         Version = version
     };
 })
-.WithTools<SearchSymbolTool>()
+.WithWrappedTools<SearchSymbolTool>()
 .WithResources<ExchangesResource>();
 
 if (isStdio)
