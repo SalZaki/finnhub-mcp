@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.12.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.3...v1.12.0) (2026-05-18)
+
+
+### ✨ Features
+
+* add char-count token estimator ([81014e7](https://github.com/SalZaki/finnhub-mcp/commit/81014e7710e803a5fe36a80ef557b68fc8fa322d))
+* add IToolResponseEnvelope and shared models ([070252f](https://github.com/SalZaki/finnhub-mcp/commit/070252f46cbb9aa613d94d7878b04e89eb7f78d5))
+* add tool invocation middleware via DelegatingMcpServerTool ([4584bfd](https://github.com/SalZaki/finnhub-mcp/commit/4584bfd514ece865b0d4eb100e7f2f3aecad94f1))
+* **P1:** tool-shape contract + retrofit search-symbol to envelope ([4ceeed4](https://github.com/SalZaki/finnhub-mcp/commit/4ceeed4ec7b7e7bc7b27969302fda3598273a140))
+
+
+### 🐛 Bug Fixes
+
+* patch approx_tokens when SDK only populates Content text ([34d5220](https://github.com/SalZaki/finnhub-mcp/commit/34d52202950d5614ffe78e9522c66930cd962183))
+
+
+### ♻️ Refactoring
+
+* retrofit search-symbol to new envelope contract ([6c5f7c9](https://github.com/SalZaki/finnhub-mcp/commit/6c5f7c9f621c755d799db796b576bdef2d24a8dc))
+
 ## [1.11.3](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.2...v1.11.3) (2026-05-18)
 
 
