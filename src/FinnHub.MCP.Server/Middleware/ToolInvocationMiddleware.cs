@@ -31,7 +31,7 @@ namespace FinnHub.MCP.Server.Middleware;
 /// model receives a structured error instead of an oversized payload.
 /// </para>
 /// </remarks>
-internal sealed class ToolInvocationMiddleware(
+public sealed class ToolInvocationMiddleware(
     McpServerTool innerTool,
     ITokenEstimator estimator,
     ILogger<ToolInvocationMiddleware> logger) : DelegatingMcpServerTool(innerTool)

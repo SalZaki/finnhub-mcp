@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Tools.Search;
 using Xunit;
 
@@ -81,5 +82,70 @@ public class SearchInputValidatorTests
         {
             Assert.Equal(expected, SearchInputValidator.ValidateLimit(input));
         }
+    }
+
+    [Theory]
+    [InlineData(null, ToolView.Summary, false)]
+    [InlineData("", ToolView.Summary, false)]
+    [InlineData("   ", ToolView.Summary, false)]
+    [InlineData("summary", ToolView.Summary, false)]
+    [InlineData("SUMMARY", ToolView.Summary, false)]
+    [InlineData("Standard", ToolView.Standard, false)]
+    [InlineData("full", ToolView.Full, false)]
+    [InlineData("  full  ", ToolView.Full, false)]
+    [InlineData("verbose", ToolView.Summary, true)]
+    [InlineData("compact", ToolView.Summary, true)]
+    public void ValidateView_HandlesVariousInputs(string? input, ToolView expected, bool shouldThrow)
+    {
+        if (shouldThrow)
+        {
+            Assert.Throws<ArgumentException>(() => SearchInputValidator.ValidateView(input));
+        }
+        else
+        {
+            Assert.Equal(expected, SearchInputValidator.ValidateView(input));
+        }
+    }
+
+    [Fact]
+    public void ValidateFields_NullOrEmpty_ReturnsNull()
+    {
+        Assert.Null(SearchInputValidator.ValidateFields(null));
+        Assert.Null(SearchInputValidator.ValidateFields([]));
+    }
+
+    [Fact]
+    public void ValidateFields_AllKnown_ReturnsSameList()
+    {
+        string[] fields = ["symbol", "description"];
+
+        var result = SearchInputValidator.ValidateFields(fields);
+
+        Assert.NotNull(result);
+        Assert.Equal(fields, result);
+    }
+
+    [Fact]
+    public void ValidateFields_UnknownField_Throws()
+    {
+        string[] fields = ["symbol", "bogus"];
+
+        Assert.Throws<ArgumentException>(() => SearchInputValidator.ValidateFields(fields));
+    }
+
+    [Fact]
+    public void ValidateFields_UppercaseField_Throws()
+    {
+        string[] fields = ["SYMBOL"];
+
+        Assert.Throws<ArgumentException>(() => SearchInputValidator.ValidateFields(fields));
+    }
+
+    [Fact]
+    public void ValidateFields_OverLengthField_Throws()
+    {
+        string[] fields = [new string('a', 65)];
+
+        Assert.Throws<ArgumentException>(() => SearchInputValidator.ValidateFields(fields));
     }
 }
