@@ -93,6 +93,23 @@ public sealed class ToolInvocationMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_TextOnlyResult_PatchesApproxTokens()
+    {
+        // The SDK's AIFunctionMcpServerTool emits the envelope into Content[0].Text
+        // without populating StructuredContent. Regression coverage: the middleware
+        // must still patch approx_tokens via the text path.
+        var inner = MakeTextOnlyTool(SmallEnvelopeJson(approxTokens: 0));
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(456), this._logger);
+
+        var result = await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
+
+        Assert.Null(result.StructuredContent);
+        var text = ((TextContentBlock)result.Content[0]).Text;
+        var node = JsonNode.Parse(text)!.AsObject();
+        Assert.Equal(456, (int?)node["approx_tokens"]);
+    }
+
+    [Fact]
     public async Task InvokeAsync_EmitsStructuredLog()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
@@ -119,6 +136,14 @@ public sealed class ToolInvocationMiddlewareTests
                 IsError = false
             }));
     }
+
+    private static FakeMcpServerTool MakeTextOnlyTool(string envelopeJson) =>
+        new("test-tool", (_, _) =>
+            ValueTask.FromResult(new CallToolResult
+            {
+                Content = [new TextContentBlock { Text = envelopeJson }],
+                IsError = false
+            }));
 
     private static RequestContext<CallToolRequestParams> MakeRequest(string? view = null)
     {

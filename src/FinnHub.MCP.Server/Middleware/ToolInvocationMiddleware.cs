@@ -124,24 +124,28 @@ public sealed class ToolInvocationMiddleware(
 
     private static void PatchApproxTokens(CallToolResult result, int approxTokens)
     {
-        if (result.StructuredContent is not { } element)
-        {
-            return;
-        }
+        var sourceJson = result.StructuredContent is { } element
+            ? element.GetRawText()
+            : result.Content.Count > 0 && result.Content[0] is TextContentBlock src
+                ? src.Text
+                : null;
 
-        if (JsonNode.Parse(element.GetRawText()) is not JsonObject obj)
+        if (sourceJson is null || JsonNode.Parse(sourceJson) is not JsonObject obj)
         {
             return;
         }
 
         obj[ApproxTokensKey] = approxTokens;
-
         var patched = obj.ToJsonString();
-        result.StructuredContent = JsonSerializer.Deserialize<JsonElement>(patched);
 
-        if (result.Content.Count > 0 && result.Content[0] is TextContentBlock text)
+        if (result.StructuredContent is not null)
         {
-            text.Text = patched;
+            result.StructuredContent = JsonSerializer.Deserialize<JsonElement>(patched);
+        }
+
+        if (result.Content.Count > 0 && result.Content[0] is TextContentBlock dst)
+        {
+            dst.Text = patched;
         }
     }
 
