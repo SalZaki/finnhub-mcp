@@ -17,5 +17,8 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>FinnHub.MCP.Server.Application.Tests.Unit</_Parameter1>
     </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>FinnHub.MCP.Server.Infrastructure</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 </Project>
