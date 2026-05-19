@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
+using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
@@ -32,7 +33,25 @@ public sealed class SearchServiceTests
     {
         this._searchApiClient = Substitute.For<ISearchApiClient>();
         ILogger<SearchService> logger = Substitute.For<ILogger<SearchService>>();
-        this._service = new SearchService(this._searchApiClient, logger);
+
+        // Pass-through cache substitute — invokes the factory unconditionally and returns its
+        // result. P2 T7 will replace this with a stateful FakeFinnHubCache that exercises
+        // cache-hit and cache-miss paths; for the legacy SearchService tests we only need the
+        // upstream call to flow through.
+        var cache = Substitute.For<IFinnHubCache>();
+        cache.GetOrCreateAsync(
+                Arg.Any<string>(),
+                Arg.Any<CacheTier>(),
+                Arg.Any<Func<CancellationToken, ValueTask<SearchSymbolResponse>>>(),
+                Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                var factory = callInfo.ArgAt<Func<CancellationToken, ValueTask<SearchSymbolResponse>>>(2);
+                var ct = callInfo.ArgAt<CancellationToken>(3);
+                return factory(ct);
+            });
+
+        this._service = new SearchService(this._searchApiClient, cache, logger);
     }
 
     /// <summary>

@@ -43,6 +43,7 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(FinnHubSearchResponse))]
+[JsonSerializable(typeof(SearchSymbolResponse))]
 [JsonSerializable(typeof(ToolView))]
 [JsonSerializable(typeof(NextAction))]
 [JsonSerializable(typeof(RateLimitInfo))]

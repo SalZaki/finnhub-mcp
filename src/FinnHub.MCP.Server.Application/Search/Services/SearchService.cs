@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Clients;
@@ -17,8 +18,18 @@ namespace FinnHub.MCP.Server.Application.Search.Services;
 /// Provides a high-level service for searching financial symbols via the configured search API client.
 /// This service handles validation, exception translation, logging, and standardized result formatting.
 /// </summary>
+/// <remarks>
+/// <para>
+/// Routes upstream calls through <see cref="IFinnHubCache"/> at the <see cref="CacheTier.News"/> tier
+/// so identical queries within the configured TTL short-circuit the Finnhub HTTP call. Cache-key
+/// canonicalization lowercases the query and uppercases the exchange to match the upstream's
+/// case-insensitive behaviour. The per-invocation <c>QueryId</c> correlation identifier is
+/// deliberately excluded from the cache key.
+/// </para>
+/// </remarks>
 public sealed class SearchService(
     ISearchApiClient searchApiClient,
+    IFinnHubCache cache,
     ILogger<SearchService> logger)
     : ISearchService
 {
@@ -42,7 +53,13 @@ public sealed class SearchService(
 
         try
         {
-            var response = await searchApiClient.SearchSymbolAsync(query, cancellationToken);
+            var cacheKey = BuildCacheKey(query);
+
+            var response = await cache.GetOrCreateAsync(
+                cacheKey,
+                CacheTier.News,
+                async ct => await searchApiClient.SearchSymbolAsync(query, ct),
+                cancellationToken);
 
             logger.Log(LogLevel.Information, "Retrieved {ResponseTotalCount} symbols for query: {Query}",
                 response.TotalCount, query);
@@ -76,5 +93,14 @@ public sealed class SearchService(
             logger.Log(LogLevel.Error, ex, "Unexpected error occurred while searching symbols for query: {Query}", query.Query);
             throw;
         }
+    }
+
+    private static string BuildCacheKey(SearchSymbolQuery query)
+    {
+        var normQuery = query.Query.Trim().ToLowerInvariant();
+        var normExchange = string.IsNullOrWhiteSpace(query.Exchange)
+            ? "*"
+            : query.Exchange.Trim().ToUpperInvariant();
+        return $"search-symbol:q={normQuery}:ex={normExchange}:lim={query.Limit}";
     }
 }
