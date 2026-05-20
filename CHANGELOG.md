@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.13.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.12.0...v1.13.0) (2026-05-20)
+
+
+### ✨ Features
+
+* add CacheTier enum and CacheOptions with tiered TTLs ([f2a8d61](https://github.com/SalZaki/finnhub-mcp/commit/f2a8d616a0de538e97c86f9fbdfd41797b5917d0))
+* add HybridCache-backed IFinnHubCache implementation ([8c9ea2b](https://github.com/SalZaki/finnhub-mcp/commit/8c9ea2b182e48d9120e7f9249998060fd1a1d407))
+* add IFinnHubCache abstraction and CacheKey helper ([060589d](https://github.com/SalZaki/finnhub-mcp/commit/060589d4e0e0163c1bcf08e238d730ea23d9d7e5))
+* **P2:** HybridCache layer with tiered TTLs ([f84f2a9](https://github.com/SalZaki/finnhub-mcp/commit/f84f2a90924c6b870f07844e1e1e281c367867b8))
+* route SearchService through IFinnHubCache ([24dec59](https://github.com/SalZaki/finnhub-mcp/commit/24dec598095e91f83ce51e78fd04d6be55c8ff2a))
+
 ## [1.12.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.11.3...v1.12.0) (2026-05-18)
 
 
