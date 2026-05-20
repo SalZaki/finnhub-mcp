@@ -8,6 +8,7 @@
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
+using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -18,13 +19,15 @@ namespace FinnHub.MCP.Server.Tests.Unit.Tools.Search;
 public sealed class SearchSymbolToolTests
 {
     private readonly ISearchService _service = Substitute.For<ISearchService>();
+    private readonly ISymbolResolver _resolver = Substitute.For<ISymbolResolver>();
     private readonly ILogger<SearchSymbolTool> _logger = Substitute.For<ILogger<SearchSymbolTool>>();
 
     [Fact]
     public async Task SearchSymbolAsync_WithoutView_DefaultsToSummary()
     {
         this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.5)]);
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        this.SetupResolver("AAPL", 0.5);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         var envelope = await tool.SearchSymbolAsync("apple");
 
@@ -35,7 +38,8 @@ public sealed class SearchSymbolToolTests
     public async Task SearchSymbolAsync_ExplicitStandardView_Honored()
     {
         this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.5)]);
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        this.SetupResolver("AAPL", 0.5);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         var envelope = await tool.SearchSymbolAsync("apple", view: "standard");
 
@@ -45,7 +49,7 @@ public sealed class SearchSymbolToolTests
     [Fact]
     public async Task SearchSymbolAsync_InvalidView_Throws()
     {
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             tool.SearchSymbolAsync("apple", view: "verbose"));
@@ -54,7 +58,7 @@ public sealed class SearchSymbolToolTests
     [Fact]
     public async Task SearchSymbolAsync_UnknownField_Throws()
     {
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             tool.SearchSymbolAsync("apple", fields: ["bogus"]));
@@ -64,7 +68,8 @@ public sealed class SearchSymbolToolTests
     public async Task SearchSymbolAsync_QueryEqualsSymbol_PopulatesNextActions()
     {
         this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.5)]);
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        this.SetupResolver("AAPL", 1.0);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         var envelope = await tool.SearchSymbolAsync("AAPL");
 
@@ -79,7 +84,8 @@ public sealed class SearchSymbolToolTests
     public async Task SearchSymbolAsync_HighConfidence_PopulatesNextActions()
     {
         this.SetupSuccess([Stock("MSFT", "Microsoft Corp.", confidence: 0.97)]);
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        this.SetupResolver("MSFT", 0.97);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         var envelope = await tool.SearchSymbolAsync("microsoft");
 
@@ -91,7 +97,8 @@ public sealed class SearchSymbolToolTests
     public async Task SearchSymbolAsync_NoExactMatchAndLowConfidence_NextActionsEmpty()
     {
         this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.4)]);
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        this.SetupResolver("AAPL", 0.4);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         var envelope = await tool.SearchSymbolAsync("appll");
 
@@ -103,7 +110,8 @@ public sealed class SearchSymbolToolTests
     {
         this._service.SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Returns(new Result<SearchSymbolResponse>().Failure("not found", ResultErrorType.NotFound));
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        this.SetupResolver("ZZZZ", 1.0);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         var envelope = await tool.SearchSymbolAsync("zzzz");
 
@@ -117,7 +125,8 @@ public sealed class SearchSymbolToolTests
     public async Task SearchSymbolAsync_Success_DefaultsSentimentSourceAndPremium()
     {
         this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.5)]);
-        var tool = new SearchSymbolTool(this._service, this._logger);
+        this.SetupResolver("AAPL", 1.0);
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
         var envelope = await tool.SearchSymbolAsync("AAPL");
 
@@ -125,10 +134,34 @@ public sealed class SearchSymbolToolTests
         Assert.False(envelope.Premium);
     }
 
+    [Fact]
+    public async Task SearchSymbolAsync_ResolverFailure_StillReturnsSuccessEnvelopeButEmptyNextActions()
+    {
+        // Upstream search succeeds; the resolver fails (e.g. its own upstream call timed out,
+        // or no canonical could be picked). The tool envelope must still surface the search
+        // results, but next_actions stays empty because there's no canonical to key off.
+        this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.5)]);
+        this._resolver.ResolveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<ResolvedSymbol>().Failure(
+                "no canonical pick", ResultErrorType.NotFound));
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
+
+        var envelope = await tool.SearchSymbolAsync("AAPL");
+
+        Assert.True(envelope.IsSuccess);
+        Assert.NotNull(envelope.Data);
+        Assert.Empty(envelope.NextActions);
+    }
+
     private void SetupSuccess(IReadOnlyList<StockSymbol> symbols) =>
         this._service.SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Returns(new Result<SearchSymbolResponse>().Success(
                 new SearchSymbolResponse { Symbols = symbols }));
+
+    private void SetupResolver(string canonical, double confidence) =>
+        this._resolver.ResolveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<ResolvedSymbol>().Success(
+                new ResolvedSymbol(canonical, canonical, Exchange: null, confidence, Candidates: [])));
 
     private static StockSymbol Stock(string symbol, string description, double confidence) => new()
     {

@@ -11,6 +11,7 @@ using System.Globalization;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
+using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Common;
 
 namespace FinnHub.MCP.Server.Tools.Search;
@@ -21,6 +22,7 @@ namespace FinnHub.MCP.Server.Tools.Search;
 [McpServerToolType]
 public sealed class SearchSymbolTool(
     ISearchService searchService,
+    ISymbolResolver symbolResolver,
     ILogger<SearchSymbolTool> logger)
 {
     /// <summary>
@@ -110,10 +112,12 @@ public sealed class SearchSymbolTool(
                 "Search completed successfully. Found {Count} results in {ElapsedMs}ms",
                 result.Data?.TotalCount, stopwatch.ElapsedMilliseconds);
 
+            var resolved = await symbolResolver.ResolveAsync(validatedQuery, cancellationToken);
+
             return EnvelopeFactory.FromResult(
                 result,
                 validatedView,
-                nextActions: BuildNextActions(result, validatedQuery),
+                nextActions: BuildNextActions(result, resolved),
                 explanation: BuildExplanation(result, validatedQuery));
         }
         catch (OperationCanceledException ex)
@@ -139,35 +143,37 @@ public sealed class SearchSymbolTool(
     }
 
     /// <summary>
-    /// Builds server-suggested follow-up tool calls when the top result clearly
-    /// matches the user's query — either by case-insensitive symbol equality or by
-    /// a high confidence score. The named tools (<c>get-company-profile</c>,
-    /// <c>get-price-summary</c>, <c>get-news-pulse</c>) are not yet registered;
-    /// they land in a later phase. The envelope is forward-compatible: clients
-    /// are expected to ignore unknown tool names in <c>next_actions</c>.
+    /// Builds server-suggested follow-up tool calls when the resolver has identified a
+    /// high-confidence canonical for the user's query (Confidence ≥ 0.95). The follow-up
+    /// tools (<c>get-company-profile</c>, <c>get-price-summary</c>, <c>get-news-pulse</c>)
+    /// are not yet registered; they land in a later phase. The envelope is forward-
+    /// compatible: clients are expected to ignore unknown tool names in <c>next_actions</c>.
     /// </summary>
+    /// <remarks>
+    /// The resolver's three fast-paths emit Confidence = 1.0, so structurally complete
+    /// inputs (<c>AAPL</c>, <c>AAPL.US</c>, <c>NASDAQ:AAPL</c>) always populate
+    /// <c>next_actions</c>. Ambiguous inputs (<c>apple</c>) populate only when Finnhub's
+    /// ConfidenceScore on the top match clears the threshold. The <c>args.symbol</c>
+    /// value is always the resolver's <see cref="ResolvedSymbol.Canonical"/> — never
+    /// the raw user input — so downstream tools receive a normalised ticker.
+    /// </remarks>
     private static IReadOnlyList<NextAction> BuildNextActions(
         Result<SearchSymbolResponse> result,
-        string query)
+        Result<ResolvedSymbol> resolved)
     {
         if (!result.IsSuccess || result.Data is null)
         {
             return [];
         }
 
-        var exact = result.Data.Symbols.FirstOrDefault(s =>
-            !string.IsNullOrWhiteSpace(s.Symbol)
-            && (string.Equals(s.Symbol, query, StringComparison.OrdinalIgnoreCase)
-                || s.ConfidenceScore >= 0.95d));
-
-        if (exact is null)
+        if (!resolved.IsSuccess || resolved.Data is null || resolved.Data.Confidence < 0.95d)
         {
             return [];
         }
 
         var args = new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["symbol"] = exact.Symbol
+            ["symbol"] = resolved.Data.Canonical
         };
 
         return

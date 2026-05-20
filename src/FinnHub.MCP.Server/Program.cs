@@ -9,6 +9,7 @@ using System.Reflection;
 using DotNetEnv;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
+using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Application.Tokens;
 using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
@@ -80,6 +81,7 @@ builder.Services
 builder.Services.RegisterInfrastructure();
 
 builder.Services.AddTransient<ISearchService, SearchService>();
+builder.Services.AddTransient<ISymbolResolver, SymbolResolver>();
 builder.Services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
 
 var mcpBuilder = builder.Services.AddMcpServer(options =>
