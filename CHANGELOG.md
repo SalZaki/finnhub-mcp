@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.14.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.13.1...v1.14.0) (2026-05-20)
+
+
+### ✨ Features
+
+* add ResolvedSymbol record and ISymbolResolver interface ([9165327](https://github.com/SalZaki/finnhub-mcp/commit/9165327e6897a73f1577ab3222802c9763ad45a9))
+* add SymbolResolver with fast-path and cached ambiguous lookup ([b0c18fb](https://github.com/SalZaki/finnhub-mcp/commit/b0c18fbc409aa76601584b2226f567d315f19c7c))
+* **P3:** symbol resolver service ([817625a](https://github.com/SalZaki/finnhub-mcp/commit/817625a4df3f3bad91c2dc9d42d1cf567eba90d5))
+
+
+### ♻️ Refactoring
+
+* route search-symbol next-actions through symbol resolver ([d1be65d](https://github.com/SalZaki/finnhub-mcp/commit/d1be65d4a2741e50565375c22df4ec4079cb4d15))
+
 ## [1.13.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.13.0...v1.13.1) (2026-05-20)
 
 
