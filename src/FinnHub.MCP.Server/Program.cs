@@ -21,15 +21,17 @@ var assembly = Assembly.GetEntryAssembly();
 var applicationName = assembly?.GetCustomAttribute<AssemblyTitleAttribute>()?.Title ?? $"finnhub-mcp-server-{Guid.NewGuid()}";
 var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion.Split('+')[0] ?? "1.0.0";
 
-if (!args.Contains("--urls"))
+var isStdio = args.Contains("--stdio");
+
+// STDIO transport never binds HTTP — skip the default --urls injection so two
+// concurrent stdio instances don't fight over port 8080.
+if (!isStdio && !args.Contains("--urls"))
 {
     args = args
         .Append("--urls")
         .Append($"http://localhost:{8080}/")
         .ToArray();
 }
-
-var isStdio = args.Contains("--stdio");
 
 var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 {
@@ -39,7 +41,11 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 
 if (builder.Environment.IsDevelopment())
 {
-    Env.TraversePath().Load();
+    // Defer to launcher-supplied env vars (Claude Code -e flags, container env, k8s
+    // secrets). The .env file only fills gaps for locals that haven't been set —
+    // never overrides them. Without this, a stale .env in the workspace can
+    // silently override a freshly-rotated API key passed by the launcher.
+    new LoadOptions(setEnvVars: true, clobberExistingVars: false, onlyExactPath: false).Load();
 }
 
 var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
