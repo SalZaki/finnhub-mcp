@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.13.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.13.0...v1.13.1) (2026-05-20)
+
+
+### 🐛 Bug Fixes
+
+* skip --urls injection in stdio mode ([75e54c8](https://github.com/SalZaki/finnhub-mcp/commit/75e54c8751df13a0377395953209c984d530db88))
+* stop --urls 8080 collision and .env env-var clobbering in stdio dev flow ([b1ace7f](https://github.com/SalZaki/finnhub-mcp/commit/b1ace7fac7b2a0418af7069ad21d1489265e2401))
+* stop .env from clobbering launcher-supplied env vars ([5f9699d](https://github.com/SalZaki/finnhub-mcp/commit/5f9699de8e01136ed8395af2e09dd2d5df2af2ca))
+
 ## [1.13.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.12.0...v1.13.0) (2026-05-20)
 
 
