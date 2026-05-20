@@ -6,11 +6,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Search.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -24,6 +24,7 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Search.
 public sealed class SearchServiceTests
 {
     private readonly ISearchApiClient _searchApiClient;
+    private readonly FakeFinnHubCache _cache;
     private readonly SearchService _service;
 
     /// <summary>
@@ -33,25 +34,8 @@ public sealed class SearchServiceTests
     {
         this._searchApiClient = Substitute.For<ISearchApiClient>();
         ILogger<SearchService> logger = Substitute.For<ILogger<SearchService>>();
-
-        // Pass-through cache substitute — invokes the factory unconditionally and returns its
-        // result. P2 T7 will replace this with a stateful FakeFinnHubCache that exercises
-        // cache-hit and cache-miss paths; for the legacy SearchService tests we only need the
-        // upstream call to flow through.
-        var cache = Substitute.For<IFinnHubCache>();
-        cache.GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<SearchSymbolResponse>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(callInfo =>
-            {
-                var factory = callInfo.ArgAt<Func<CancellationToken, ValueTask<SearchSymbolResponse>>>(2);
-                var ct = callInfo.ArgAt<CancellationToken>(3);
-                return factory(ct);
-            });
-
-        this._service = new SearchService(this._searchApiClient, cache, logger);
+        this._cache = new FakeFinnHubCache();
+        this._service = new SearchService(this._searchApiClient, this._cache, logger);
     }
 
     /// <summary>
@@ -293,5 +277,112 @@ public sealed class SearchServiceTests
         Assert.True(result.Data.SearchDuration > TimeSpan.Zero);
         Assert.True(result.Data.SearchTimestamp >= startTime);
         Assert.True(result.Data.SearchTimestamp <= endTime);
+    }
+
+    /// <summary>
+    /// Verifies that two identical queries hit the upstream exactly once — the
+    /// second call short-circuits via the cache. <c>QueryId</c> differs between
+    /// the two queries to prove it is excluded from the cache key.
+    /// </summary>
+    [Fact]
+    public async Task SearchSymbolsAsync_TwoIdenticalCalls_HitUpstreamExactlyOnce()
+    {
+        // Arrange
+        var response = new SearchSymbolResponse
+        {
+            Symbols = [new StockSymbol { Symbol = "AAPL", DisplaySymbol = "AAPL", Description = "Apple", Type = "Common Stock" }]
+        };
+        this._searchApiClient
+            .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
+            .Returns(response);
+
+        var queryA = new SearchSymbolQuery { QueryId = "call-1", Query = "AAPL" };
+        var queryB = new SearchSymbolQuery { QueryId = "call-2", Query = "AAPL" };
+
+        // Act
+        var first = await this._service.SearchSymbolAsync(queryA, CancellationToken.None);
+        var second = await this._service.SearchSymbolAsync(queryB, CancellationToken.None);
+
+        // Assert
+        Assert.True(first.IsSuccess);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(first.Data!.TotalCount, second.Data!.TotalCount);
+        Assert.Equal(1, this._cache.FactoryInvocationCount);
+        await this._searchApiClient.Received(1).SearchSymbolAsync(
+            Arg.Any<SearchSymbolQuery>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Verifies that distinct queries each hit the upstream — different query
+    /// inputs produce different cache slots.
+    /// </summary>
+    [Fact]
+    public async Task SearchSymbolsAsync_DifferentInputs_HitUpstreamPerCall()
+    {
+        // Arrange
+        this._searchApiClient
+            .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo => new SearchSymbolResponse
+            {
+                Symbols = [new StockSymbol
+                {
+                    Symbol = callInfo.ArgAt<SearchSymbolQuery>(0).Query,
+                    DisplaySymbol = "X",
+                    Description = "X",
+                    Type = "Common Stock"
+                }]
+            });
+
+        var queryA = new SearchSymbolQuery { QueryId = "a", Query = "AAPL" };
+        var queryB = new SearchSymbolQuery { QueryId = "b", Query = "NVDA" };
+
+        // Act
+        await this._service.SearchSymbolAsync(queryA, CancellationToken.None);
+        await this._service.SearchSymbolAsync(queryB, CancellationToken.None);
+
+        // Assert
+        Assert.Equal(2, this._cache.FactoryInvocationCount);
+        await this._searchApiClient.Received(2).SearchSymbolAsync(
+            Arg.Any<SearchSymbolQuery>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Verifies that a transient upstream failure does not poison the cache —
+    /// the next call retries the upstream and can succeed.
+    /// </summary>
+    [Fact]
+    public async Task SearchSymbolsAsync_FactoryThrows_DoesNotCacheException()
+    {
+        // Arrange
+        var query = new SearchSymbolQuery { QueryId = "t", Query = "AAPL" };
+        var successResponse = new SearchSymbolResponse
+        {
+            Symbols = [new StockSymbol { Symbol = "AAPL", DisplaySymbol = "AAPL", Description = "Apple", Type = "Common Stock" }]
+        };
+
+        var callCount = 0;
+        this._searchApiClient
+            .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                callCount++;
+                if (callCount == 1)
+                {
+                    throw new ApiClientHttpException("boom", HttpStatusCode.ServiceUnavailable);
+                }
+                return successResponse;
+            });
+
+        // Act
+        var first = await this._service.SearchSymbolAsync(query, CancellationToken.None);
+        var second = await this._service.SearchSymbolAsync(query, CancellationToken.None);
+
+        // Assert
+        Assert.False(first.IsSuccess);
+        Assert.Equal("ServiceUnavailable", first.ErrorType);
+        Assert.True(second.IsSuccess);
+        Assert.Equal(2, callCount);
     }
 }
