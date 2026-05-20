@@ -8,9 +8,12 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
+using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Clients;
+using FinnHub.MCP.Server.Infrastructure.Caching;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -33,6 +36,19 @@ public static class ServiceCollectionExtension
     /// <param name="services">The service collection to which services are added.</param>
     public static void RegisterInfrastructure(this IServiceCollection services)
     {
+        services.AddHybridCache(options =>
+        {
+            options.MaximumPayloadBytes = 1 * 1024 * 1024;
+            options.MaximumKeyLength = 1024;
+            options.DefaultEntryOptions = new HybridCacheEntryOptions
+            {
+                Expiration = TimeSpan.FromMinutes(1),
+                LocalCacheExpiration = TimeSpan.FromMinutes(1)
+            };
+        });
+
+        services.AddSingleton<IFinnHubCache, FinnHubHybridCache>();
+
         services.AddHttpClient<ISearchApiClient, FinnHubSearchApiClient>("FinnHub-Search-Client", (provider, client) =>
             {
                 var options = provider.GetRequiredService<IOptions<FinnHubOptions>>().Value;

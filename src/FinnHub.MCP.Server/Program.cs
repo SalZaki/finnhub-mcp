@@ -65,6 +65,12 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+builder.Services
+    .AddOptions<CacheOptions>()
+    .Bind(builder.Configuration.GetSection("Cache"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 builder.Services.RegisterInfrastructure();
 
 builder.Services.AddTransient<ISearchService, SearchService>();

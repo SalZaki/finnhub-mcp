@@ -20,6 +20,7 @@
 
   <ItemGroup Label="Microsoft">
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0"/>
+    <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(MicrosoftExtensionsVersion)" />

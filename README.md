@@ -196,6 +196,22 @@ A response that exceeds its declared view's token ceiling is rebuilt by the tool
 
 Returns the list of stock exchanges available through the provider as `application/json`.
 
+### Response caching
+
+Every Application service is fronted by `Microsoft.Extensions.Caching.Hybrid.HybridCache` with per-endpoint TTL tiers. Identical requests within the tier's TTL short-circuit the upstream Finnhub call.
+
+Tiers (defaults shown):
+
+| Tier | Default TTL | Used for |
+|---|---|---|
+| `Quote` | 10s | Live market data |
+| `News` | 60s | News articles, sentiment, symbol search |
+| `Financials` | 1h | Reported financials, KPI snapshots |
+| `Profile` | 24h | Company profiles, peer lists |
+| `Exchanges` | 7d | Stock exchange catalogues |
+
+TTLs are tunable in `appsettings.json` under the `Cache` section. Bad values (zero or out-of-range) fail startup validation. Cache keys are namespaced with a `tenant=shared` prefix today; a future BYOK milestone partitions per user without a key-shape migration. See `.planning/specs/01-product-surface.md` §3 P2 for the full design.
+
 ## ⚙️ Configuration
 
 Configuration is loaded from `appsettings.json`, an optional environment-specific `appsettings.{Environment}.json`, environment variables, and command-line arguments — in that order. The `FINNHUB_API_KEY` environment variable, if present, overrides `FinnHub:ApiKey`.
