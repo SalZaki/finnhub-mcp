@@ -41,7 +41,11 @@ var builder = WebApplication.CreateBuilder(new WebApplicationOptions
 
 if (builder.Environment.IsDevelopment())
 {
-    Env.TraversePath().Load();
+    // Defer to launcher-supplied env vars (Claude Code -e flags, container env, k8s
+    // secrets). The .env file only fills gaps for locals that haven't been set —
+    // never overrides them. Without this, a stale .env in the workspace can
+    // silently override a freshly-rotated API key passed by the launcher.
+    new LoadOptions(setEnvVars: true, clobberExistingVars: false, onlyExactPath: false).Load();
 }
 
 var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
