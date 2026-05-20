@@ -134,6 +134,25 @@ public sealed class SearchSymbolToolTests
         Assert.False(envelope.Premium);
     }
 
+    [Fact]
+    public async Task SearchSymbolAsync_ResolverFailure_StillReturnsSuccessEnvelopeButEmptyNextActions()
+    {
+        // Upstream search succeeds; the resolver fails (e.g. its own upstream call timed out,
+        // or no canonical could be picked). The tool envelope must still surface the search
+        // results, but next_actions stays empty because there's no canonical to key off.
+        this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.5)]);
+        this._resolver.ResolveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<ResolvedSymbol>().Failure(
+                "no canonical pick", ResultErrorType.NotFound));
+        var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
+
+        var envelope = await tool.SearchSymbolAsync("AAPL");
+
+        Assert.True(envelope.IsSuccess);
+        Assert.NotNull(envelope.Data);
+        Assert.Empty(envelope.NextActions);
+    }
+
     private void SetupSuccess(IReadOnlyList<StockSymbol> symbols) =>
         this._service.SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
             .Returns(new Result<SearchSymbolResponse>().Success(
