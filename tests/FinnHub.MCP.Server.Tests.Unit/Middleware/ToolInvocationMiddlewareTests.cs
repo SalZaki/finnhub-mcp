@@ -8,6 +8,7 @@
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Middleware;
 using FinnHub.MCP.Server.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging;
@@ -20,6 +21,11 @@ namespace FinnHub.MCP.Server.Tests.Unit.Middleware;
 
 public sealed class ToolInvocationMiddlewareTests
 {
+    // Real cold-start tracker — Snapshot() returns null, matching the pre-P4 envelope behaviour
+    // that the existing tests were written against. P4 T6 adds dedicated rate-limit tests
+    // that arrange a non-null snapshot via Update().
+    private readonly IRateLimitTracker _rateLimitTracker = new RateLimitTracker();
+
     private readonly ILogger<ToolInvocationMiddleware> _logger =
         Substitute.For<ILogger<ToolInvocationMiddleware>>();
 
@@ -27,7 +33,7 @@ public sealed class ToolInvocationMiddlewareTests
     public async Task InvokeAsync_DelegatesToInnerTool()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
-        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(10), this._logger);
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(10), this._rateLimitTracker, this._logger);
 
         await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
 
@@ -38,7 +44,7 @@ public sealed class ToolInvocationMiddlewareTests
     public async Task InvokeAsync_UnderBudget_PatchesApproxTokens()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson(approxTokens: 0));
-        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(123), this._logger);
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(123), this._rateLimitTracker, this._logger);
 
         var result = await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
 
@@ -51,7 +57,7 @@ public sealed class ToolInvocationMiddlewareTests
     public async Task InvokeAsync_OverSummaryBudget_DowngradesToFailureEnvelope()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
-        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(501), this._logger);
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(501), this._rateLimitTracker, this._logger);
 
         var result = await middleware.InvokeAsync(MakeRequest("summary"), CancellationToken.None);
 
@@ -68,7 +74,7 @@ public sealed class ToolInvocationMiddlewareTests
     public async Task InvokeAsync_FullView_NoCeilingEnforced()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
-        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(100_000), this._logger);
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(100_000), this._rateLimitTracker, this._logger);
 
         var result = await middleware.InvokeAsync(MakeRequest("full"), CancellationToken.None);
 
@@ -82,8 +88,8 @@ public sealed class ToolInvocationMiddlewareTests
     public async Task InvokeAsync_StandardView_HonoursStandardCeiling()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
-        var underStandard = new ToolInvocationMiddleware(inner, new StubTokenEstimator(1_500), this._logger);
-        var overStandard = new ToolInvocationMiddleware(inner, new StubTokenEstimator(2_001), this._logger);
+        var underStandard = new ToolInvocationMiddleware(inner, new StubTokenEstimator(1_500), this._rateLimitTracker, this._logger);
+        var overStandard = new ToolInvocationMiddleware(inner, new StubTokenEstimator(2_001), this._rateLimitTracker, this._logger);
 
         var under = await underStandard.InvokeAsync(MakeRequest("standard"), CancellationToken.None);
         var over = await overStandard.InvokeAsync(MakeRequest("standard"), CancellationToken.None);
@@ -99,7 +105,7 @@ public sealed class ToolInvocationMiddlewareTests
         // without populating StructuredContent. Regression coverage: the middleware
         // must still patch approx_tokens via the text path.
         var inner = MakeTextOnlyTool(SmallEnvelopeJson(approxTokens: 0));
-        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(456), this._logger);
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(456), this._rateLimitTracker, this._logger);
 
         var result = await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
 
@@ -113,7 +119,7 @@ public sealed class ToolInvocationMiddlewareTests
     public async Task InvokeAsync_EmitsStructuredLog()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
-        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(42), this._logger);
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(42), this._rateLimitTracker, this._logger);
 
         await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
 

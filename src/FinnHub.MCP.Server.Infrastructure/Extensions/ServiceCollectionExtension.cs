@@ -10,9 +10,11 @@ using System.Net.Http.Headers;
 using System.Net.Mime;
 using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Options;
+using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
+using FinnHub.MCP.Server.Infrastructure.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -49,6 +51,9 @@ public static class ServiceCollectionExtension
 
         services.AddSingleton<IFinnHubCache, FinnHubHybridCache>();
 
+        services.AddSingleton<IRateLimitTracker, RateLimitTracker>();
+        services.AddTransient<RateLimitHeaderHandler>();
+
         services.AddHttpClient<ISearchApiClient, FinnHubSearchApiClient>("FinnHub-Search-Client", (provider, client) =>
             {
                 var options = provider.GetRequiredService<IOptions<FinnHubOptions>>().Value;
@@ -69,6 +74,9 @@ public static class ServiceCollectionExtension
                 MaxConnectionsPerServer = 10,
                 AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
             })
+            // Rate-limit header observation runs outermost so it sees the post-retry response
+            // Polly ultimately surfaces to the caller, not the intermediate failed attempts.
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
             .AddPolicyHandler((provider, _) =>
             {
                 var logger = provider.GetRequiredService<ILogger<FinnHubSearchApiClient>>();

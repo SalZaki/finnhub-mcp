@@ -8,6 +8,7 @@
 using System.Diagnostics;
 using System.Text.Json.Nodes;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Tokens;
 
 namespace FinnHub.MCP.Server.Middleware;
@@ -34,9 +35,13 @@ namespace FinnHub.MCP.Server.Middleware;
 public sealed class ToolInvocationMiddleware(
     McpServerTool innerTool,
     ITokenEstimator estimator,
+    IRateLimitTracker rateLimitTracker,
     ILogger<ToolInvocationMiddleware> logger) : DelegatingMcpServerTool(innerTool)
 {
     private const string ApproxTokensKey = "approx_tokens";
+    private const string RateLimitKey = "rate_limit";
+    private const string RateLimitRemainingKey = "remaining";
+    private const string RateLimitResetAtKey = "reset_at";
 
     /// <inheritdoc />
     public override async ValueTask<CallToolResult> InvokeAsync(
@@ -53,6 +58,9 @@ public sealed class ToolInvocationMiddleware(
 
         stopwatch.Stop();
 
+        // Read the tracker snapshot exactly once per InvokeAsync (R5) so both success
+        // and budget-exceeded envelopes carry coherent metadata.
+        var rateLimit = rateLimitTracker.Snapshot();
         var serialized = SerializeStructuredContent(result);
         var approxTokens = estimator.EstimateTokens(serialized);
         var ceiling = ToolBudget.CeilingFor(declaredView);
@@ -63,10 +71,10 @@ public sealed class ToolInvocationMiddleware(
                 "tool {ToolName} view={View} tokens={ApproxTokens} budget={Budget} budget_exceeded=true duration_ms={ElapsedMs}",
                 toolName, declaredView, approxTokens, ceiling, stopwatch.ElapsedMilliseconds);
 
-            return BuildBudgetExceededResult(approxTokens, ceiling);
+            return BuildBudgetExceededResult(approxTokens, ceiling, rateLimit);
         }
 
-        PatchApproxTokens(result, approxTokens);
+        PatchEnvelopeMetadata(result, approxTokens, rateLimit);
 
         logger.LogInformation(
             "tool {ToolName} view={View} tokens={ApproxTokens} budget_exceeded=false duration_ms={ElapsedMs}",
@@ -122,7 +130,7 @@ public sealed class ToolInvocationMiddleware(
         return string.Empty;
     }
 
-    private static void PatchApproxTokens(CallToolResult result, int approxTokens)
+    private static void PatchEnvelopeMetadata(CallToolResult result, int approxTokens, RateLimitInfo? rateLimit)
     {
         var sourceJson = result.StructuredContent is { } element
             ? element.GetRawText()
@@ -136,6 +144,8 @@ public sealed class ToolInvocationMiddleware(
         }
 
         obj[ApproxTokensKey] = approxTokens;
+        obj[RateLimitKey] = BuildRateLimitNode(rateLimit);
+
         var patched = obj.ToJsonString();
 
         if (result.StructuredContent is not null)
@@ -149,7 +159,7 @@ public sealed class ToolInvocationMiddleware(
         }
     }
 
-    private static CallToolResult BuildBudgetExceededResult(int approxTokens, int ceiling)
+    private static CallToolResult BuildBudgetExceededResult(int approxTokens, int ceiling, RateLimitInfo? rateLimit)
     {
         var envelope = new JsonObject
         {
@@ -163,7 +173,7 @@ public sealed class ToolInvocationMiddleware(
                 $"Response would be ~{approxTokens} tokens against a {ceiling}-token ceiling. " +
                 "Retry with view=standard, view=full, or a sparser fields projection.",
             ["approx_tokens"] = approxTokens,
-            ["rate_limit"] = null,
+            ["rate_limit"] = BuildRateLimitNode(rateLimit),
             ["sentiment_source"] = null,
             ["premium"] = false
         };
@@ -176,5 +186,24 @@ public sealed class ToolInvocationMiddleware(
             Content = [new TextContentBlock { Text = json }],
             IsError = true
         };
+    }
+
+    private static JsonObject? BuildRateLimitNode(RateLimitInfo? rateLimit)
+    {
+        if (rateLimit is null)
+        {
+            return null;
+        }
+
+        var node = new JsonObject();
+        if (rateLimit.Remaining is { } remaining)
+        {
+            node[RateLimitRemainingKey] = remaining;
+        }
+        if (rateLimit.ResetAt is { } resetAt)
+        {
+            node[RateLimitResetAtKey] = resetAt.ToString("O");
+        }
+        return node;
     }
 }
