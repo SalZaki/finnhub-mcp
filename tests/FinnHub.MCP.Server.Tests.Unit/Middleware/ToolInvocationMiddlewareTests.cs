@@ -116,6 +116,44 @@ public sealed class ToolInvocationMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_TrackerHasSnapshot_PatchesRateLimitIntoEnvelope()
+    {
+        var tracker = new RateLimitTracker();
+        var reset = DateTimeOffset.UtcNow.AddMinutes(1);
+        tracker.Update(33, reset);
+
+        var inner = MakeInnerTool(SmallEnvelopeJson());
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(10), tracker, this._logger);
+
+        var result = await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
+
+        var node = ReadEnvelope(result);
+        var rateLimit = node!["rate_limit"]?.AsObject();
+        Assert.NotNull(rateLimit);
+        Assert.Equal(33, (int?)rateLimit["remaining"]);
+        Assert.Equal(reset.ToString("O"), (string?)rateLimit["reset_at"]);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_OverBudgetWithSnapshot_FailureEnvelopeAlsoCarriesRateLimit()
+    {
+        var tracker = new RateLimitTracker();
+        var reset = DateTimeOffset.UtcNow.AddMinutes(1);
+        tracker.Update(5, reset);
+
+        var inner = MakeInnerTool(SmallEnvelopeJson());
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(501), tracker, this._logger);
+
+        var result = await middleware.InvokeAsync(MakeRequest("summary"), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        var node = ReadEnvelope(result);
+        var rateLimit = node!["rate_limit"]?.AsObject();
+        Assert.NotNull(rateLimit);
+        Assert.Equal(5, (int?)rateLimit["remaining"]);
+    }
+
+    [Fact]
     public async Task InvokeAsync_EmitsStructuredLog()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
