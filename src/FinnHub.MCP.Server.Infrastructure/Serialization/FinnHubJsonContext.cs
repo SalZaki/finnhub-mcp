@@ -7,6 +7,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
@@ -54,4 +55,7 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(GetPeersResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetPeersResponse>))]
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(FinnHubFinancialsResponse))]
+[JsonSerializable(typeof(GetFinancialsSnapshotResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetFinancialsSnapshotResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;
