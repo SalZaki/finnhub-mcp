@@ -194,6 +194,29 @@ public sealed class SearchServiceTests
     }
 
     /// <summary>
+    /// Verifies that a 403 from the client maps to a PremiumRequired result rather
+    /// than the generic ServiceUnavailable mapping.
+    /// </summary>
+    [Fact]
+    public async Task SearchSymbolsAsync_ReturnsPremiumRequiredResult_WhenClientThrowsPremiumRequiredException()
+    {
+        // Arrange
+        var query = new SearchSymbolQuery { QueryId = "test", Query = "AAPL" };
+
+        this._searchApiClient
+            .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ApiClientPremiumRequiredException("/api/v1/search", "premium body"));
+
+        // Act
+        var result = await this._service.SearchSymbolAsync(query, CancellationToken.None);
+
+        // Assert
+        Assert.False(result.IsSuccess);
+        Assert.Equal("PremiumRequired", result.ErrorType);
+        Assert.Contains("premium plan", result.ErrorMessage);
+    }
+
+    /// <summary>
     /// Verifies that service handles timeout exceptions appropriately.
     /// </summary>
     [Fact]

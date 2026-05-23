@@ -45,7 +45,9 @@ public class MockHttpMessageHandler : HttpMessageHandler
             throw this._exception;
         }
 
-        return Task.FromResult(this._response ?? new HttpResponseMessage(HttpStatusCode.OK));
+        var response = this._response ?? new HttpResponseMessage(HttpStatusCode.OK);
+        response.RequestMessage = request;
+        return Task.FromResult(response);
     }
 
     protected override void Dispose(bool disposing)

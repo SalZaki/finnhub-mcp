@@ -302,6 +302,22 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     }
 
     [Fact]
+    public async Task SearchSymbolAsync_WithForbiddenResponse_ThrowsPremiumRequiredException()
+    {
+        // Arrange
+        var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
+        this._messageHandler.SetResponse(HttpStatusCode.Forbidden, "{\"error\":\"You don't have access to this resource.\"}");
+
+        // Act & Assert
+        var ex = await Assert.ThrowsAsync<ApiClientPremiumRequiredException>(() =>
+            this._sut.SearchSymbolAsync(query, CancellationToken.None));
+
+        Assert.Contains("/api/v1/search", ex.Endpoint, StringComparison.Ordinal);
+        Assert.Contains("premium plan", ex.Message, StringComparison.Ordinal);
+        Assert.Equal("API_CLIENT_PREMIUM_REQUIRED", ex.ErrorCode);
+    }
+
+    [Fact]
     public async Task SearchSymbolAsync_WithInvalidJson_ThrowsJsonException()
     {
         // Arrange
