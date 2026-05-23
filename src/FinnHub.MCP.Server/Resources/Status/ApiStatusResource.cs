@@ -1,4 +1,4 @@
-// ---------------------------------------------------------------------------------------------------------------------
+﻿// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -7,7 +7,6 @@
 
 using System.ComponentModel;
 using System.Net.Mime;
-using System.Text.Json;
 using FinnHub.MCP.Server.Application.RateLimiting;
 
 namespace FinnHub.MCP.Server.Resources.Status;
