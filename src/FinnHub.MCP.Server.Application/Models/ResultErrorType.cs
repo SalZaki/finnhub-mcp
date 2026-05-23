@@ -86,5 +86,18 @@ public enum ResultErrorType
     /// response. Recovery is typically to retry the call with a broader view
     /// (<c>standard</c> or <c>full</c>) or with a sparser <c>fields</c> projection.
     /// </remarks>
-    BudgetExceeded
+    BudgetExceeded,
+
+    /// <summary>
+    /// Indicates that the upstream endpoint requires a premium Finnhub plan that
+    /// the configured API key does not have access to.
+    /// </summary>
+    /// <remarks>
+    /// Surfaced when Finnhub returns HTTP 403 Forbidden. This is a permanent failure
+    /// for the current key — retrying will not succeed. Polly retry and circuit
+    /// breaker policies are configured to bypass 403 for this reason. Consumers
+    /// should treat the envelope's <c>premium = true</c> flag as a signal to either
+    /// upgrade the key or surface a "premium-only" hint to the user.
+    /// </remarks>
+    PremiumRequired
 }

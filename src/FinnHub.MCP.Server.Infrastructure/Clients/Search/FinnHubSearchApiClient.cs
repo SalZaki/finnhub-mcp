@@ -259,7 +259,8 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
     /// <param name="response">The response with error status.</param>
     /// <param name="contentStream">The stream containing response body.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <exception cref="ApiClientHttpException">Thrown with enriched details about the error.</exception>
+    /// <exception cref="ApiClientPremiumRequiredException">Thrown when Finnhub returns 403 (premium-locked endpoint).</exception>
+    /// <exception cref="ApiClientHttpException">Thrown with enriched details about any other error.</exception>
     private async Task HandleErrorResponseAsync(
         HttpResponseMessage response,
         Stream contentStream,
@@ -269,6 +270,16 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
 
         using var reader = new StreamReader(contentStream);
         var errorBody = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
+
+        if (statusCode == HttpStatusCode.Forbidden)
+        {
+            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
+            this._logger.LogWarning(
+                "Premium-locked endpoint from FinnHub API: {Endpoint} - {Content}",
+                endpoint,
+                errorBody);
+            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
+        }
 
         if ((int)statusCode >= 400 && (int)statusCode < 500)
         {

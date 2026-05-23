@@ -68,6 +68,15 @@ public sealed class SearchService(
                 ? new Result<SearchSymbolResponse>().Success(response)
                 : new Result<SearchSymbolResponse>().Failure("No search symbol(s) found.", ResultErrorType.NotFound);
         }
+        catch (ApiClientPremiumRequiredException ex)
+        {
+            logger.LogWarning(
+                ex,
+                "Premium-only endpoint hit for query: {Query} (Endpoint: {Endpoint})",
+                query.Query,
+                ex.Endpoint);
+            return new Result<SearchSymbolResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+        }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error from FinnHub API for query: {Query} (Status: {StatusCode})", query.Query, ex.StatusCode.ToString());

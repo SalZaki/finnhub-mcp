@@ -95,10 +95,15 @@ public static class ServiceCollectionExtension
     /// </summary>
     /// <param name="logger">The logger to record retry attempts and reasons.</param>
     /// <returns>An asynchronous retry policy for HTTP responses.</returns>
-    private static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(ILogger logger)
+    /// <remarks>
+    /// HTTP 403 is excluded — Finnhub uses it to signal premium-locked endpoints, which is
+    /// a permanent failure for the current API key. Retrying wastes quota and delays the
+    /// typed <c>ApiClientPremiumRequiredException</c> the caller needs.
+    /// </remarks>
+    internal static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(ILogger logger)
     {
         return Policy<HttpResponseMessage>
-            .HandleResult(res => !res.IsSuccessStatusCode)
+            .HandleResult(res => !res.IsSuccessStatusCode && res.StatusCode != HttpStatusCode.Forbidden)
             .Or<HttpRequestException>()
             .Or<TaskCanceledException>()
             .WaitAndRetryAsync(
@@ -123,10 +128,15 @@ public static class ServiceCollectionExtension
     /// </summary>
     /// <param name="logger">The logger to record circuit breaker events.</param>
     /// <returns>An asynchronous circuit breaker policy for HTTP responses.</returns>
+    /// <remarks>
+    /// HTTP 403 is excluded for the same reason as the retry policy: premium-locked
+    /// endpoints are an expected, per-key permanent failure mode and must not trip the
+    /// breaker for the broader client.
+    /// </remarks>
     private static AsyncCircuitBreakerPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(ILogger logger)
     {
         return Policy<HttpResponseMessage>
-            .HandleResult(r => !r.IsSuccessStatusCode)
+            .HandleResult(r => !r.IsSuccessStatusCode && r.StatusCode != HttpStatusCode.Forbidden)
             .Or<HttpRequestException>()
             .CircuitBreakerAsync(
                 handledEventsAllowedBeforeBreaking: 3,
