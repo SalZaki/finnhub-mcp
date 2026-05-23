@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.15.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.14.0...v1.15.0) (2026-05-23)
+
+
+### ✨ Features
+
+* **P4:** rate-limit awareness on envelope + api-status resource ([730a563](https://github.com/SalZaki/finnhub-mcp/commit/730a563f274eab7866fbb69f534ad254da44072b))
+* surface Finnhub rate-limit on envelope and status resource ([ad39c08](https://github.com/SalZaki/finnhub-mcp/commit/ad39c080a63db74308af67cdb195bf40b4f66305))
+
+
+### 🐛 Bug Fixes
+
+* return JSON string from resource handlers so SDK marshals correctly ([890b205](https://github.com/SalZaki/finnhub-mcp/commit/890b205af30d7b118e355784a82fbac723e90f59))
+
 ## [1.14.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.13.1...v1.14.0) (2026-05-20)
 
 
