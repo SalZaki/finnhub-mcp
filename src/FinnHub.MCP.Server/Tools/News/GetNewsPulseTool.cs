@@ -70,6 +70,7 @@ public sealed class GetNewsPulseTool(
             return EnvelopeFactory.FromResult(
                 result,
                 validatedView,
+                nextActions: BuildNextActions(result, validatedSymbol),
                 explanation: BuildExplanation(result, validatedSymbol),
                 sentimentSource: result.Data?.SentimentSource);
         }
@@ -93,6 +94,22 @@ public sealed class GetNewsPulseTool(
             stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
+    }
+
+    private static IReadOnlyList<NextAction> BuildNextActions(Result<GetNewsPulseResponse> result, string symbol)
+    {
+        if (!result.IsSuccess || result.Data is null || result.Data.Count == 0)
+        {
+            return [];
+        }
+
+        var args = new Dictionary<string, string>(StringComparer.Ordinal) { ["symbol"] = symbol };
+
+        return
+        [
+            new NextAction("get-price-summary", args, "correlate sentiment with recent price action"),
+            new NextAction("get-financials-snapshot", args, "check fundamentals against the news flow")
+        ];
     }
 
     private static string BuildExplanation(Result<GetNewsPulseResponse> result, string symbol)
