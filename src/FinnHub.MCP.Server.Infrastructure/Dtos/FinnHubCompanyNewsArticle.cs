@@ -26,7 +26,8 @@ public sealed class FinnHubCompanyNewsArticle
     [JsonPropertyName("source")]
     public string? Source { get; init; }
 
-    /// <summary>Unix-epoch (seconds) publication time.</summary>
+    /// <summary>Unix-epoch (seconds) publication time. Always present in practice; nullable
+    /// to defend against upstream omitting it on edge-case articles (e.g. pre-publication previews).</summary>
     [JsonPropertyName("datetime")]
-    public long Datetime { get; init; }
+    public long? Datetime { get; init; }
 }

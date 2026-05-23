@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
+using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -141,6 +142,30 @@ public sealed class FinnHubFinancialsApiClientTests : IDisposable
         Assert.True(result.Raw!.ContainsKey("marketCapitalization"));
         Assert.True(result.Raw.ContainsKey("52WeekHigh"));
         Assert.False(result.Raw.ContainsKey("52WeekHighDate"));
+        Assert.False(result.Raw.ContainsKey("52WeekLowDate"));
+    }
+
+    /// <summary>
+    /// Real captured /stock/metric?metric=all response for AAPL (~234 kB, hundreds of
+    /// fields, mixed numeric KPIs + ISO date strings). This is the canary: if the parser
+    /// regresses to the synthetic-test-data failure mode we'll see it here first.
+    /// </summary>
+    [Fact]
+    public async Task GetSnapshotAsync_RealAaplResponse_ParsesAndFiltersDateKeysFromRaw()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("metric-AAPL"));
+
+        var result = await this._sut.GetSnapshotAsync(
+            new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "AAPL", IncludeRaw = true },
+            CancellationToken.None);
+
+        Assert.Equal("AAPL", result.Symbol);
+        Assert.NotNull(result.Beta);
+        Assert.NotNull(result.Week52High);
+
+        // Raw carries only the numeric subset — date strings (52WeekHighDate, etc.) must be excluded.
+        Assert.NotNull(result.Raw);
+        Assert.False(result.Raw!.ContainsKey("52WeekHighDate"));
         Assert.False(result.Raw.ContainsKey("52WeekLowDate"));
     }
 
