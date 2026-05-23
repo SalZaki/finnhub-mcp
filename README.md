@@ -35,19 +35,29 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 ## 🚧 Available & Upcoming MCP Capabilities
 
 ### ✅ Currently Available
-- **`search-symbol`** tool — search for financial symbols by ticker, company name, ISIN, or CUSIP, optionally filtered by exchange code (limit 1–100, default 10)
-- **`finnhub://resources/exchanges`** resource — catalog of stock exchanges (code, name, country, MIC, timezone, trading hours)
+
+**Tools (5):**
+- **`search-symbol`** — search for financial symbols by ticker, company name, ISIN, or CUSIP, optionally filtered by exchange code (limit 1–100, default 10). On a high-confidence exact match, suggests `get-news-pulse`, `get-financials-snapshot`, `get-price-summary`, and `get-peers` as next actions.
+- **`get-peers`** — peer ticker list for a symbol, optionally grouped by `industry` (default), `subindustry`, or `sector`. Summary view caps at 10 peers, standard at 25, full returns all.
+- **`get-financials-snapshot`** — curated 10-KPI snapshot (market cap, P/E, P/B, EPS, dividend yield, 52-week high/low, 52-week return, beta, revenue per share). `view=full` adds the raw upstream metric dictionary.
+- **`get-price-summary`** — aggregated price stats over a candle range (`min`, `max`, `mean`, `return_pct`, `vol`, `latest`). Period: `7d`, `30d` (default), `90d`, `1y`. `view=full` adds the raw OHLCV arrays.
+- **`get-news-pulse`** — news pulse over the past 7 days: sentiment score (when available), top 5 headlines, article count, week-over-week delta. Gracefully degrades sentiment when the upstream `/news-sentiment` endpoint is premium-locked.
+
+Every tool returns the standard token-budgeted envelope with cross-linked `next_actions` and the most-recent observed Finnhub rate-limit headers.
+
+**Resources (2):**
+- **`finnhub://resources/exchanges`** — catalog of stock exchanges (code, name, country, MIC, timezone, trading hours)
+- **`finnhub://resources/api-status`** — latest observed Finnhub upstream quota: `remaining`, `reset_at`, and a rolling 429 count
 
 ### 🔄 In Development
 - Wire `ExchangesResource` to the live Finnhub `/stock/exchange` endpoint
-- **Real-Time Quote Tool** — live prices for stocks, FX, and crypto
-- **Company Profile Tool** — company information and metrics
-- **Basic Financials Tool** — key financial metrics and ratios
+- **`get-quote`** — real-time price snapshot (current, change, percent_change, high/low/open, prev_close, timestamp)
+- **`get-company-profile`** — company information (name, ticker, country, currency, exchange, IPO, market cap, industry, sector)
 
 ### 📋 Planned
-- Earnings calendar, news & sentiment, insider trading, market status
+- Calendar tool (parameter-dispatched across earnings/IPO/economic), insider transactions, analyst recommendations
+- `search-tools` meta-tool for intent-based discovery (P7)
 - Technical indicators (RSI, MACD, moving averages)
-- Economic data and crypto market data
 - WebSocket transport for streaming Finnhub feeds
 
 ## 🚀 Getting Started
@@ -171,6 +181,38 @@ Parameters:
 - `limit` *(int, optional)* — 1–100, defaults to 10.
 - `view` *(string, optional)* — response detail level. One of `summary` (default, ~500-token ceiling), `standard` (~2000-token ceiling), `full` (no ceiling).
 - `fields` *(string[], optional)* — sparse projection over the documented response fields. Unknown field names are rejected as a validation error.
+
+### Tool: `get-peers`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker, e.g. `AAPL`. 1–20 chars, starts with A–Z.
+- `grouping` *(string, optional)* — `industry` (default), `subindustry`, or `sector`.
+- `view` *(string, optional)* — `summary` (top 10), `standard` (top 25), `full` (all).
+
+### Tool: `get-financials-snapshot`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker.
+- `view` *(string, optional)* — `summary`/`standard` (10 curated KPIs), `full` (KPIs + raw upstream metric dictionary).
+
+### Tool: `get-price-summary`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker.
+- `period` *(string, optional)* — `7d`, `30d` (default), `90d`, or `1y`. The `1y` window uses weekly resolution; the others use daily.
+- `view` *(string, optional)* — `summary`/`standard` (aggregated stats), `full` (stats + raw OHLCV arrays).
+
+### Tool: `get-news-pulse`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker.
+- `view` *(string, optional)* — `summary`/`standard` (top 5 headlines), `full` (all headlines from the past 7 days).
+
+Sentiment fields (`sentiment_score`, `bullish_percent`, `bearish_percent`, `sentiment_source`) are populated only when the upstream `/news-sentiment` endpoint is reachable; they fall back to `null` on premium-locked keys without failing the call.
 
 ### Tool response envelope
 

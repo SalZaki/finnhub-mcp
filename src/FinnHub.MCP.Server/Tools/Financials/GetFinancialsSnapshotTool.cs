@@ -68,6 +68,7 @@ public sealed class GetFinancialsSnapshotTool(
             return EnvelopeFactory.FromResult(
                 result,
                 validatedView,
+                nextActions: BuildNextActions(result, validatedSymbol),
                 explanation: BuildExplanation(result, validatedSymbol));
         }
         catch (OperationCanceledException ex)
@@ -90,6 +91,22 @@ public sealed class GetFinancialsSnapshotTool(
             stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
+    }
+
+    private static IReadOnlyList<NextAction> BuildNextActions(Result<GetFinancialsSnapshotResponse> result, string symbol)
+    {
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return [];
+        }
+
+        var args = new Dictionary<string, string>(StringComparer.Ordinal) { ["symbol"] = symbol };
+
+        return
+        [
+            new NextAction("get-peers", args, "compare this symbol's valuation to industry peers"),
+            new NextAction("get-price-summary", args, "check recent price action against these fundamentals")
+        ];
     }
 
     private static string BuildExplanation(Result<GetFinancialsSnapshotResponse> result, string symbol)
