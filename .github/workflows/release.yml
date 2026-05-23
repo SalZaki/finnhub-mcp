@@ -19,8 +19,35 @@ permissions:
   issues: write
 
 jobs:
+  validate:
+    name: ✅ Validate Release Branch
+    if: ${{ github.ref_name == 'release' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 📦 Restore
+        shell: bash
+        run: dotnet restore ./finnhub-mcp.sln
+
+      - name: 🎨 Format check
+        shell: bash
+        run: dotnet format ./finnhub-mcp.sln --verify-no-changes --no-restore
+
+      - name: 🧪 Test
+        shell: bash
+        run: dotnet test ./finnhub-mcp.sln --configuration Release --no-restore
+
   release:
     name: 📦 Create GitHub Release
+    needs: validate
     if: ${{ github.ref_name == 'release' }}
     runs-on: ubuntu-latest
     outputs:
@@ -40,33 +67,10 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
-  validate:
-    name: ✅ Validate Release
-    needs: release
-    if: ${{ needs.release.outputs.release_created == 'true' }}
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 📥 Checkout
-        uses: actions/checkout@v4
-
-      - name: 🧰 Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: 📦 Restore
-        shell: bash
-        run: dotnet restore ./finnhub-mcp.sln
-
-      - name: 🧪 Test
-        shell: bash
-        run: dotnet test ./finnhub-mcp.sln --configuration Release --no-restore
-
   build:
     name: 🔧 Build & Upload Artifacts
-    needs: [release, validate]
-    if: ${{ needs.release.outputs.release_created }}
+    needs: release
+    if: ${{ needs.release.outputs.release_created == 'true' }}
     strategy:
       fail-fast: true
       matrix:
