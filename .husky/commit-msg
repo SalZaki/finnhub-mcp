@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------------------------------------------------
+# Conventional-commit validator.
+# Rejects commits whose first line does not match the Conventional Commits spec
+# the release-please config in .release-please-config.json depends on.
+#
+# Allowed types are taken directly from release-please's changelog-sections.
+# Scope is optional; ! marks a breaking change; subject is 1–72 chars after the colon+space.
+# ---------------------------------------------------------------------------------------------------------------------
+
+. "$(dirname "$0")/_/husky.sh"
+
+# $1 is the path to the file holding the commit message (set by git).
+MSG_FILE="$1"
+FIRST_LINE="$(head -n1 "$MSG_FILE")"
+
+# Allow auto-generated messages git uses verbatim — no need to rewrite these.
+case "$FIRST_LINE" in
+  "Merge "*|"Revert "*|"fixup! "*|"squash! "*|"amend! "*)
+    exit 0
+    ;;
+esac
+
+PATTERN='^(feat|fix|perf|refactor|revert|style|build|ci|chore|docs|test)(\([a-z0-9._-]+\))?!?: .{1,72}$'
+
+if ! [[ "$FIRST_LINE" =~ $PATTERN ]]; then
+  echo
+  echo "❌ Commit message does not follow Conventional Commits."
+  echo
+  echo "   Got:       $FIRST_LINE"
+  echo "   Expected:  <type>(<optional scope>)<optional !>: <subject>"
+  echo
+  echo "   Allowed types: feat, fix, perf, refactor, revert, style,"
+  echo "                  build, ci, chore, docs, test"
+  echo
+  echo "   Examples:"
+  echo "     feat(p6c): add get-calendar tool"
+  echo "     fix(p6a): handle null in /quote response"
+  echo "     ci: gate releases through release branch"
+  echo "     feat!: drop support for net8"
+  echo
+  echo "   Reason: release-please reads these prefixes to compute version"
+  echo "   bumps and CHANGELOG entries. A non-conforming message breaks"
+  echo "   the release pipeline silently."
+  echo
+  exit 1
+fi
