@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.17.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.16.0...v1.17.0) (2026-05-23)
+
+
+### ✨ Features
+
+* **p6a:** add get-financials-snapshot — 10 curated KPIs ([9e40b63](https://github.com/SalZaki/finnhub-mcp/commit/9e40b63c2106fc2bfde2adc0e89a2babcf239372))
+* **p6a:** add get-financials-snapshot tool — 10 curated KPIs ([8c69f3c](https://github.com/SalZaki/finnhub-mcp/commit/8c69f3c2c9ce8060473fbb26378aa7d0b6e22e9a))
+* **p6a:** add get-peers tool — pattern reference for Wave A ([71c8cd6](https://github.com/SalZaki/finnhub-mcp/commit/71c8cd65d3b6d39985df4202d18d95d2080307a8))
+* **p6a:** add get-peers tool — peer ticker lookup for a symbol ([1044cda](https://github.com/SalZaki/finnhub-mcp/commit/1044cda2d8a5294eb42aa41795bc25b5a54f44c2))
+
 ## [1.16.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.15.0...v1.16.0) (2026-05-23)
 
 
