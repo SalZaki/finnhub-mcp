@@ -130,11 +130,24 @@ public static class ServiceCollectionExtension
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 
-    private static void ConfigureFinnHubClient(IServiceProvider provider, HttpClient client)
+    /// <summary>
+    /// Shared <see cref="HttpClient"/> configuration for every Finnhub-typed client.
+    /// </summary>
+    /// <remarks>
+    /// The trailing-slash normalization is load-bearing. Per RFC 3986, if <see cref="HttpClient.BaseAddress"/>
+    /// lacks a trailing slash, the last path segment is **replaced** when combined with a relative request URI:
+    /// <c>https://finnhub.io/api/v1</c> + <c>stock/profile2</c> → <c>https://finnhub.io/api/stock/profile2</c>
+    /// (the <c>/v1</c> is silently lost). Finnhub responds to that wrong URL with a 302 to its landing
+    /// page, the HttpClient follows the redirect, and our deserializer fails on the resulting HTML —
+    /// surfacing as <c>InvalidResponse</c> rather than a clean <c>ServiceUnavailable</c>.
+    /// We append the slash defensively so a configuration regression cannot reintroduce the bug.
+    /// </remarks>
+    internal static void ConfigureFinnHubClient(IServiceProvider provider, HttpClient client)
     {
         var options = provider.GetRequiredService<IOptions<FinnHubOptions>>().Value;
 
-        client.BaseAddress = new Uri(options.BaseUrl);
+        var baseUrl = options.BaseUrl.EndsWith('/') ? options.BaseUrl : options.BaseUrl + "/";
+        client.BaseAddress = new Uri(baseUrl);
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("FinnHub-MCP-Server", "1.0"));
         client.Timeout = TimeSpan.FromSeconds(30);
