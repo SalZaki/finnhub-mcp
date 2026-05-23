@@ -103,4 +103,28 @@ public sealed class ToolResponseEnvelopeTests
         Assert.Throws<ArgumentNullException>(() =>
             EnvelopeFactory.FromResult<SearchSymbolResponse>(null!));
     }
+
+    [Fact]
+    public void FromResult_PremiumRequiredFailure_AutoSetsPremiumFlag()
+    {
+        var result = new Result<SearchSymbolResponse>()
+            .Failure("premium-only", ResultErrorType.PremiumRequired);
+
+        var envelope = EnvelopeFactory.FromResult(result);
+
+        Assert.False(envelope.IsSuccess);
+        Assert.Equal("PremiumRequired", envelope.ErrorType);
+        Assert.True(envelope.Premium);
+    }
+
+    [Fact]
+    public void FromResult_NonPremiumFailure_LeavesPremiumFalse()
+    {
+        var result = new Result<SearchSymbolResponse>()
+            .Failure("nope", ResultErrorType.NotFound);
+
+        var envelope = EnvelopeFactory.FromResult(result);
+
+        Assert.False(envelope.Premium);
+    }
 }

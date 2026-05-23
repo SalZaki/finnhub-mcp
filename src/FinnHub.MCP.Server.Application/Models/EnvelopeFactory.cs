@@ -65,7 +65,7 @@ public static class EnvelopeFactory
     /// <param name="nextActions">Server-suggested follow-ups for the success branch.</param>
     /// <param name="explanation">Short summary of the payload for the consuming model.</param>
     /// <param name="sentimentSource">Source label for sentiment values, when applicable.</param>
-    /// <param name="premium">Whether the underlying endpoint required a premium key.</param>
+    /// <param name="premium">Whether the underlying endpoint required a premium key. Auto-derived from a <c>PremiumRequired</c> failure when not explicitly set.</param>
     public static ToolResponseEnvelope<T> FromResult<T>(
         Result<T> result,
         ToolView view = ToolView.Summary,
@@ -76,13 +76,16 @@ public static class EnvelopeFactory
     {
         ArgumentNullException.ThrowIfNull(result);
 
+        var parsedError = ParseErrorType(result.ErrorType);
+        var effectivePremium = premium || parsedError == ResultErrorType.PremiumRequired;
+
         return result.IsSuccess && result.Data is not null
-            ? Success(result.Data, view, nextActions, explanation, sentimentSource, premium)
+            ? Success(result.Data, view, nextActions, explanation, sentimentSource, effectivePremium)
             : Failure<T>(
                 result.ErrorMessage ?? "Operation failed.",
-                ParseErrorType(result.ErrorType),
+                parsedError,
                 view,
-                premium: premium);
+                premium: effectivePremium);
     }
 
     private static ResultErrorType ParseErrorType(string? errorType) =>
