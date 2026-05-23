@@ -73,6 +73,7 @@ public sealed class GetPriceSummaryTool(
             return EnvelopeFactory.FromResult(
                 result,
                 validatedView,
+                nextActions: BuildNextActions(result, validatedSymbol),
                 explanation: BuildExplanation(result, validatedSymbol));
         }
         catch (OperationCanceledException ex)
@@ -95,6 +96,22 @@ public sealed class GetPriceSummaryTool(
             stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
+    }
+
+    private static IReadOnlyList<NextAction> BuildNextActions(Result<GetPriceSummaryResponse> result, string symbol)
+    {
+        if (!result.IsSuccess || result.Data is null || result.Data.CandleCount == 0)
+        {
+            return [];
+        }
+
+        var args = new Dictionary<string, string>(StringComparer.Ordinal) { ["symbol"] = symbol };
+
+        return
+        [
+            new NextAction("get-news-pulse", args, "find news that may explain the price action"),
+            new NextAction("get-financials-snapshot", args, "check fundamentals against recent price moves")
+        ];
     }
 
     private static string BuildExplanation(Result<GetPriceSummaryResponse> result, string symbol)

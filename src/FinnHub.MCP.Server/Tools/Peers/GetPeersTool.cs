@@ -73,6 +73,7 @@ public sealed class GetPeersTool(
             return EnvelopeFactory.FromResult(
                 ProjectByView(result, validatedView),
                 validatedView,
+                nextActions: BuildNextActions(result, validatedSymbol),
                 explanation: BuildExplanation(result, validatedSymbol));
         }
         catch (OperationCanceledException ex)
@@ -123,6 +124,22 @@ public sealed class GetPeersTool(
         };
 
         return new Result<GetPeersResponse>().Success(projected);
+    }
+
+    private static IReadOnlyList<NextAction> BuildNextActions(Result<GetPeersResponse> result, string symbol)
+    {
+        if (!result.IsSuccess || result.Data is null || result.Data.TotalCount == 0)
+        {
+            return [];
+        }
+
+        var args = new Dictionary<string, string>(StringComparer.Ordinal) { ["symbol"] = symbol };
+
+        return
+        [
+            new NextAction("get-financials-snapshot", args, "compare this symbol's valuation to the peer set"),
+            new NextAction("get-news-pulse", args, "sentiment and headlines for this symbol")
+        ];
     }
 
     private static string BuildExplanation(Result<GetPeersResponse> result, string symbol)

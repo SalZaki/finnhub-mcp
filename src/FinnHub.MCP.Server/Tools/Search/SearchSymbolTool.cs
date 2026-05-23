@@ -144,10 +144,8 @@ public sealed class SearchSymbolTool(
 
     /// <summary>
     /// Builds server-suggested follow-up tool calls when the resolver has identified a
-    /// high-confidence canonical for the user's query (Confidence ≥ 0.95). The follow-up
-    /// tools (<c>get-company-profile</c>, <c>get-price-summary</c>, <c>get-news-pulse</c>)
-    /// are not yet registered; they land in a later phase. The envelope is forward-
-    /// compatible: clients are expected to ignore unknown tool names in <c>next_actions</c>.
+    /// high-confidence canonical (Confidence ≥ 0.95) for the user's query. Points at the
+    /// P6 Wave A research workflow: pulse, fundamentals, recent price action, peers.
     /// </summary>
     /// <remarks>
     /// The resolver's three fast-paths emit Confidence = 1.0, so structurally complete
@@ -178,9 +176,10 @@ public sealed class SearchSymbolTool(
 
         return
         [
-            new NextAction("get-company-profile", args, "fetch profile, sector, and market-cap context"),
-            new NextAction("get-price-summary", args, "summary stats for the latest range"),
-            new NextAction("get-news-pulse", args, "sentiment and top headlines")
+            new NextAction("get-news-pulse", args, "sentiment and top headlines from the past week"),
+            new NextAction("get-financials-snapshot", args, "10 curated valuation/profitability KPIs"),
+            new NextAction("get-price-summary", args, "min/max/mean/return/volatility over the last 30 days"),
+            new NextAction("get-peers", args, "industry peer list for comparison")
         ];
     }
 
