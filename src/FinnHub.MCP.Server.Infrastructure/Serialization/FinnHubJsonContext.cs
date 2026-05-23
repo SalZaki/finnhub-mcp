@@ -8,6 +8,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
@@ -50,4 +51,7 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(NextAction))]
 [JsonSerializable(typeof(RateLimitInfo))]
 [JsonSerializable(typeof(ToolResponseEnvelope<SearchSymbolResponse>))]
+[JsonSerializable(typeof(GetPeersResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetPeersResponse>))]
+[JsonSerializable(typeof(string[]))]
 public partial class FinnHubJsonContext : JsonSerializerContext;

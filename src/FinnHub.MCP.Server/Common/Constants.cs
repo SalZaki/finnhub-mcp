@@ -191,5 +191,64 @@ public static class Constants
                 Approx tokens: summary ~200, standard ~2000, full ~8000.
                 """;
         }
+
+        /// <summary>
+        /// Constants for the <c>get-peers</c> tool — peer ticker lookup for a symbol.
+        /// </summary>
+        public static class Peers
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-peers";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Peers";
+
+            /// <summary>
+            /// Parameter names and descriptions for <c>get-peers</c>.
+            /// </summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>Grouping parameter name.</summary>
+                public const string GroupingName = "grouping";
+
+                /// <summary>Grouping parameter description.</summary>
+                public const string GroupingDescription =
+                    "Peer grouping strategy: industry (default), subindustry, or sector.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>
+            /// Tool description registered with the MCP server.
+            /// </summary>
+            public const string Description =
+                """
+                Get the peer ticker list for a symbol — companies in the same industry, sub-industry, or sector.
+
+                ## Example:
+                - symbol='AAPL', grouping='industry'
+
+                ## Response Fields:
+                - peers (array of strings): peer ticker symbols
+                - grouping (string): echo of the grouping strategy
+                - total_count (int)
+                - has_results (bool)
+
+                ## Notes:
+                - summary view returns the top 10 peers; standard returns up to 25; full returns the complete array.
+
+                Approx tokens: summary ~80, standard ~200, full ~400.
+                """;
+        }
     }
 }

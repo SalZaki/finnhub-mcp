@@ -10,9 +10,12 @@ using System.Net.Http.Headers;
 using System.Net.Mime;
 using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Options;
+using FinnHub.MCP.Server.Application.Peers.Clients;
+using FinnHub.MCP.Server.Application.Peers.Services;
 using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
+using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
 using FinnHub.MCP.Server.Infrastructure.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -54,41 +57,45 @@ public static class ServiceCollectionExtension
         services.AddSingleton<IRateLimitTracker, RateLimitTracker>();
         services.AddTransient<RateLimitHeaderHandler>();
 
-        services.AddHttpClient<ISearchApiClient, FinnHubSearchApiClient>("FinnHub-Search-Client", (provider, client) =>
-            {
-                var options = provider.GetRequiredService<IOptions<FinnHubOptions>>().Value;
-
-                client.BaseAddress = new Uri(options.BaseUrl);
-                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
-                client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("FinnHub-MCP-Server", "1.0"));
-                client.Timeout = TimeSpan.FromSeconds(30);
-
-                if (!string.IsNullOrWhiteSpace(options.ApiKey))
-                {
-                    client.DefaultRequestHeaders.Add("X-Finnhub-Token", options.ApiKey);
-                }
-            })
-            .ConfigurePrimaryHttpMessageHandler(() => new SocketsHttpHandler
-            {
-                PooledConnectionLifetime = TimeSpan.FromMinutes(2),
-                MaxConnectionsPerServer = 10,
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
-            })
+        services.AddHttpClient<ISearchApiClient, FinnHubSearchApiClient>("FinnHub-Search-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
             // Rate-limit header observation runs outermost so it sees the post-retry response
             // Polly ultimately surfaces to the caller, not the intermediate failed attempts.
             .AddHttpMessageHandler<RateLimitHeaderHandler>()
-            .AddPolicyHandler((provider, _) =>
-            {
-                var logger = provider.GetRequiredService<ILogger<FinnHubSearchApiClient>>();
-                return GetRetryPolicy(logger);
-            })
-            .AddPolicyHandler((provider, _) =>
-            {
-                var logger = provider.GetRequiredService<ILogger<FinnHubSearchApiClient>>();
-                return GetCircuitBreakerPolicy(logger);
-            })
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubSearchApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubSearchApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IPeersService, PeersService>();
+        services.AddHttpClient<IPeersApiClient, FinnHubPeersApiClient>("FinnHub-Peers-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubPeersApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubPeersApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
+
+    private static void ConfigureFinnHubClient(IServiceProvider provider, HttpClient client)
+    {
+        var options = provider.GetRequiredService<IOptions<FinnHubOptions>>().Value;
+
+        client.BaseAddress = new Uri(options.BaseUrl);
+        client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
+        client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("FinnHub-MCP-Server", "1.0"));
+        client.Timeout = TimeSpan.FromSeconds(30);
+
+        if (!string.IsNullOrWhiteSpace(options.ApiKey))
+        {
+            client.DefaultRequestHeaders.Add("X-Finnhub-Token", options.ApiKey);
+        }
+    }
+
+    private static HttpMessageHandler BuildPrimaryHandler() => new SocketsHttpHandler
+    {
+        PooledConnectionLifetime = TimeSpan.FromMinutes(2),
+        MaxConnectionsPerServer = 10,
+        AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate
+    };
 
     /// <summary>
     /// Builds a retry policy using Polly with exponential backoff and logs each retry attempt.
