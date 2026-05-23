@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.16.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.15.0...v1.16.0) (2026-05-23)
+
+
+### ✨ Features
+
+* gate premium endpoints with typed 403 handling ([eb956f5](https://github.com/SalZaki/finnhub-mcp/commit/eb956f573476e72f77d82ee5bcb0adb38339169c))
+* **p5:** premium-endpoint gating via typed 403 handling ([b5f734a](https://github.com/SalZaki/finnhub-mcp/commit/b5f734a3b08422ae16b8a5976d87f18040d60386))
+
 ## [1.15.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.14.0...v1.15.0) (2026-05-23)
 
 
