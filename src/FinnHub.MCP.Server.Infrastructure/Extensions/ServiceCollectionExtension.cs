@@ -14,11 +14,14 @@ using FinnHub.MCP.Server.Application.Financials.Services;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Peers.Clients;
 using FinnHub.MCP.Server.Application.Peers.Services;
+using FinnHub.MCP.Server.Application.Prices.Clients;
+using FinnHub.MCP.Server.Application.Prices.Services;
 using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
 using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
+using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
 using FinnHub.MCP.Server.Infrastructure.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -83,6 +86,14 @@ public static class ServiceCollectionExtension
             .AddHttpMessageHandler<RateLimitHeaderHandler>()
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubFinancialsApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubFinancialsApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IPricesService, PricesService>();
+        services.AddHttpClient<IPricesApiClient, FinnHubPricesApiClient>("FinnHub-Prices-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubPricesApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubPricesApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 

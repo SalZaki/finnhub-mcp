@@ -303,5 +303,64 @@ public static class Constants
                 Approx tokens: summary ~200, standard ~200, full ~3000.
                 """;
         }
+
+        /// <summary>Constants for the <c>get-price-summary</c> tool — aggregated price stats over a candle range.</summary>
+        public static class PriceSummary
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-price-summary";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Price Summary";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>Period parameter name.</summary>
+                public const string PeriodName = "period";
+
+                /// <summary>Period parameter description.</summary>
+                public const string PeriodDescription =
+                    "Lookback window: 7d, 30d (default), 90d, or 1y.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Aggregate the price candle range for a symbol into curated summary stats —
+                min, max, mean, total return %, volatility (population stdev of closes), and the most-recent close.
+
+                ## Example:
+                - symbol='AAPL', period='30d'
+
+                ## Response Fields:
+                - symbol (string)
+                - period (string): echo of the requested window
+                - resolution (string): Finnhub resolution code (D|W)
+                - min, max, mean (double): from low/high/close arrays
+                - return_pct (double): (last_close - first_close) / first_close * 100
+                - vol (double): population stdev of closing prices
+                - latest (object): { close, timestamp_utc }
+                - candle_count (int)
+                - candles (object, optional): full OHLCV arrays, populated only when view = "full"
+
+                ## Notes:
+                - 1y period uses weekly resolution to stay within token budget; 7d/30d/90d use daily.
+
+                Approx tokens: summary ~120, standard ~120, full varies with period (~600 at 30d, ~2000 at 1y).
+                """;
+        }
     }
 }
