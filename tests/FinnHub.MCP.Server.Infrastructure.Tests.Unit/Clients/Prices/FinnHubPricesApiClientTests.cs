@@ -109,6 +109,26 @@ public sealed class FinnHubPricesApiClientTests : IDisposable
             CancellationToken.None));
     }
 
+    /// <summary>
+    /// Regression: catches future URL-construction drift. See FinnHubProfilesApiClientTests
+    /// for the bug class this protects against. The 1y period asserts in another test;
+    /// here we pin the default 30d shape.
+    /// </summary>
+    [Fact]
+    public async Task GetSummaryAsync_HitsApiV1StockCandleEndpointWithSymbolAndResolution()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "{\"s\":\"no_data\"}");
+
+        await this._sut.GetSummaryAsync(
+            new GetPriceSummaryQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None);
+
+        Assert.NotNull(this._handler.LastRequest?.RequestUri);
+        var uri = this._handler.LastRequest!.RequestUri!.AbsoluteUri;
+        Assert.StartsWith("https://finnhub.io/api/v1/stock/candle?symbol=AAPL&resolution=D&from=", uri, StringComparison.Ordinal);
+        Assert.Contains("&to=", uri, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task GetSummaryAsync_OneYearPeriod_UsesWeeklyResolution()
     {
