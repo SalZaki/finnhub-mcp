@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
 using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
@@ -62,4 +63,8 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(FinnHubCandleResponse))]
 [JsonSerializable(typeof(GetPriceSummaryResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetPriceSummaryResponse>))]
+[JsonSerializable(typeof(FinnHubNewsSentimentResponse))]
+[JsonSerializable(typeof(FinnHubCompanyNewsArticle[]))]
+[JsonSerializable(typeof(GetNewsPulseResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetNewsPulseResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;

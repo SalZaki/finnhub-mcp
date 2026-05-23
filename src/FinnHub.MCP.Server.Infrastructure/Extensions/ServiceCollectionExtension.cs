@@ -11,6 +11,8 @@ using System.Net.Mime;
 using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Financials.Clients;
 using FinnHub.MCP.Server.Application.Financials.Services;
+using FinnHub.MCP.Server.Application.News.Clients;
+using FinnHub.MCP.Server.Application.News.Services;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Peers.Clients;
 using FinnHub.MCP.Server.Application.Peers.Services;
@@ -20,6 +22,7 @@ using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
 using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
+using FinnHub.MCP.Server.Infrastructure.Clients.News;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
@@ -94,6 +97,14 @@ public static class ServiceCollectionExtension
             .AddHttpMessageHandler<RateLimitHeaderHandler>()
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubPricesApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubPricesApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<INewsService, NewsService>();
+        services.AddHttpClient<INewsApiClient, FinnHubNewsApiClient>("FinnHub-News-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubNewsApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubNewsApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 

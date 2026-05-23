@@ -362,5 +362,56 @@ public static class Constants
                 Approx tokens: summary ~120, standard ~120, full varies with period (~600 at 30d, ~2000 at 1y).
                 """;
         }
+
+        /// <summary>Constants for the <c>get-news-pulse</c> tool — aggregated news sentiment and headlines.</summary>
+        public static class NewsPulse
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-news-pulse";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get News Pulse";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Get an aggregated news pulse for a symbol over the past 7 days — sentiment scores
+                (when the upstream sentiment endpoint is available), top 5 headlines, total article
+                count, and the article-count delta vs the prior 7-day window.
+
+                ## Example:
+                - symbol='AAPL'
+
+                ## Response Fields:
+                - symbol (string)
+                - period (string): always "7d" in v1
+                - sentiment_score, bullish_percent, bearish_percent (double, nullable):
+                  populated only when the upstream /news-sentiment endpoint is reachable.
+                  Falls back to null gracefully on premium-locked keys.
+                - sentiment_source (string, nullable): "finnhub" when sentiment is present, null otherwise.
+                - top_headlines (array of objects): top 5 most-recent (or all if view="full"); each
+                  { headline, url, source, datetime_utc }.
+                - count (int): article count over the current 7-day window.
+                - delta_vs_prev_week (int): current count minus prior-week count.
+
+                Approx tokens: summary ~400, standard ~400, full varies with article count.
+                """;
+        }
     }
 }
