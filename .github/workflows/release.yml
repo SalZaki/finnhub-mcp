@@ -3,13 +3,15 @@
 on:
   push:
     branches:
-      - main
       - release
     paths-ignore:
-      - '.github/**'
       - 'docs/**'
       - 'assets/**'
   workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
@@ -19,6 +21,7 @@ permissions:
 jobs:
   release:
     name: 📦 Create GitHub Release
+    if: ${{ github.ref_name == 'release' }}
     runs-on: ubuntu-latest
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
@@ -37,9 +40,32 @@ jobs:
           config-file: .release-please-config.json
           manifest-file: .release-please-manifest.json
 
+  validate:
+    name: ✅ Validate Release
+    needs: release
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🧰 Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: 📦 Restore
+        shell: bash
+        run: dotnet restore ./finnhub-mcp.sln
+
+      - name: 🧪 Test
+        shell: bash
+        run: dotnet test ./finnhub-mcp.sln --configuration Release --no-restore
+
   build:
     name: 🔧 Build & Upload Artifacts
-    needs: release
+    needs: [release, validate]
     if: ${{ needs.release.outputs.release_created }}
     strategy:
       fail-fast: true
@@ -96,18 +122,18 @@ jobs:
       - name: 📦 Publish
         shell: bash
         run: |
-          VERSION_CLEAN=${{ needs.release.outputs.tag_name }}
+          VERSION_CLEAN="${{ needs.release.outputs.tag_name }}"
           VERSION_CLEAN=${VERSION_CLEAN#v}
           echo "Publishing version: $VERSION_CLEAN"
 
           dotnet publish src/FinnHub.MCP.Server/FinnHub.MCP.Server.csproj \
             -c Release \
-            -r ${{ matrix.runtime }} \
+            -r "${{ matrix.runtime }}" \
             --self-contained true \
             --no-restore \
-            -p:Version=$VERSION_CLEAN \
-            -p:AssemblyVersion=$VERSION_CLEAN \
-            -p:FileVersion=$VERSION_CLEAN \
+            -p:Version="$VERSION_CLEAN" \
+            -p:AssemblyVersion="$VERSION_CLEAN" \
+            -p:FileVersion="$VERSION_CLEAN" \
             -p:DebugType=None \
             -p:DebugSymbols=false \
             -p:PublishSingleFile=true \
@@ -123,10 +149,12 @@ jobs:
 
       - name: 🧼 Prepare Artifact
         shell: bash
+        env:
+          RUNTIME: ${{ matrix.runtime }}
         run: |
           cd ./publish
 
-          if [[ "${{ matrix.runtime }}" == win-* ]]; then
+          if [[ "$RUNTIME" == win-* ]]; then
             # Windows: Look for .exe files
             EXEC=$(find . -name "*.exe" -type f | head -1)
             if [ -z "$EXEC" ]; then
@@ -173,6 +201,8 @@ jobs:
 
       - name: ✅ Verify Artifact
         shell: bash
+        env:
+          RUNTIME: ${{ matrix.runtime }}
         run: |
           cd ./publish
           if [ ! -f "${{ matrix.artifact_name }}" ]; then
@@ -185,7 +215,7 @@ jobs:
           echo "✅ Artifact size: $SIZE bytes"
 
           # Verify it's executable (Unix only)
-          if [[ "${{ matrix.runtime }}" != win-* ]] && [ ! -x "${{ matrix.artifact_name }}" ]; then
+          if [[ "$RUNTIME" != win-* ]] && [ ! -x "${{ matrix.artifact_name }}" ]; then
             echo "❌ Artifact is not executable"
             exit 1
           fi
@@ -204,15 +234,19 @@ jobs:
         if: always()
         shell: bash
         run: |
-          echo "## Build Summary for ${{ matrix.runtime }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **OS**: ${{ matrix.os }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Runtime**: ${{ matrix.runtime }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Artifact**: ${{ matrix.artifact_name }}" >> $GITHUB_STEP_SUMMARY
+          {
+            echo "## Build Summary for ${{ matrix.runtime }}"
+            echo "- **OS**: ${{ matrix.os }}"
+            echo "- **Runtime**: ${{ matrix.runtime }}"
+            echo "- **Artifact**: ${{ matrix.artifact_name }}"
+          } >> "$GITHUB_STEP_SUMMARY"
 
           if [ -f "./publish/${{ matrix.artifact_name }}" ]; then
             SIZE=$(stat -c%s "./publish/${{ matrix.artifact_name }}" 2>/dev/null || stat -f%z "./publish/${{ matrix.artifact_name }}" 2>/dev/null || echo "unknown")
-            echo "- **Size**: $SIZE bytes" >> $GITHUB_STEP_SUMMARY
-            echo "- **Status**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+            {
+              echo "- **Size**: $SIZE bytes"
+              echo "- **Status**: ✅ Success"
+            } >> "$GITHUB_STEP_SUMMARY"
           else
-            echo "- **Status**: ❌ Failed" >> $GITHUB_STEP_SUMMARY
+            echo "- **Status**: ❌ Failed" >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -2,15 +2,13 @@ name: Build and Test
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, release]
     paths-ignore:
-      - '.github/**'
       - 'docs/**'
       - 'assets/**'
   pull_request:
     branches: [main, develop]
     paths-ignore:
-      - '.github/**'
       - 'docs/**'
       - 'assets/**'
   workflow_dispatch:
@@ -57,7 +55,7 @@ jobs:
         run: dotnet restore ./finnhub-mcp.sln
 
       - name: 🏗️ Build solution
-        run: dotnet build -p:CurrentYear=$(date +'%Y') --no-restore --configuration Release
+        run: dotnet build -p:CurrentYear="$(date +'%Y')" --no-restore --configuration Release
 
   test:
     name: 🧪 Unit Tests & 📊 Coverage
@@ -103,13 +101,13 @@ jobs:
 
           # Find all coverage files and copy them
           counter=1
-          for file in $(find ./TestResults -name "coverage.cobertura.xml"); do
+          while IFS= read -r file; do
             # Extract a unique identifier from the path
             dir_name=$(dirname "$file" | sed 's|.*/||')
             cp "$file" "./Coverage/coverage-${counter}-${dir_name}.cobertura.xml"
             echo "Copied $file to ./Coverage/coverage-${counter}-${dir_name}.cobertura.xml"
             ((counter++))
-          done
+          done < <(find ./TestResults -name "coverage.cobertura.xml")
 
           # Copy test results file
           find ./TestResults -name "*.trx" -exec cp {} ./Coverage/ \;
