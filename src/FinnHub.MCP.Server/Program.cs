@@ -15,6 +15,7 @@ using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.Middleware;
 using FinnHub.MCP.Server.Resources.Exchanges;
+using FinnHub.MCP.Server.Resources.Status;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.AspNetCore.Mvc;
 
@@ -94,7 +95,8 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
     };
 })
 .WithWrappedTools<SearchSymbolTool>()
-.WithResources<ExchangesResource>();
+.WithResources<ExchangesResource>()
+.WithResources<ApiStatusResource>();
 
 if (isStdio)
 {

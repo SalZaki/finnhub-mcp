@@ -7,6 +7,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Tokens;
 
 namespace FinnHub.MCP.Server.Middleware;
@@ -57,6 +58,7 @@ public static class WrappedToolsExtensions
             builder.Services.AddSingleton<McpServerTool>(sp =>
             {
                 var estimator = sp.GetRequiredService<ITokenEstimator>();
+                var rateLimitTracker = sp.GetRequiredService<IRateLimitTracker>();
                 var logger = sp.GetRequiredService<ILogger<ToolInvocationMiddleware>>();
 
                 var inner = McpServerTool.Create(
@@ -64,7 +66,7 @@ public static class WrappedToolsExtensions
                     static ctx => ActivatorUtilities.CreateInstance(ctx.Services!, typeof(TToolType)),
                     options: null);
 
-                return new ToolInvocationMiddleware(inner, estimator, logger);
+                return new ToolInvocationMiddleware(inner, estimator, rateLimitTracker, logger);
             });
         }
 

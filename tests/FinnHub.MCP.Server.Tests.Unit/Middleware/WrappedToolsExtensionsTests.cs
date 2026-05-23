@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Application.Tokens;
 using FinnHub.MCP.Server.Middleware;
@@ -24,6 +25,7 @@ public class WrappedToolsExtensionsTests
         var services = new ServiceCollection();
         services.AddLogging();
         services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
+        services.AddSingleton<IRateLimitTracker, RateLimitTracker>();
         services.AddSingleton(Substitute.For<ISearchService>());
 
         services.AddMcpServer().WithWrappedTools<SearchSymbolTool>();

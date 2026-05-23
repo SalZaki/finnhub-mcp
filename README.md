@@ -186,7 +186,7 @@ Every MCP tool returns the same envelope shape so consuming models get a predict
 | `next_actions` | array | Server-suggested follow-up tool calls. |
 | `explanation` | string \| null | Short natural-language summary. |
 | `approx_tokens` | int | Estimated serialized token count, set by the middleware. |
-| `rate_limit` | object \| null | Upstream rate-limit snapshot (populated in a later phase). |
+| `rate_limit` | object \| null | Upstream Finnhub quota snapshot `{ remaining, reset_at }` — populated after the first observed upstream response, `null` on cold start. |
 | `sentiment_source` | string \| null | Source label for sentiment values. |
 | `premium` | bool | Whether the underlying upstream endpoint required a premium key. |
 
@@ -195,6 +195,20 @@ A response that exceeds its declared view's token ceiling is rebuilt by the tool
 ### Resource: `finnhub://resources/exchanges`
 
 Returns the list of stock exchanges available through the provider as `application/json`.
+
+### Resource: `finnhub://resources/api-status`
+
+Returns the most-recent observed Finnhub upstream quota state as `application/json`:
+
+```json
+{
+  "remaining": 42,
+  "reset_at": "2026-12-31T23:59:59Z",
+  "recent_throttled_count": 0
+}
+```
+
+The `remaining` and `reset_at` fields are `null` before the server has made any upstream call; the `recent_throttled_count` resets to zero whenever the quota window rolls over. Clients can poll this resource to monitor headroom without invoking a tool.
 
 ### Response caching
 
