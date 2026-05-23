@@ -108,10 +108,15 @@ public sealed class FinnHubFinancialsApiClient : IFinancialsApiClient
         return Project(query, dto?.Metric);
     }
 
-    private static GetFinancialsSnapshotResponse Project(GetFinancialsSnapshotQuery query, Dictionary<string, double?>? metric)
+    private static GetFinancialsSnapshotResponse Project(GetFinancialsSnapshotQuery query, Dictionary<string, JsonElement>? metric)
     {
         double? Get(string key) =>
-            metric is not null && metric.TryGetValue(key, out var value) ? value : null;
+            metric is not null
+            && metric.TryGetValue(key, out var value)
+            && value.ValueKind == JsonValueKind.Number
+            && value.TryGetDouble(out var d)
+                ? d
+                : null;
 
         return new GetFinancialsSnapshotResponse
         {
@@ -127,9 +132,27 @@ public sealed class FinnHubFinancialsApiClient : IFinancialsApiClient
             Beta = Get("beta"),
             RevenuePerShareTtm = Get("revenuePerShareTTM"),
             Raw = query.IncludeRaw && metric is not null
-                ? new Dictionary<string, double?>(metric)
+                ? BuildRaw(metric)
                 : null
         };
+    }
+
+    /// <summary>
+    /// Builds the numeric-only subset of the raw upstream metric dictionary.
+    /// Non-numeric values (date strings, etc.) are skipped so the wire shape
+    /// stays <c>Dictionary&lt;string, double?&gt;</c>.
+    /// </summary>
+    private static Dictionary<string, double?> BuildRaw(Dictionary<string, JsonElement> metric)
+    {
+        var raw = new Dictionary<string, double?>(metric.Count, StringComparer.Ordinal);
+        foreach (var (key, value) in metric)
+        {
+            if (value.ValueKind == JsonValueKind.Number && value.TryGetDouble(out var d))
+            {
+                raw[key] = d;
+            }
+        }
+        return raw;
     }
 
     private async Task HandleErrorAsync(HttpResponseMessage response, Stream contentStream, CancellationToken ct)
