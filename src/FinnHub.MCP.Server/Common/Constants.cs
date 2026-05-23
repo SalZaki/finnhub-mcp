@@ -250,5 +250,58 @@ public static class Constants
                 Approx tokens: summary ~80, standard ~200, full ~400.
                 """;
         }
+
+        /// <summary>
+        /// Constants for the <c>get-financials-snapshot</c> tool — curated 10-KPI snapshot.
+        /// </summary>
+        public static class FinancialsSnapshot
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-financials-snapshot";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Financials Snapshot";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Get a curated 10-KPI financial snapshot for a symbol — market cap, P/E, P/B, EPS, dividend yield,
+                52-week high/low, 52-week price return, beta, and revenue per share.
+
+                ## Example:
+                - symbol='AAPL'
+
+                ## Response Fields (10 curated KPIs, all nullable):
+                - symbol (string)
+                - market_cap (double): market capitalisation in USD millions
+                - pe_ttm (double): trailing twelve-month P/E
+                - pb_annual (double): annual price/book
+                - eps_ttm (double): trailing twelve-month EPS
+                - dividend_yield (double): indicated annual dividend yield
+                - week52_high, week52_low (double)
+                - week52_price_return_pct (double): 52-week price return
+                - beta (double)
+                - revenue_per_share_ttm (double)
+                - raw (object, optional): full upstream metric dictionary, populated only when view = "full"
+
+                Approx tokens: summary ~200, standard ~200, full ~3000.
+                """;
+        }
     }
 }
