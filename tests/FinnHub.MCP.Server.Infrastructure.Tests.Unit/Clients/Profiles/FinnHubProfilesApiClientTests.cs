@@ -98,6 +98,27 @@ public sealed class FinnHubProfilesApiClientTests : IDisposable
         Assert.Null(result.Name);
     }
 
+    /// <summary>
+    /// Regression: previously this client constructed relative URIs that, combined with a
+    /// slash-less BaseAddress, sent requests to /api/stock/profile2 (dropping /v1) — surfaced
+    /// as InvalidResponse from HTML deserialization. Any future drift in URL construction
+    /// will fail this assertion before it hits production.
+    /// </summary>
+    [Fact]
+    public async Task GetProfileAsync_HitsApiV1StockProfile2Endpoint()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "{}");
+
+        await this._sut.GetProfileAsync(
+            new GetCompanyProfileQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None);
+
+        Assert.NotNull(this._handler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/stock/profile2?symbol=AAPL",
+            this._handler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
     [Fact]
     public async Task GetProfileAsync_Forbidden_ThrowsPremiumRequired()
     {

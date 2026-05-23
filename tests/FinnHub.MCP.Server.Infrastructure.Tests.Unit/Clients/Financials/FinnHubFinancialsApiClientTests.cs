@@ -169,6 +169,25 @@ public sealed class FinnHubFinancialsApiClientTests : IDisposable
         Assert.False(result.Raw.ContainsKey("52WeekLowDate"));
     }
 
+    /// <summary>
+    /// Regression: catches future URL-construction drift. See FinnHubProfilesApiClientTests
+    /// for the bug class this protects against.
+    /// </summary>
+    [Fact]
+    public async Task GetSnapshotAsync_HitsApiV1StockMetricEndpointWithAllMetricSelector()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "{}");
+
+        await this._sut.GetSnapshotAsync(
+            new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None);
+
+        Assert.NotNull(this._handler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/stock/metric?symbol=AAPL&metric=all",
+            this._handler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
     [Fact]
     public async Task GetSnapshotAsync_Forbidden_ThrowsPremiumRequired()
     {

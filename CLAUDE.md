@@ -59,7 +59,14 @@ Dependency direction: `Server` → `Application` ← `Infrastructure`. The `Appl
 4. **Add an Application service / query** for the domain logic in `Application/<Feature>/`.
 5. **Register everything in DI** — `Server/Program.cs` for the tool, `Infrastructure/Extensions/` for the client/services.
 6. **Write unit tests in all three test projects** — tool-level, application-level, infrastructure-level. NSubstitute mocks at the boundary you're testing.
-7. **Update README.md** "Currently Available" section.
+7. **MANDATORY: capture a real Finnhub response** at `tests/Fixtures/finnhub/<endpoint>-<ticker>.json` via `tests/Fixtures/finnhub/capture.sh`, and write at least one client test that loads that fixture. Synthetic payloads have shipped bugs (PR #166, PR #169) — real captures are non-negotiable.
+8. **MANDATORY: assert the on-wire URL** in the client test using `_handler.LastRequest!.RequestUri!.AbsoluteUri`. Pin the full expected URL with `Assert.Equal`. Catches the URL-resolution bug class from PR #169 before it ships. See `ConfigureFinnHubClientTests` and any of the `HitsApiV1*Endpoint` tests for the pattern.
+9. **MANDATORY: live-smoke against real Finnhub** with the running server before marking the PR ready. `dotnet run` locally, hit each new tool via curl or Claude Code, confirm the response shape. Mocks alone don't catch URL-resolution, follow-redirect, header, or auth issues.
+10. **Update README.md** "Currently Available" section.
+
+### Debugging discipline (added 2026-05-23)
+
+When a live error is reported, the **first** step is to read the actual server log / stack trace — not to guess the most plausible code-review explanation. The financials misdiagnosis (PR #166 fixed a real bug but not the user-reported one; PR #169 was the actual fix) cost a full release cycle because the investigation skipped this step. Stack traces from the running process are authoritative; "most plausible code path" guesses are not.
 
 ## Adding a new MCP resource
 

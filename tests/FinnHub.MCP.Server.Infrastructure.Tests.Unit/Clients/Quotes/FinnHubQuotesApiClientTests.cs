@@ -78,6 +78,25 @@ public sealed class FinnHubQuotesApiClientTests : IDisposable
         Assert.Null(result.TimestampUtc);
     }
 
+    /// <summary>
+    /// Regression: catches future URL-construction drift. See FinnHubProfilesApiClientTests
+    /// for the bug class this protects against.
+    /// </summary>
+    [Fact]
+    public async Task GetQuoteAsync_HitsApiV1QuoteEndpoint()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "{}");
+
+        await this._sut.GetQuoteAsync(
+            new GetQuoteQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None);
+
+        Assert.NotNull(this._handler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/quote?symbol=AAPL",
+            this._handler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
     [Fact]
     public async Task GetQuoteAsync_Forbidden_ThrowsPremiumRequired()
     {
