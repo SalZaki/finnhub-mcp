@@ -142,14 +142,6 @@ jobs:
           flags: unit-tests
           name: codecov-test-results-finnhub-mcp
 
-      - name: 📊 Publish test results
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: .NET Tests
-          path: ./TestResults/*.trx
-          reporter: dotnet-trx
-
       - name: 📁 Upload test results
         uses: actions/upload-artifact@v4
         if: always()
