@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.19.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.18.0...v1.19.0) (2026-05-23)
+
+
+### ✨ Features
+
+* **p6a:** cross-link next_actions across Wave A tools + README ([5538cae](https://github.com/SalZaki/finnhub-mcp/commit/5538caefdd49faa5de9477be18c6e6fc2bc79769))
+* **p6a:** cross-link next_actions across Wave A tools and document in README ([dedb7dd](https://github.com/SalZaki/finnhub-mcp/commit/dedb7dd93c4c0ee6b8ccdcb9ceb6aac278c9f290))
+
+
+### 👷 CI/CD
+
+* gate releases through release branch ([a95f026](https://github.com/SalZaki/finnhub-mcp/commit/a95f026f973727d5d3bbbab3da5aff964293ce28))
+* remove dorny/test-reporter — the real source of PR CI flakes ([c630a10](https://github.com/SalZaki/finnhub-mcp/commit/c630a10b4c48a458b2691714d4be944929eaeac6))
+* validate before release-please so failed tests do not create orphan releases ([618a923](https://github.com/SalZaki/finnhub-mcp/commit/618a9232e831e4f398812ce29a226c4b7265e385))
+
 ## [1.18.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.17.0...v1.18.0) (2026-05-23)
 
 
