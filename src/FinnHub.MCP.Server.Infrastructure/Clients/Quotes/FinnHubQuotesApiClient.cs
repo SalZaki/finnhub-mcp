@@ -102,16 +102,16 @@ public sealed class FinnHubQuotesApiClient : IQuotesApiClient
         return new GetQuoteResponse
         {
             Symbol = query.Symbol,
-            Current = dto?.Current ?? 0,
-            Change = dto?.Change ?? 0,
-            PercentChange = dto?.PercentChange ?? 0,
-            High = dto?.High ?? 0,
-            Low = dto?.Low ?? 0,
-            Open = dto?.Open ?? 0,
-            PrevClose = dto?.PrevClose ?? 0,
-            TimestampUtc = dto is null || dto.Timestamp == 0
-                ? DateTimeOffset.MinValue
-                : DateTimeOffset.FromUnixTimeSeconds(dto.Timestamp)
+            Current = dto?.Current,
+            Change = dto?.Change,
+            PercentChange = dto?.PercentChange,
+            High = dto?.High,
+            Low = dto?.Low,
+            Open = dto?.Open,
+            PrevClose = dto?.PrevClose,
+            TimestampUtc = dto?.Timestamp is { } ts and > 0
+                ? DateTimeOffset.FromUnixTimeSeconds(ts)
+                : null
         };
     }
 

@@ -45,7 +45,9 @@ public sealed class QuotesService(
                 "Retrieved quote for {Symbol}: current={Current} change={Change}",
                 query.Symbol, response.Current, response.Change);
 
-            return response.Current > 0
+            // Finnhub returns all-zero/null for unknown symbols. Anything with a
+            // non-zero current price OR a real timestamp is treated as a live quote.
+            return (response.Current is > 0) || response.TimestampUtc is not null
                 ? new Result<GetQuoteResponse>().Success(response)
                 : new Result<GetQuoteResponse>().Failure(
                     $"No live quote for {query.Symbol}.",

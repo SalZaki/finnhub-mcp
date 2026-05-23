@@ -115,8 +115,12 @@ public sealed class GetQuoteTool(
             return $"No quote available for '{symbol}'.";
         }
 
-        return string.Create(
-            CultureInfo.InvariantCulture,
-            $"{symbol} {result.Data.Current:F2} ({result.Data.PercentChange:+0.00;-0.00}%) as of {result.Data.TimestampUtc:u}.");
+        var current = result.Data.Current is { } c ? c.ToString("F2", CultureInfo.InvariantCulture) : "n/a";
+        var pct = result.Data.PercentChange is { } p
+            ? p.ToString("+0.00;-0.00", CultureInfo.InvariantCulture) + "%"
+            : "n/a";
+        var ts = result.Data.TimestampUtc is { } t ? t.ToString("u", CultureInfo.InvariantCulture) : "unknown";
+
+        return string.Create(CultureInfo.InvariantCulture, $"{symbol} {current} ({pct}) as of {ts}.");
     }
 }

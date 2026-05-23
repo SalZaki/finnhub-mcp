@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Re-capture all Finnhub fixtures. Run from repo root with FINNHUB_API_KEY exported
+# (or a .env at the repo root containing it).
+#
+#   ./tests/Fixtures/finnhub/capture.sh
+#
+# Fixtures are committed — only regenerate when Finnhub changes a response shape
+# or when adding a new endpoint.
+set -euo pipefail
+
+if [ -z "${FINNHUB_API_KEY:-}" ]; then
+  if [ -f .env ]; then
+    set -a; . ./.env; set +a
+  fi
+fi
+test -n "${FINNHUB_API_KEY:-}" || { echo "FINNHUB_API_KEY not set" >&2; exit 1; }
+
+TO=$(date -u +%Y-%m-%d)
+FROM=$(date -u -v-7d +%Y-%m-%d 2>/dev/null || date -u -d '7 days ago' +%Y-%m-%d)
+NOW=$(date -u +%s)
+WEEK_AGO=$((NOW - 86400 * 7))
+
+OUT_DIR="tests/Fixtures/finnhub"
+mkdir -p "$OUT_DIR"
+
+fetch() {
+  local name=$1 path=$2 out="$OUT_DIR/${name}.json" status size
+  status=$(curl -s -o "$out" -w "%{http_code}" \
+    -H "X-Finnhub-Token: $FINNHUB_API_KEY" \
+    "https://finnhub.io/api/v1/$path")
+  size=$(wc -c < "$out" | tr -d ' ')
+  printf "  %-25s [%s, %sb]\n" "$name" "$status" "$size"
+}
+
+fetch search-apple             "search?q=apple"
+fetch peers-AAPL-industry      "stock/peers?symbol=AAPL&grouping=industry"
+fetch metric-AAPL              "stock/metric?symbol=AAPL&metric=all"
+fetch quote-AAPL               "quote?symbol=AAPL"
+fetch quote-unknown            "quote?symbol=ZZZNOTASYMBOL"
+fetch profile-AAPL             "stock/profile2?symbol=AAPL"
+fetch candle-AAPL              "stock/candle?symbol=AAPL&resolution=D&from=$WEEK_AGO&to=$NOW"
+fetch company-news-AAPL        "company-news?symbol=AAPL&from=$FROM&to=$TO"
+fetch news-sentiment-AAPL      "news-sentiment?symbol=AAPL"

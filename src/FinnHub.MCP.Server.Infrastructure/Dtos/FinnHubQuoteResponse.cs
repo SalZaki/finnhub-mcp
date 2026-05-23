@@ -10,39 +10,44 @@ using System.Text.Json.Serialization;
 
 namespace FinnHub.MCP.Server.Infrastructure.Dtos;
 
-/// <summary>Wire DTO for the Finnhub <c>/quote</c> endpoint.</summary>
+/// <summary>
+/// Wire DTO for the Finnhub <c>/quote</c> endpoint. All numeric fields are nullable
+/// because Finnhub returns <c>null</c> for change/percent-change on freshly listed
+/// symbols (no previous close) and crypto/FX symbols outside their session, and
+/// returns <c>0</c> or <c>null</c> for unknown symbols.
+/// </summary>
 [ExcludeFromCodeCoverage]
 public sealed class FinnHubQuoteResponse
 {
-    /// <summary>Current price.</summary>
+    /// <summary>Current price; <c>null</c> for unknown symbols.</summary>
     [JsonPropertyName("c")]
-    public double Current { get; init; }
+    public double? Current { get; init; }
 
-    /// <summary>Absolute change vs previous close.</summary>
+    /// <summary>Absolute change vs previous close; <c>null</c> when no previous close exists.</summary>
     [JsonPropertyName("d")]
-    public double Change { get; init; }
+    public double? Change { get; init; }
 
-    /// <summary>Percentage change vs previous close.</summary>
+    /// <summary>Percentage change vs previous close; <c>null</c> when no previous close exists.</summary>
     [JsonPropertyName("dp")]
-    public double PercentChange { get; init; }
+    public double? PercentChange { get; init; }
 
     /// <summary>Session high.</summary>
     [JsonPropertyName("h")]
-    public double High { get; init; }
+    public double? High { get; init; }
 
     /// <summary>Session low.</summary>
     [JsonPropertyName("l")]
-    public double Low { get; init; }
+    public double? Low { get; init; }
 
     /// <summary>Session open.</summary>
     [JsonPropertyName("o")]
-    public double Open { get; init; }
+    public double? Open { get; init; }
 
     /// <summary>Previous close.</summary>
     [JsonPropertyName("pc")]
-    public double PrevClose { get; init; }
+    public double? PrevClose { get; init; }
 
-    /// <summary>Unix-epoch (seconds) snapshot timestamp.</summary>
+    /// <summary>Unix-epoch (seconds) snapshot timestamp; <c>null</c> or <c>0</c> for unknown symbols.</summary>
     [JsonPropertyName("t")]
-    public long Timestamp { get; init; }
+    public long? Timestamp { get; init; }
 }

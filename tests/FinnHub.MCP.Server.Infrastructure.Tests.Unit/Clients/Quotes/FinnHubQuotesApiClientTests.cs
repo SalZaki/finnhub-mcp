@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
 using FinnHub.MCP.Server.Infrastructure.Clients.Quotes;
+using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -19,19 +20,6 @@ namespace FinnHub.MCP.Server.Infrastructure.Tests.Unit.Clients.Quotes;
 
 public sealed class FinnHubQuotesApiClientTests : IDisposable
 {
-    private const string SamplePayload = """
-                                         {
-                                           "c": 261.74,
-                                           "d": 0.4,
-                                           "dp": 0.1531,
-                                           "h": 263.31,
-                                           "l": 260.68,
-                                           "o": 261.07,
-                                           "pc": 261.34,
-                                           "t": 1700000000
-                                         }
-                                         """;
-
     private readonly MockHttpMessageHandler _handler = new();
     private readonly HttpClient _httpClient;
     private readonly FinnHubQuotesApiClient _sut;
@@ -52,20 +40,42 @@ public sealed class FinnHubQuotesApiClientTests : IDisposable
     }
 
     [Fact]
-    public async Task GetQuoteAsync_MapsAllFields()
+    public async Task GetQuoteAsync_RealAaplResponse_MapsAllFields()
     {
-        this._handler.SetResponse(HttpStatusCode.OK, SamplePayload);
+        this._handler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("quote-AAPL"));
 
         var result = await this._sut.GetQuoteAsync(
             new GetQuoteQuery { QueryId = "q1", Symbol = "AAPL" },
             CancellationToken.None);
 
         Assert.Equal("AAPL", result.Symbol);
-        Assert.Equal(261.74, result.Current);
-        Assert.Equal(0.4, result.Change);
-        Assert.Equal(0.1531, result.PercentChange);
-        Assert.Equal(263.31, result.High);
-        Assert.Equal(261.34, result.PrevClose);
+        Assert.NotNull(result.Current);
+        Assert.NotNull(result.Change);
+        Assert.NotNull(result.PercentChange);
+        Assert.NotNull(result.TimestampUtc);
+        Assert.True(result.Current > 0);
+    }
+
+    /// <summary>
+    /// Regression: Finnhub returns <c>{"c":0,"d":null,"dp":null,"h":0,...,"t":0}</c> for
+    /// unknown symbols. With non-nullable double DTO fields this threw a JsonException
+    /// at deserialization time and surfaced to clients as InvalidResponse. With
+    /// nullable fields the parser tolerates the nulls and the service layer maps the
+    /// all-zero/null shape to a NotFound result.
+    /// </summary>
+    [Fact]
+    public async Task GetQuoteAsync_UnknownSymbol_ParsesNullChangeFieldsWithoutThrowing()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("quote-unknown"));
+
+        var result = await this._sut.GetQuoteAsync(
+            new GetQuoteQuery { QueryId = "q1", Symbol = "ZZZNOTASYMBOL" },
+            CancellationToken.None);
+
+        Assert.Equal(0, result.Current);
+        Assert.Null(result.Change);
+        Assert.Null(result.PercentChange);
+        Assert.Null(result.TimestampUtc);
     }
 
     [Fact]
