@@ -105,6 +105,46 @@ public sealed class FinnHubFinancialsApiClientTests : IDisposable
     }
 
     [Fact]
+    public async Task GetSnapshotAsync_MixedNumericAndStringValues_ParsesNumericKpisAndSkipsStrings()
+    {
+        // Real Finnhub /stock/metric?metric=all responses interleave numeric KPIs with
+        // string-formatted dates like 52WeekHighDate. Confirm we don't throw on the
+        // string values and that the raw dictionary only carries the numeric subset.
+        const string MixedPayload = """
+                                    {
+                                      "symbol": "NVDA",
+                                      "metricType": "all",
+                                      "metric": {
+                                        "marketCapitalization": 3000000.0,
+                                        "peTTM": 50.4,
+                                        "52WeekHigh": 199.6,
+                                        "52WeekHighDate": "2024-12-26",
+                                        "52WeekLow": 164.1,
+                                        "52WeekLowDate": "2024-04-19",
+                                        "beta": 1.8
+                                      }
+                                    }
+                                    """;
+        this._handler.SetResponse(HttpStatusCode.OK, MixedPayload);
+
+        var result = await this._sut.GetSnapshotAsync(
+            new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "NVDA", IncludeRaw = true },
+            CancellationToken.None);
+
+        Assert.Equal(3000000.0, result.MarketCap);
+        Assert.Equal(50.4, result.PeTtm);
+        Assert.Equal(199.6, result.Week52High);
+        Assert.Equal(1.8, result.Beta);
+
+        // raw carries only the numeric keys; the string-typed date fields are filtered out.
+        Assert.NotNull(result.Raw);
+        Assert.True(result.Raw!.ContainsKey("marketCapitalization"));
+        Assert.True(result.Raw.ContainsKey("52WeekHigh"));
+        Assert.False(result.Raw.ContainsKey("52WeekHighDate"));
+        Assert.False(result.Raw.ContainsKey("52WeekLowDate"));
+    }
+
+    [Fact]
     public async Task GetSnapshotAsync_Forbidden_ThrowsPremiumRequired()
     {
         this._handler.SetResponse(HttpStatusCode.Forbidden, "premium");
