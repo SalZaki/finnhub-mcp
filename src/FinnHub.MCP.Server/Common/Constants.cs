@@ -413,5 +413,100 @@ public static class Constants
                 Approx tokens: summary ~400, standard ~400, full varies with article count.
                 """;
         }
+
+        /// <summary>Constants for the <c>get-quote</c> tool — real-time price snapshot.</summary>
+        public static class Quote
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-quote";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Quote";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Get the real-time price snapshot for a symbol — current, change, percent change,
+                session high/low/open, previous close, and snapshot timestamp.
+
+                ## Example:
+                - symbol='AAPL'
+
+                ## Response Fields:
+                - symbol (string)
+                - current (double): latest trade price
+                - change (double): absolute change vs previous close
+                - percent_change (double)
+                - high, low, open, prev_close (double)
+                - timestamp_utc (ISO 8601)
+
+                ## Notes:
+                - Cached at the 10s Quote tier; bypassed cache for very short staleness windows.
+                - The response is already curated — no view variation beyond default.
+
+                Approx tokens: summary ~80, standard ~80, full ~80.
+                """;
+        }
+
+        /// <summary>Constants for the <c>get-company-profile</c> tool — company snapshot.</summary>
+        public static class CompanyProfile
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-company-profile";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Company Profile";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Get the company profile for a symbol — name, ticker, country, currency, exchange,
+                IPO date, market cap, shares outstanding, industry, and (on standard/full views)
+                logo, phone, and website URL.
+
+                ## Example:
+                - symbol='AAPL'
+
+                ## Response Fields (all nullable):
+                - ticker, name, country, currency, exchange, ipo, industry (string)
+                - market_cap (double, USD millions)
+                - share_outstanding (double, millions)
+                - logo, phone, weburl (string) — populated only on view='standard' or 'full'
+
+                Approx tokens: summary ~100, standard ~150, full ~150.
+                """;
+        }
     }
 }

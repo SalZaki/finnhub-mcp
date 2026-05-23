@@ -18,6 +18,10 @@ using FinnHub.MCP.Server.Application.Peers.Clients;
 using FinnHub.MCP.Server.Application.Peers.Services;
 using FinnHub.MCP.Server.Application.Prices.Clients;
 using FinnHub.MCP.Server.Application.Prices.Services;
+using FinnHub.MCP.Server.Application.Profiles.Clients;
+using FinnHub.MCP.Server.Application.Profiles.Services;
+using FinnHub.MCP.Server.Application.Quotes.Clients;
+using FinnHub.MCP.Server.Application.Quotes.Services;
 using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
@@ -25,6 +29,8 @@ using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
 using FinnHub.MCP.Server.Infrastructure.Clients.News;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
+using FinnHub.MCP.Server.Infrastructure.Clients.Profiles;
+using FinnHub.MCP.Server.Infrastructure.Clients.Quotes;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
 using FinnHub.MCP.Server.Infrastructure.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -105,6 +111,22 @@ public static class ServiceCollectionExtension
             .AddHttpMessageHandler<RateLimitHeaderHandler>()
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubNewsApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubNewsApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IQuotesService, QuotesService>();
+        services.AddHttpClient<IQuotesApiClient, FinnHubQuotesApiClient>("FinnHub-Quotes-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubQuotesApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubQuotesApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IProfilesService, ProfilesService>();
+        services.AddHttpClient<IProfilesApiClient, FinnHubProfilesApiClient>("FinnHub-Profiles-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 
