@@ -1,10 +1,11 @@
-﻿// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Text.Json;
 using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Resources.Status;
 using Xunit;
@@ -18,13 +19,13 @@ public sealed class ApiStatusResourceTests
     {
         var resource = new ApiStatusResource(new RateLimitTracker());
 
-        var result = resource.GetStatus();
+        var json = resource.GetStatus();
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
 
-        Assert.True(result.IsSuccess);
-        Assert.NotNull(result.Data);
-        Assert.Null(result.Data.Remaining);
-        Assert.Null(result.Data.ResetAt);
-        Assert.Equal(0, result.Data.RecentThrottledCount);
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("remaining").ValueKind);
+        Assert.Equal(JsonValueKind.Null, root.GetProperty("reset_at").ValueKind);
+        Assert.Equal(0, root.GetProperty("recent_throttled_count").GetInt32());
     }
 
     [Fact]
@@ -36,11 +37,12 @@ public sealed class ApiStatusResourceTests
         tracker.RecordThrottled();
         tracker.RecordThrottled();
 
-        var result = new ApiStatusResource(tracker).GetStatus();
+        var json = new ApiStatusResource(tracker).GetStatus();
+        using var document = JsonDocument.Parse(json);
+        var root = document.RootElement;
 
-        Assert.True(result.IsSuccess);
-        Assert.Equal(25, result.Data!.Remaining);
-        Assert.Equal(reset, result.Data.ResetAt);
-        Assert.Equal(2, result.Data.RecentThrottledCount);
+        Assert.Equal(25, root.GetProperty("remaining").GetInt32());
+        Assert.Equal(reset, root.GetProperty("reset_at").GetDateTimeOffset());
+        Assert.Equal(2, root.GetProperty("recent_throttled_count").GetInt32());
     }
 }

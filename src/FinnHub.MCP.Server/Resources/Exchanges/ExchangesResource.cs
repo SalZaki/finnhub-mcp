@@ -1,4 +1,4 @@
-﻿// ---------------------------------------------------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------------------------------
 //  <copyright>
 //    This file is part of FinnHub MCP Server and is licensed under the MIT License.
 //    See the LICENSE file in the project root for full license information.
@@ -7,9 +7,9 @@
 
 using System.ComponentModel;
 using System.Net.Mime;
+using System.Text.Json;
 using FinnHub.MCP.Server.Application.Exchanges;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
-using FinnHub.MCP.Server.Application.Models;
 
 namespace FinnHub.MCP.Server.Resources.Exchanges;
 
@@ -20,34 +20,34 @@ namespace FinnHub.MCP.Server.Resources.Exchanges;
 public sealed class ExchangesResource
 {
     /// <summary>
-    /// Returns the catalog of stock exchanges available through the Finnhub provider,
-    /// wrapped in an application-level <see cref="Result{T}"/>.
+    /// Returns the catalog of stock exchanges serialized as JSON for the
+    /// <c>finnhub://resources/exchanges</c> resource.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// This is the read handler for the <c>finnhub://resources/exchanges</c> MCP
-    /// resource. Each entry exposes the exchange code, full name, country,
-    /// MIC code, time zone, trading hours, and a public information URL — enough
-    /// for clients to populate dropdowns or filter symbol searches by venue.
+    /// Each entry exposes the exchange code, full name, country, MIC code, time
+    /// zone, trading hours, and a public information URL — enough for clients to
+    /// populate dropdowns or filter symbol searches by venue.
     /// </para>
     /// <para>
     /// The current implementation returns a static stub (London Stock Exchange only)
     /// pending wiring to the Finnhub <c>/stock/exchange</c> endpoint.
     /// </para>
+    /// <para>
+    /// Returns a JSON <see cref="string"/> rather than the typed response because
+    /// the MCP SDK only marshals a fixed set of resource handler return types
+    /// (<c>ResourceContents</c>, <c>string</c>, <c>IEnumerable&lt;...&gt;</c>);
+    /// the SDK wraps the string in a <c>TextResourceContents</c> using the
+    /// declared <see cref="MediaTypeNames.Application.Json"/> mime type.
+    /// </para>
     /// </remarks>
-    /// <returns>
-    /// A successful <see cref="Result{T}"/> containing an <see cref="ExchangesResponse"/>
-    /// with the available exchanges. The result is never a failure under the current
-    /// stubbed implementation, but consumers should still check <c>IsSuccess</c>
-    /// once the live provider call is wired up.
-    /// </returns>
     [McpServerResource(
         UriTemplate = "finnhub://resources/exchanges",
         Name = "get-exchanges",
         Title = "Exchanges",
         MimeType = MediaTypeNames.Application.Json)]
     [Description("Gets all the exchanges listed on Finnhub.")]
-    public Result<ExchangesResponse> GetExchanges()
+    public string GetExchanges()
     {
         // TODO: Replace stub data with real Finnhub API call logic.
         var responsePayload = new ExchangesResponse
@@ -69,6 +69,6 @@ public sealed class ExchangesResource
             ]
         };
 
-        return new Result<ExchangesResponse>().Success(responsePayload);
+        return JsonSerializer.Serialize(responsePayload, ResourceJsonContext.Default.ExchangesResponse);
     }
 }
