@@ -176,6 +176,8 @@ public sealed class SearchSymbolTool(
 
         return
         [
+            new NextAction("get-quote", args, "real-time price snapshot"),
+            new NextAction("get-company-profile", args, "company name, industry, country, market cap"),
             new NextAction("get-news-pulse", args, "sentiment and top headlines from the past week"),
             new NextAction("get-financials-snapshot", args, "10 curated valuation/profitability KPIs"),
             new NextAction("get-price-summary", args, "min/max/mean/return/volatility over the last 30 days"),
