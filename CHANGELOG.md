@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.18.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.17.0...v1.18.0) (2026-05-23)
+
+
+### ✨ Features
+
+* **p6a:** add get-news-pulse — completes P6 Wave A ([b295ece](https://github.com/SalZaki/finnhub-mcp/commit/b295ecede1f866724d67b5f9c74e9f36ca9b1352))
+* **p6a:** add get-news-pulse tool — sentiment + headlines + week-over-week delta ([5e9fcc0](https://github.com/SalZaki/finnhub-mcp/commit/5e9fcc0a184d975825486cde8508320b1b4ee511))
+* **p6a:** add get-price-summary — aggregated price stats ([319bec8](https://github.com/SalZaki/finnhub-mcp/commit/319bec81c6f1c2acf764b53b875bde881a1b92f2))
+* **p6a:** add get-price-summary tool — aggregated price stats ([b9165e6](https://github.com/SalZaki/finnhub-mcp/commit/b9165e6b4dae86a67de2dc4760b27bb00df9aea3))
+
 ## [1.17.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.16.0...v1.17.0) (2026-05-23)
 
 
