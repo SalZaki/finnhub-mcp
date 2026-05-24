@@ -6,7 +6,15 @@
         <Configuration>
           <Format>cobertura</Format>
           <ExcludeByAttribute>GeneratedCodeAttribute,CompilerGeneratedAttribute,ExcludeFromCodeCoverageAttribute</ExcludeByAttribute>
-          <ExcludeByFile>**/Migrations/**/*,**/bin/**/*,**/obj/**/*</ExcludeByFile>
+          <!--
+            Program.cs is the application entry point — top-level statements that
+            wire DI, configure ASP.NET Core middleware, and host the MCP server.
+            It's exercised end-to-end by the live smoke (see CLAUDE.md "Adding a
+            new MCP tool" step 9), not by unit tests; instrumenting it would force
+            us to spawn WebApplicationFactory just to hit lines without validating
+            meaningful behaviour. Excluded from coverage measurement.
+          -->
+          <ExcludeByFile>**/Migrations/**/*,**/bin/**/*,**/obj/**/*,**/Program.cs</ExcludeByFile>
           <SingleHit>false</SingleHit>
           <UseSourceLink>true</UseSourceLink>
           <IncludeTestAssembly>false</IncludeTestAssembly>
