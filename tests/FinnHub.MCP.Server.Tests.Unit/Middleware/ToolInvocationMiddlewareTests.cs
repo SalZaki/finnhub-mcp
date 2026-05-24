@@ -154,6 +154,72 @@ public sealed class ToolInvocationMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_ArgsMissingViewKey_DefaultsToSummary()
+    {
+        // args is non-null but does not contain the "view" key — covers the
+        // TryGetValue=false branch in ExtractView. Send 501 tokens so the
+        // 500-summary ceiling kicks in, proving Summary was selected.
+        var inner = MakeInnerTool(SmallEnvelopeJson());
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(501), this._rateLimitTracker, this._logger);
+        var args = new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        {
+            ["symbol"] = JsonSerializer.Deserialize<JsonElement>("\"AAPL\"")
+        };
+
+        var result = await middleware.InvokeAsync(MakeRequestWithArgs(args), CancellationToken.None);
+
+        Assert.True(result.IsError);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_UnknownViewValue_DefaultsToSummary()
+    {
+        // Unparseable view string ("weird") falls through to the `_ =>` default
+        // arm — the middleware tolerates it and applies the summary ceiling.
+        var inner = MakeInnerTool(SmallEnvelopeJson());
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(501), this._rateLimitTracker, this._logger);
+
+        var result = await middleware.InvokeAsync(MakeRequest("weird"), CancellationToken.None);
+
+        Assert.True(result.IsError);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_NonObjectStructuredContent_LeavesContentAloneNoCrash()
+    {
+        // PatchEnvelopeMetadata early-returns when the parsed body isn't a JsonObject.
+        // Use a JSON array as the structured payload — it's parseable but not patchable.
+        // The middleware must still complete without throwing.
+        var inner = new FakeMcpServerTool("test-tool", (_, _) =>
+            ValueTask.FromResult(new CallToolResult
+            {
+                StructuredContent = JsonSerializer.Deserialize<JsonElement>("[1, 2, 3]"),
+                Content = [new TextContentBlock { Text = "[1, 2, 3]" }],
+                IsError = false
+            }));
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(10), this._rateLimitTracker, this._logger);
+
+        var result = await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
+
+        Assert.False(result.IsError);
+    }
+
+    [Fact]
+    public async Task InvokeAsync_EmptyResult_SerializesAsEmptyString()
+    {
+        // Result with no StructuredContent and no Content blocks — covers the
+        // `return string.Empty` tail in SerializeStructuredContent. Estimator
+        // sees "" → 0 tokens → never trips the budget.
+        var inner = new FakeMcpServerTool("test-tool", (_, _) =>
+            ValueTask.FromResult(new CallToolResult { IsError = false }));
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(0), this._rateLimitTracker, this._logger);
+
+        var result = await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
+
+        Assert.False(result.IsError);
+    }
+
+    [Fact]
     public async Task InvokeAsync_EmitsStructuredLog()
     {
         var inner = MakeInnerTool(SmallEnvelopeJson());
@@ -198,6 +264,11 @@ public sealed class ToolInvocationMiddlewareTests
                 ["view"] = JsonSerializer.Deserialize<JsonElement>($"\"{view}\"")
             };
 
+        return MakeRequestWithArgs(args);
+    }
+
+    private static RequestContext<CallToolRequestParams> MakeRequestWithArgs(Dictionary<string, JsonElement>? args)
+    {
         var server = Substitute.For<McpServer>();
         var rpcRequest = new JsonRpcRequest { Method = "tools/call" };
         var parameters = new CallToolRequestParams { Name = "test-tool", Arguments = args };
