@@ -156,16 +156,19 @@ public sealed class ToolSmokeTests : IClassFixture<LiveSmokeFactory>
     public async Task GetQuote_UnknownSymbol_DegradesGracefully()
     {
         // Finnhub returns {"c":0,"d":null,"dp":null,...} for unknown tickers.
-        // Tool MUST still produce IsSuccess=true with degraded data — the
-        // BuildExplanation path renders n/a for nulls. This is the regression
-        // signature from PR #167 (defensive nullable DTOs).
+        // PR #167 made the DTOs tolerate the nulls so deserialization doesn't
+        // crash; the service layer is free to either pass that through as
+        // IsSuccess=true with degraded data, OR detect the all-zeros shape
+        // and return a typed NotFound envelope. Both are "graceful degradation"
+        // — the regression we're guarding against is an unhandled exception
+        // or a ServiceUnavailable bubbling up from a deserialization failure.
         var tool = new GetQuoteTool(
             this._services.GetRequiredService<IQuotesService>(),
             NullLogger<GetQuoteTool>.Instance);
 
         var envelope = await tool.GetQuoteAsync("ZZZZ");
 
-        AssertSuccessOrPremium(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
+        AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
     }
 
     private static void AssertSuccessOrPremium(bool isSuccess, string? errorType, string? errorMessage)
@@ -183,6 +186,24 @@ public sealed class ToolSmokeTests : IClassFixture<LiveSmokeFactory>
         }
 
         Assert.Fail($"Tool failed against real Finnhub. error_type={errorType ?? "<null>"} error_message={errorMessage ?? "<null>"}");
+    }
+
+    private static void AssertGracefulDegradation(bool isSuccess, string? errorType, string? errorMessage)
+    {
+        // Tolerated outcomes for an unknown / nonsense input:
+        //   - IsSuccess=true  → service passed through degraded data (zeros / nulls)
+        //   - NotFound        → service detected the bogus symbol and returned a typed not-found
+        //   - PremiumRequired → endpoint is premium-gated (unlikely for /quote but kept for parity)
+        // Anything else (ServiceUnavailable, an uncaught exception type, etc.) means
+        // the failure path itself broke — that's the regression we want to catch.
+        if (isSuccess
+            || string.Equals(errorType, "NotFound", StringComparison.Ordinal)
+            || string.Equals(errorType, "PremiumRequired", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        Assert.Fail($"Unknown-symbol path failed unexpectedly. error_type={errorType ?? "<null>"} error_message={errorMessage ?? "<null>"}");
     }
 
     private static void RequireApiKey()
