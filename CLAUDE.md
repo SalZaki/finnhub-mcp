@@ -135,9 +135,11 @@ Refresh fixtures when Finnhub changes a shape or you add an endpoint.
 
 **Shipping a release:**
 1. Open a `main → release` PR titled `chore(release): promote main to release`
-2. Merge it → validate runs on `release`
+2. **Merge it with `--merge` (NOT `--squash`)** → validate runs on `release`
 3. release-please opens its own PR against `release` with the version bump + CHANGELOG entry (`release-please--branches--release`)
-4. Merge that → tag + GitHub release + 6-platform build matrix triggers
+4. **Merge that with `--merge` (NOT `--squash`)** → tag + GitHub release + 6-platform build matrix triggers
+
+> **Why `--merge` and not `--squash`?** release-please walks the commit graph since the last release tag and bumps the version off the conventional-commit titles it finds (`fix:` → patch, `feat:` → minor). A squash replaces every inner commit with a single `chore(release):` commit. release-please then sees only a hidden `chore:` type, finds nothing user-facing, and skips releasing — leaving you with an empty cycle. A regular merge preserves the inner titles in release's history. PR #178 was squash-merged and produced no release; PR #180 was the recovery merge that brought the inner `fix(ci):` commits back into release's history so release-please could cut v1.20.1.
 
 **Things to know:**
 - `CHANGELOG.md` is generated; don't edit it by hand.
@@ -196,3 +198,4 @@ When any AI agent needs to browse, prefer gstack's `/browse` over `mcp__claude-i
 - **Don't merge GitHub's "compare and pull request" prompt for `release → main`.** It's a circular merge (see "Gated release model" above).
 - **Don't ship synthetic-payload-only client tests.** Real Finnhub fixtures live under `tests/Fixtures/finnhub/`; use them. Mocks bypass URL resolution AND don't catch upstream shape drift.
 - **Don't guess the fix from a code-review reading when a live error is reported** — read the server log first (see "Debugging discipline" above). The financials misdiagnosis cost a release cycle for this exact reason.
+- **Don't `--squash` promotion PRs from `main → release`.** The squash collapses every inner commit into a single `chore(release): promote main to release` commit, hiding the `fix:` / `feat:` titles that drive release-please's version bump. release-please walks the squashed history, finds only `chore(release):` (hidden type), and skips releasing — leaving you with an empty release cycle that has to be repaired by a follow-up `--merge`. Always use `gh pr merge --merge` for promotion PRs. PR #178 was the canary; PR #180 was the recovery merge that brought the inner `fix(ci):` commits back into release's history.
