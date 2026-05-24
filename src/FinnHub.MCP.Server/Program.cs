@@ -56,11 +56,22 @@ if (builder.Environment.IsDevelopment())
     new LoadOptions(setEnvVars: true, clobberExistingVars: false, onlyExactPath: false).Load();
 }
 
-var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
-var exeDirectory = exePath is not null ? Path.GetDirectoryName(exePath) : Directory.GetCurrentDirectory();
+// Use the host assembly's own directory as the config base path. This is
+// load-bearing for two scenarios:
+//   - Published AOT/single-file binaries that may run from any cwd
+//   - WebApplicationFactory in tests, where Process.MainModule resolves to
+//     the dotnet test-host (/opt/.../dotnet) rather than the server dll, so
+//     SetBasePath(processExeDir) would point at the wrong tree and the
+//     non-optional appsettings.json load would throw FileNotFoundException
+//     at startup. The host assembly's location always points to the
+//     server's bin output, where appsettings.json is co-located.
+var hostAssemblyPath = typeof(Program).Assembly.Location;
+var basePath = !string.IsNullOrEmpty(hostAssemblyPath)
+    ? Path.GetDirectoryName(hostAssemblyPath)!
+    : AppContext.BaseDirectory;
 
 builder.Configuration
-    .SetBasePath(exeDirectory!)
+    .SetBasePath(basePath)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
     .AddEnvironmentVariables()
@@ -370,3 +381,12 @@ if (!isStdio)
 }
 
 app.Run();
+
+/// <summary>
+/// Public partial Program declaration exists solely so
+/// <c>WebApplicationFactory&lt;Program&gt;</c> in the
+/// <c>FinnHub.MCP.Server.Tests.LiveSmoke</c> project can resolve the host
+/// type from top-level statements. No runtime behaviour.
+/// </summary>
+public partial class Program;
+

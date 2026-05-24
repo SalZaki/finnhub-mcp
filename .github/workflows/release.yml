@@ -43,7 +43,9 @@ jobs:
 
       - name: 🧪 Test
         shell: bash
-        run: dotnet test ./finnhub-mcp.sln --configuration Release --no-restore
+        # --filter "Category!=LiveSmoke" excludes the scheduled live-smoke
+        # project — that runs against real Finnhub on its own cron.
+        run: dotnet test ./finnhub-mcp.sln --configuration Release --no-restore --filter "Category!=LiveSmoke"
 
   release:
     name: 📦 Create GitHub Release
