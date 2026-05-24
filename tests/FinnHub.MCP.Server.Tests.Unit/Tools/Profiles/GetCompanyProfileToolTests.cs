@@ -92,4 +92,15 @@ public sealed class GetCompanyProfileToolTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetCompanyProfileAsync("AAPL"));
     }
+
+    [Fact]
+    public async Task GetCompanyProfileAsync_FailureResult_ReturnsEmptyNextActions()
+    {
+        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetCompanyProfileResponse>().Failure("upstream-error"));
+
+        var envelope = await this._sut.GetCompanyProfileAsync("AAPL");
+
+        Assert.Empty(envelope.NextActions);
+    }
 }

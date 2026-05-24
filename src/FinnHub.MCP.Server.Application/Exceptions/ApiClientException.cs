@@ -18,7 +18,7 @@ public abstract class ApiClientException(string message, Exception? inner = null
     /// <summary>
     /// Gets the unique error code representing this exception type.
     /// </summary>
-    public virtual string ErrorCode => "API_CLIENT_ERROR";
+    public abstract string ErrorCode { get; }
 
     /// <summary>
     /// Optional correlation ID for tracking the request.

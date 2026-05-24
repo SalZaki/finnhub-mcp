@@ -86,4 +86,15 @@ public sealed class GetFinancialsSnapshotToolTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetFinancialsSnapshotAsync("AAPL"));
     }
+
+    [Fact]
+    public async Task GetFinancialsSnapshotAsync_FailureResult_ReturnsEmptyNextActions()
+    {
+        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetFinancialsSnapshotResponse>().Failure("upstream-error"));
+
+        var envelope = await this._sut.GetFinancialsSnapshotAsync("AAPL");
+
+        Assert.Empty(envelope.NextActions);
+    }
 }

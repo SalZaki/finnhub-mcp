@@ -101,4 +101,15 @@ public sealed class GetPeersToolTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetPeersAsync("AAPL"));
     }
+
+    [Fact]
+    public async Task GetPeersAsync_FailureResult_ReturnsEmptyNextActions()
+    {
+        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetPeersResponse>().Failure("upstream-error"));
+
+        var envelope = await this._sut.GetPeersAsync("AAPL");
+
+        Assert.Empty(envelope.NextActions);
+    }
 }

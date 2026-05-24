@@ -105,6 +105,36 @@ public sealed class RateLimitHeaderHandlerTests
         tracker.Received(1).RecordThrottled();
     }
 
+    [Fact]
+    public async Task SendAsync_UnparseableResetHeader_LeavesResetAtNull()
+    {
+        var tracker = Substitute.For<IRateLimitTracker>();
+
+        await SendOnceAsync(tracker, r =>
+        {
+            r.Headers.TryAddWithoutValidation("X-Ratelimit-Remaining", "3");
+            r.Headers.TryAddWithoutValidation("X-Ratelimit-Reset", "not-a-timestamp");
+        });
+
+        tracker.Received(1).Update(3, null);
+    }
+
+    [Fact]
+    public async Task SendAsync_HeaderPresentWithNullValue_TreatedAsMissing()
+    {
+        // Defends the `raw is null` branches in TryReadInt / TryReadResetAt — TryGetValues
+        // returns true but FirstOrDefault yields null when the header was stored as null.
+        var tracker = Substitute.For<IRateLimitTracker>();
+
+        await SendOnceAsync(tracker, r =>
+        {
+            r.Headers.TryAddWithoutValidation("X-Ratelimit-Remaining", new string?[] { null });
+            r.Headers.TryAddWithoutValidation("X-Ratelimit-Reset", new string?[] { null });
+        });
+
+        tracker.DidNotReceive().Update(Arg.Any<int?>(), Arg.Any<DateTimeOffset?>());
+    }
+
     private static async Task SendOnceAsync(
         IRateLimitTracker tracker,
         Action<HttpResponseMessage> configureResponse,

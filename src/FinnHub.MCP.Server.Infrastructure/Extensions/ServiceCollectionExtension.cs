@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
@@ -47,6 +48,16 @@ namespace FinnHub.MCP.Server.Infrastructure.Extensions;
 /// Provides extension methods for registering infrastructure services such as typed HTTP clients
 /// and resilient policies using Polly for retry and circuit breaker behavior.
 /// </summary>
+/// <remarks>
+/// Excluded from coverage measurement for the same reason as <c>Program.cs</c> (see
+/// <c>coverlet.runsettings</c>): the only meaningful test for DI wiring is an end-to-end
+/// host bootstrap, which is exercised by the live smoke step in CLAUDE.md's
+/// "Adding a new MCP tool" recipe — not by unit tests. Instrumenting it would force a
+/// <c>WebApplicationFactory</c> harness that hits lines without validating behaviour.
+/// The load-bearing trailing-slash normalization in <see cref="ConfigureFinnHubClient"/>
+/// is covered by per-client URL-assertion tests; see PR #169.
+/// </remarks>
+[ExcludeFromCodeCoverage]
 public static class ServiceCollectionExtension
 {
     /// <summary>

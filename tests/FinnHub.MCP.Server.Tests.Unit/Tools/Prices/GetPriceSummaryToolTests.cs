@@ -86,4 +86,15 @@ public sealed class GetPriceSummaryToolTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetPriceSummaryAsync("AAPL"));
     }
+
+    [Fact]
+    public async Task GetPriceSummaryAsync_FailureResult_ReturnsEmptyNextActions()
+    {
+        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetPriceSummaryResponse>().Failure("upstream-error"));
+
+        var envelope = await this._sut.GetPriceSummaryAsync("AAPL");
+
+        Assert.Empty(envelope.NextActions);
+    }
 }
