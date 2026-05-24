@@ -82,7 +82,9 @@ public sealed class FinnHubNewsApiClient : INewsApiClient
                     a.Headline ?? string.Empty,
                     a.Url ?? string.Empty,
                     a.Source ?? string.Empty,
-                    DateTimeOffset.FromUnixTimeSeconds(a.Datetime)))
+                    a.Datetime is { } ts and > 0
+                        ? DateTimeOffset.FromUnixTimeSeconds(ts)
+                        : DateTimeOffset.MinValue))
                 .ToList()
                 .AsReadOnly();
     }

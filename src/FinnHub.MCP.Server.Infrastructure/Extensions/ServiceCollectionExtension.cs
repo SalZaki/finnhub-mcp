@@ -18,6 +18,10 @@ using FinnHub.MCP.Server.Application.Peers.Clients;
 using FinnHub.MCP.Server.Application.Peers.Services;
 using FinnHub.MCP.Server.Application.Prices.Clients;
 using FinnHub.MCP.Server.Application.Prices.Services;
+using FinnHub.MCP.Server.Application.Profiles.Clients;
+using FinnHub.MCP.Server.Application.Profiles.Services;
+using FinnHub.MCP.Server.Application.Quotes.Clients;
+using FinnHub.MCP.Server.Application.Quotes.Services;
 using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
@@ -25,6 +29,8 @@ using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
 using FinnHub.MCP.Server.Infrastructure.Clients.News;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
+using FinnHub.MCP.Server.Infrastructure.Clients.Profiles;
+using FinnHub.MCP.Server.Infrastructure.Clients.Quotes;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
 using FinnHub.MCP.Server.Infrastructure.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -106,13 +112,42 @@ public static class ServiceCollectionExtension
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubNewsApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubNewsApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IQuotesService, QuotesService>();
+        services.AddHttpClient<IQuotesApiClient, FinnHubQuotesApiClient>("FinnHub-Quotes-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubQuotesApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubQuotesApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IProfilesService, ProfilesService>();
+        services.AddHttpClient<IProfilesApiClient, FinnHubProfilesApiClient>("FinnHub-Profiles-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 
-    private static void ConfigureFinnHubClient(IServiceProvider provider, HttpClient client)
+    /// <summary>
+    /// Shared <see cref="HttpClient"/> configuration for every Finnhub-typed client.
+    /// </summary>
+    /// <remarks>
+    /// The trailing-slash normalization is load-bearing. Per RFC 3986, if <see cref="HttpClient.BaseAddress"/>
+    /// lacks a trailing slash, the last path segment is **replaced** when combined with a relative request URI:
+    /// <c>https://finnhub.io/api/v1</c> + <c>stock/profile2</c> → <c>https://finnhub.io/api/stock/profile2</c>
+    /// (the <c>/v1</c> is silently lost). Finnhub responds to that wrong URL with a 302 to its landing
+    /// page, the HttpClient follows the redirect, and our deserializer fails on the resulting HTML —
+    /// surfacing as <c>InvalidResponse</c> rather than a clean <c>ServiceUnavailable</c>.
+    /// We append the slash defensively so a configuration regression cannot reintroduce the bug.
+    /// </remarks>
+    internal static void ConfigureFinnHubClient(IServiceProvider provider, HttpClient client)
     {
         var options = provider.GetRequiredService<IOptions<FinnHubOptions>>().Value;
 
-        client.BaseAddress = new Uri(options.BaseUrl);
+        var baseUrl = options.BaseUrl.EndsWith('/') ? options.BaseUrl : options.BaseUrl + "/";
+        client.BaseAddress = new Uri(baseUrl);
         client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(MediaTypeNames.Application.Json));
         client.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("FinnHub-MCP-Server", "1.0"));
         client.Timeout = TimeSpan.FromSeconds(30);

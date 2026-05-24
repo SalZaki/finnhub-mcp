@@ -12,6 +12,8 @@ using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
 using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
+using FinnHub.MCP.Server.Application.Profiles.Features.GetCompanyProfile;
+using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
@@ -67,4 +69,10 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(FinnHubCompanyNewsArticle[]))]
 [JsonSerializable(typeof(GetNewsPulseResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetNewsPulseResponse>))]
+[JsonSerializable(typeof(FinnHubQuoteResponse))]
+[JsonSerializable(typeof(GetQuoteResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetQuoteResponse>))]
+[JsonSerializable(typeof(FinnHubProfileResponse))]
+[JsonSerializable(typeof(GetCompanyProfileResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetCompanyProfileResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;

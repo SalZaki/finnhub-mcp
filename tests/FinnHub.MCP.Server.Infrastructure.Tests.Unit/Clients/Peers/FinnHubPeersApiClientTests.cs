@@ -68,6 +68,25 @@ public sealed class FinnHubPeersApiClientTests : IDisposable
         Assert.Contains("grouping=subIndustry", this._handler.LastRequest!.RequestUri!.Query, StringComparison.Ordinal);
     }
 
+    /// <summary>
+    /// Regression: catches future URL-construction drift. See FinnHubProfilesApiClientTests
+    /// for the bug class this protects against.
+    /// </summary>
+    [Fact]
+    public async Task GetPeersAsync_HitsApiV1StockPeersEndpoint()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "[]");
+
+        await this._sut.GetPeersAsync(
+            new GetPeersQuery { QueryId = "q1", Symbol = "AAPL", Grouping = PeersGrouping.Industry },
+            CancellationToken.None);
+
+        Assert.NotNull(this._handler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/stock/peers?symbol=AAPL&grouping=industry",
+            this._handler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
     [Fact]
     public async Task GetPeersAsync_Forbidden_ThrowsPremiumRequired()
     {

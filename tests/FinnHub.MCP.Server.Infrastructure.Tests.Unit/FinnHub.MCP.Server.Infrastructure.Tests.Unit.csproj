@@ -18,4 +18,8 @@
     <ProjectReference Include="..\..\src\FinnHub.MCP.Server.Application\FinnHub.MCP.Server.Application.csproj" />
     <ProjectReference Include="..\..\src\FinnHub.MCP.Server.Infrastructure\FinnHub.MCP.Server.Infrastructure.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Real Finnhub HTTP responses captured for client tests. See tests/Fixtures/README.md. -->
+    <Content Include="..\Fixtures\finnhub\*.json" LinkBase="Fixtures\finnhub" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

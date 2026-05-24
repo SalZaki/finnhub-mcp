@@ -77,6 +77,44 @@ public sealed class FinnHubNewsApiClientTests : IDisposable
             this._sut.GetSentimentAsync("AAPL", CancellationToken.None));
     }
 
+    /// <summary>
+    /// Regression: catches future URL-construction drift on /news-sentiment. See
+    /// FinnHubProfilesApiClientTests for the bug class this protects against.
+    /// </summary>
+    [Fact]
+    public async Task GetSentimentAsync_HitsApiV1NewsSentimentEndpoint()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "{}");
+
+        await this._sut.GetSentimentAsync("AAPL", CancellationToken.None);
+
+        Assert.NotNull(this._handler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/news-sentiment?symbol=AAPL",
+            this._handler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
+    /// <summary>
+    /// Regression: catches future URL-construction drift on /company-news. The from/to
+    /// date params are also pinned because they previously had off-by-one issues elsewhere.
+    /// </summary>
+    [Fact]
+    public async Task GetCompanyNewsAsync_HitsApiV1CompanyNewsEndpointWithDateRange()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "[]");
+
+        await this._sut.GetCompanyNewsAsync(
+            "AAPL",
+            new DateOnly(2026, 5, 16),
+            new DateOnly(2026, 5, 23),
+            CancellationToken.None);
+
+        Assert.NotNull(this._handler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/company-news?symbol=AAPL&from=2026-05-16&to=2026-05-23",
+            this._handler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
     [Fact]
     public async Task GetCompanyNewsAsync_Success_MapsArticles()
     {

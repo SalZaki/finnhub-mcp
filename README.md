@@ -36,8 +36,10 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 
 ### ✅ Currently Available
 
-**Tools (5):**
-- **`search-symbol`** — search for financial symbols by ticker, company name, ISIN, or CUSIP, optionally filtered by exchange code (limit 1–100, default 10). On a high-confidence exact match, suggests `get-news-pulse`, `get-financials-snapshot`, `get-price-summary`, and `get-peers` as next actions.
+**Tools (7):**
+- **`search-symbol`** — search for financial symbols by ticker, company name, ISIN, or CUSIP, optionally filtered by exchange code (limit 1–100, default 10). On a high-confidence exact match, suggests `get-quote`, `get-company-profile`, `get-news-pulse`, `get-financials-snapshot`, `get-price-summary`, and `get-peers` as next actions.
+- **`get-quote`** — real-time price snapshot (current, change, percent change, session high/low/open, prev close, timestamp). Cached at the 10-second Quote tier.
+- **`get-company-profile`** — company snapshot (name, ticker, country, currency, exchange, IPO, market cap, shares outstanding, industry). `view=summary` drops the cosmetic fields (logo, phone, weburl); `standard` and `full` include them.
 - **`get-peers`** — peer ticker list for a symbol, optionally grouped by `industry` (default), `subindustry`, or `sector`. Summary view caps at 10 peers, standard at 25, full returns all.
 - **`get-financials-snapshot`** — curated 10-KPI snapshot (market cap, P/E, P/B, EPS, dividend yield, 52-week high/low, 52-week return, beta, revenue per share). `view=full` adds the raw upstream metric dictionary.
 - **`get-price-summary`** — aggregated price stats over a candle range (`min`, `max`, `mean`, `return_pct`, `vol`, `latest`). Period: `7d`, `30d` (default), `90d`, `1y`. `view=full` adds the raw OHLCV arrays.
@@ -51,11 +53,11 @@ Every tool returns the standard token-budgeted envelope with cross-linked `next_
 
 ### 🔄 In Development
 - Wire `ExchangesResource` to the live Finnhub `/stock/exchange` endpoint
-- **`get-quote`** — real-time price snapshot (current, change, percent_change, high/low/open, prev_close, timestamp)
-- **`get-company-profile`** — company information (name, ticker, country, currency, exchange, IPO, market cap, industry, sector)
+- **`get-calendar`** — parameter-dispatched calendar across earnings, IPO, and economic events
 
 ### 📋 Planned
-- Calendar tool (parameter-dispatched across earnings/IPO/economic), insider transactions, analyst recommendations
+- **`get-insider-signal`** — net buy/sell aggregation over the past 30 days plus notable insider names
+- **`get-recommendations`** — analyst consensus with strong-buy/buy/hold/sell/strong-sell counts
 - `search-tools` meta-tool for intent-based discovery (P7)
 - Technical indicators (RSI, MACD, moving averages)
 - WebSocket transport for streaming Finnhub feeds
@@ -181,6 +183,22 @@ Parameters:
 - `limit` *(int, optional)* — 1–100, defaults to 10.
 - `view` *(string, optional)* — response detail level. One of `summary` (default, ~500-token ceiling), `standard` (~2000-token ceiling), `full` (no ceiling).
 - `fields` *(string[], optional)* — sparse projection over the documented response fields. Unknown field names are rejected as a validation error.
+
+### Tool: `get-quote`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker, e.g. `AAPL`. 1–20 chars, starts with A–Z.
+- `view` *(string, optional)* — `summary`/`standard`/`full` all return the same curated snapshot fields.
+
+Response is intentionally compact (`current`, `change`, `percent_change`, `high`, `low`, `open`, `prev_close`, `timestamp_utc`). Cached at the 10-second Quote tier.
+
+### Tool: `get-company-profile`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker.
+- `view` *(string, optional)* — `summary` drops `logo`/`phone`/`weburl`; `standard` and `full` include them.
 
 ### Tool: `get-peers`
 

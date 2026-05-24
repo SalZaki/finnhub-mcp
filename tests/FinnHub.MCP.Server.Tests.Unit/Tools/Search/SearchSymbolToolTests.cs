@@ -73,11 +73,13 @@ public sealed class SearchSymbolToolTests
 
         var envelope = await tool.SearchSymbolAsync("AAPL");
 
-        Assert.Equal(4, envelope.NextActions.Count);
-        Assert.Equal("get-news-pulse", envelope.NextActions[0].Tool);
-        Assert.Equal("get-financials-snapshot", envelope.NextActions[1].Tool);
-        Assert.Equal("get-price-summary", envelope.NextActions[2].Tool);
-        Assert.Equal("get-peers", envelope.NextActions[3].Tool);
+        Assert.Equal(6, envelope.NextActions.Count);
+        Assert.Equal("get-quote", envelope.NextActions[0].Tool);
+        Assert.Equal("get-company-profile", envelope.NextActions[1].Tool);
+        Assert.Equal("get-news-pulse", envelope.NextActions[2].Tool);
+        Assert.Equal("get-financials-snapshot", envelope.NextActions[3].Tool);
+        Assert.Equal("get-price-summary", envelope.NextActions[4].Tool);
+        Assert.Equal("get-peers", envelope.NextActions[5].Tool);
         Assert.All(envelope.NextActions, a => Assert.Equal("AAPL", a.Args["symbol"]));
     }
 
@@ -90,7 +92,7 @@ public sealed class SearchSymbolToolTests
 
         var envelope = await tool.SearchSymbolAsync("microsoft");
 
-        Assert.Equal(4, envelope.NextActions.Count);
+        Assert.Equal(6, envelope.NextActions.Count);
         Assert.All(envelope.NextActions, a => Assert.Equal("MSFT", a.Args["symbol"]));
     }
 

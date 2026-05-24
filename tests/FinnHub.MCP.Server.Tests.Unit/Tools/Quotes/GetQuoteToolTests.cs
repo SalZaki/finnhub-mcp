@@ -1,0 +1,59 @@
+﻿// ---------------------------------------------------------------------------------------------------------------------
+//  <copyright>
+//    This file is part of FinnHub MCP Server and is licensed under the MIT License.
+//    See the LICENSE file in the project root for full license information.
+//  </copyright>
+// ---------------------------------------------------------------------------------------------------------------------
+
+using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
+using FinnHub.MCP.Server.Application.Quotes.Services;
+using FinnHub.MCP.Server.Tools.Quotes;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
+using Xunit;
+
+namespace FinnHub.MCP.Server.Tests.Unit.Tools.Quotes;
+
+public sealed class GetQuoteToolTests
+{
+    private readonly IQuotesService _service = Substitute.For<IQuotesService>();
+    private readonly GetQuoteTool _sut;
+
+    public GetQuoteToolTests()
+    {
+        this._sut = new GetQuoteTool(this._service, NullLogger<GetQuoteTool>.Instance);
+    }
+
+    [Fact]
+    public async Task GetQuoteAsync_InvalidSymbol_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() => this._sut.GetQuoteAsync("!!!"));
+    }
+
+    [Fact]
+    public async Task GetQuoteAsync_LowercaseSymbol_Normalises()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetQuoteResponse>().Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
+
+        await this._sut.GetQuoteAsync("aapl");
+
+        await this._service.Received(1).GetQuoteAsync(
+            Arg.Is<GetQuoteQuery>(q => q.Symbol == "AAPL"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetQuoteAsync_Success_PopulatesNextActions()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetQuoteResponse>().Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
+
+        var envelope = await this._sut.GetQuoteAsync("AAPL");
+
+        Assert.Equal(2, envelope.NextActions.Count);
+        Assert.Equal("get-news-pulse", envelope.NextActions[0].Tool);
+        Assert.Equal("get-price-summary", envelope.NextActions[1].Tool);
+    }
+}
