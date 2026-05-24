@@ -1,5 +1,46 @@
 # Changelog
 
+## [1.20.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.19.0...v1.20.0) (2026-05-24)
+
+
+### ✨ Features
+
+* **p6b:** add get-quote and get-company-profile (P6 Wave B) ([a6cdeba](https://github.com/SalZaki/finnhub-mcp/commit/a6cdebaada632a447543712bda4917a91a5a1649))
+* **p6b:** add get-quote and get-company-profile (P6 Wave B) ([d4b0789](https://github.com/SalZaki/finnhub-mcp/commit/d4b0789f4e14252118386b9eb8186a1ca0952999))
+
+
+### 🐛 Bug Fixes
+
+* **p6a:** tolerate mixed types in /stock/metric response ([2e7214e](https://github.com/SalZaki/finnhub-mcp/commit/2e7214eb742be5c148a82a0f0e1c69e17589c1bc))
+* **p6a:** tolerate mixed types in /stock/metric response ([a6bf456](https://github.com/SalZaki/finnhub-mcp/commit/a6bf4563ee2349d5eb40048f9e78cba68693e526))
+* **p6:** BaseUrl trailing-slash so relative request URIs hit /api/v1/ ([bf79257](https://github.com/SalZaki/finnhub-mcp/commit/bf792570c8c40cbb3eecffe0818835dd775fffac))
+* **p6:** BaseUrl trailing-slash so relative request URIs hit /api/v1/ ([205f1e3](https://github.com/SalZaki/finnhub-mcp/commit/205f1e3bb49a07335202e57d3a3dd78393f5efde))
+* **p6:** nullable defensive DTOs + real Finnhub fixtures ([039373a](https://github.com/SalZaki/finnhub-mcp/commit/039373a01e6cc7293ef66c3aea03f2e0d47b9b69))
+* **p6:** nullable defensive DTOs + real Finnhub fixtures for client tests ([99f0b5a](https://github.com/SalZaki/finnhub-mcp/commit/99f0b5a23841ccd8dc90c851af279dea744feeb4))
+
+
+### 👷 CI/CD
+
+* add PR title validator + CONTRIBUTING.md for commitizen flow ([2d5d541](https://github.com/SalZaki/finnhub-mcp/commit/2d5d5414b8b9a3622f917e2f40bd6e7e57ead31f))
+* enforce conventional commits via Husky.Net + PR title validator ([b739281](https://github.com/SalZaki/finnhub-mcp/commit/b739281e419c391cc1dd4d05faaa17bd4d79ff23))
+
+## [1.19.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.18.0...v1.19.0) (2026-05-23)
+
+
+### ✨ Features
+
+* **p6a:** cross-link next_actions across Wave A tools + README ([5538cae](https://github.com/SalZaki/finnhub-mcp/commit/5538caefdd49faa5de9477be18c6e6fc2bc79769))
+* **p6a:** cross-link next_actions across Wave A tools and document in README ([dedb7dd](https://github.com/SalZaki/finnhub-mcp/commit/dedb7dd93c4c0ee6b8ccdcb9ceb6aac278c9f290))
+
+
+### 👷 CI/CD
+
+* gate releases through release branch ([a95f026](https://github.com/SalZaki/finnhub-mcp/commit/a95f026f973727d5d3bbbab3da5aff964293ce28))
+* remove dorny/test-reporter — the real source of PR CI flakes ([c630a10](https://github.com/SalZaki/finnhub-mcp/commit/c630a10b4c48a458b2691714d4be944929eaeac6))
+* target release branch from release-please ([9fdcc46](https://github.com/SalZaki/finnhub-mcp/commit/9fdcc46b6cd8d8fc5d916967c46296add27898ab))
+* target release branch from release-please ([9db7de8](https://github.com/SalZaki/finnhub-mcp/commit/9db7de8b063e065666875d242c80f686a4e3b937))
+* validate before release-please so failed tests do not create orphan releases ([618a923](https://github.com/SalZaki/finnhub-mcp/commit/618a9232e831e4f398812ce29a226c4b7265e385))
+
 ## [1.18.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.17.0...v1.18.0) (2026-05-23)
 
 
