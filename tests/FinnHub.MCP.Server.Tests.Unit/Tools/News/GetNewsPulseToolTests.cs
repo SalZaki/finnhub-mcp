@@ -86,4 +86,15 @@ public sealed class GetNewsPulseToolTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetNewsPulseAsync("AAPL"));
     }
+
+    [Fact]
+    public async Task GetNewsPulseAsync_FailureResult_ReturnsEmptyNextActions()
+    {
+        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetNewsPulseResponse>().Failure("upstream-error"));
+
+        var envelope = await this._sut.GetNewsPulseAsync("AAPL");
+
+        Assert.Empty(envelope.NextActions);
+    }
 }
