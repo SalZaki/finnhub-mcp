@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.News.Services;
 using FinnHub.MCP.Server.Tools.News;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.News;
@@ -66,5 +67,23 @@ public sealed class GetNewsPulseToolTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             this._sut.GetNewsPulseAsync("AAPL", view: "nonsense"));
+    }
+
+    [Fact]
+    public async Task GetNewsPulseAsync_Cancelled_PropagatesOperationCanceled()
+    {
+        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetNewsPulseAsync("AAPL"));
+    }
+
+    [Fact]
+    public async Task GetNewsPulseAsync_UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetNewsPulseAsync("AAPL"));
     }
 }

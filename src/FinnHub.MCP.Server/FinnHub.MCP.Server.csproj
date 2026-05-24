@@ -10,9 +10,12 @@
     <NeutralLanguage>en-GB</NeutralLanguage>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <RepositoryUrl>https://github.com/salzaki/finnhub-mcp</RepositoryUrl>
+    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Slim release artifacts: skip symbols for the published binary. -->
     <PublishSymbols>false</PublishSymbols>
     <DebugType>None</DebugType>
-    <RuntimeIdentifiers>win-x64;win-arm64;linux-x64;linux-arm64;osx-x64;osx-arm64</RuntimeIdentifiers>
   </PropertyGroup>
   <ItemGroup Label="Packages">
     <PackageReference Include="ModelContextProtocol" />

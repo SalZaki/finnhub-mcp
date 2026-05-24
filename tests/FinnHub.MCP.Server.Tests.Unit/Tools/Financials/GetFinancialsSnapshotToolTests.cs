@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Tools.Financials;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Financials;
@@ -66,5 +67,23 @@ public sealed class GetFinancialsSnapshotToolTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             this._sut.GetFinancialsSnapshotAsync("AAPL", view: "nonsense"));
+    }
+
+    [Fact]
+    public async Task GetFinancialsSnapshotAsync_Cancelled_PropagatesOperationCanceled()
+    {
+        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetFinancialsSnapshotAsync("AAPL"));
+    }
+
+    [Fact]
+    public async Task GetFinancialsSnapshotAsync_UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetFinancialsSnapshotAsync("AAPL"));
     }
 }

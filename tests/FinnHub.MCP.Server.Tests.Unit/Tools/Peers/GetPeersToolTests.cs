@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Peers.Services;
 using FinnHub.MCP.Server.Tools.Peers;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Peers;
@@ -81,5 +82,23 @@ public sealed class GetPeersToolTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             this._sut.GetPeersAsync("AAPL", grouping: "nonsense"));
+    }
+
+    [Fact]
+    public async Task GetPeersAsync_Cancelled_PropagatesOperationCanceled()
+    {
+        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetPeersAsync("AAPL"));
+    }
+
+    [Fact]
+    public async Task GetPeersAsync_UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetPeersAsync("AAPL"));
     }
 }

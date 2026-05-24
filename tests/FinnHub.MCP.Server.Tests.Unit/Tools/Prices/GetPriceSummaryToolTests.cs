@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Prices.Services;
 using FinnHub.MCP.Server.Tools.Prices;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Prices;
@@ -66,5 +67,23 @@ public sealed class GetPriceSummaryToolTests
         await this._service.Received(1).GetSummaryAsync(
             Arg.Is<GetPriceSummaryQuery>(q => q.Period == PricePeriod.NinetyDays),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetPriceSummaryAsync_Cancelled_PropagatesOperationCanceled()
+    {
+        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetPriceSummaryAsync("AAPL"));
+    }
+
+    [Fact]
+    public async Task GetPriceSummaryAsync_UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetPriceSummaryAsync("AAPL"));
     }
 }

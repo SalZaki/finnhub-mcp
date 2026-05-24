@@ -6,10 +6,23 @@ coverage:
   status:
     project:
       default:
-        target: 0.2  # Require at least 20% coverage
+        # Aggregate codebase coverage. Current baseline (after PR #176): 91% line
+        # with Program.cs excluded via [ExcludeFromCodeCoverage]. Set the floor
+        # below the actual to absorb small swings without spurious failures, but
+        # high enough that a real regression trips it.
+        target: 85%
         threshold: 1%
         informational: false
         if_not_found: failure
+    patch:
+      default:
+        # New / changed code in each PR. Strict: a PR can land code with <80%
+        # coverage only by deliberately overriding (admin merge), the same
+        # safety valve used for CI-flake escapes.
+        target: 80%
+        threshold: 1%
+        informational: false
+        if_not_found: success
 
 comment:
   layout: "reach,diff,flags,files"

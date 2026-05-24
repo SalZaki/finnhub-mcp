@@ -44,7 +44,9 @@ Dependency direction: `Server` → `Application` ← `Infrastructure`. The `Appl
 
 ## Conventions
 
-- **Conventional Commits** — release-please depends on them. Use `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `test:`, `ci:`, `build:`. Breaking changes via `!` or a `BREAKING CHANGE:` footer.
+- **Conventional Commits** — release-please depends on them. Enforced by a Husky.Net `commit-msg` hook locally **and** the `PR Title` GitHub Action server-side. Allowed types (the full list, mirrors `.release-please-config.json`): `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `build`, `ci`, `chore`, `docs`, `test`. Breaking changes via `!` (`feat!:` …) or a `BREAKING CHANGE:` footer.
+  - **`release:` is NOT an allowed type.** Promotion PRs from `main → release` must use `chore(release): promote main to release` (PR #171 was rejected for using `release:`).
+  - After a fresh clone: `dotnet tool restore && dotnet husky install` — otherwise the local hook isn't wired and commits go straight to the server-side check.
 - **Source-generated JSON** — every DTO must have an entry in the `JsonSerializerContext` partial class in `Infrastructure/Serialization`. No reflection-based `JsonSerializer.Serialize<T>` without a context.
 - **Strongly-typed options** — bind from `appsettings.json` via `IOptions<T>` with data-annotation validation on startup.
 - **No secrets in source** — API keys, tokens, anything sensitive: environment variables only.
@@ -87,11 +89,76 @@ The Finnhub HTTP client is wired with `Microsoft.Extensions.Http.Resilience` (Po
 
 For 403 responses (premium-locked endpoints): handle these as a typed exception, do **not** retry through Polly. Mark the endpoint as premium-gated and return a structured error.
 
-## CI & releases
+## HTTP clients and URI resolution
 
-- `.github/workflows/dotnet.yml` runs build + test on every push.
-- `.github/workflows/release.yml` uses `release-please` in manifest mode. Versioning is driven by Conventional Commit prefixes — write your commit messages accordingly.
+Two URL-construction patterns exist in the codebase. Both work; **don't mix them by accident**:
+
+- **Absolute** — `FinnHubSearchApiClient.BuildRequestUri` concatenates `BaseUrl + endpoint` manually. Slash-tolerant in either direction.
+- **Relative-with-slashed-BaseAddress** — all six Wave A/B clients use `client.SendAsync(new HttpRequestMessage(Get, "stock/profile2?…"))`. This relies on `HttpClient.BaseAddress` having a **trailing slash**. Per RFC 3986, without the slash the last path segment is *replaced* (`/api/v1` + `stock/profile2` → `/api/stock/profile2`, dropping `/v1` silently — surfaces as `InvalidResponse` from HTML deserialization on the Finnhub landing page).
+
+`ConfigureFinnHubClient` in `ServiceCollectionExtension.cs` defensively appends the trailing slash if the configured `BaseUrl` lacks one. **Do not strip that normalization in a cleanup PR** — it's load-bearing (PR #169). The XML comment on the method explains why.
+
+Every client must have a regression test that pins the on-wire URL:
+```csharp
+Assert.Equal("https://finnhub.io/api/v1/stock/profile2?symbol=AAPL",
+             _handler.LastRequest!.RequestUri!.AbsoluteUri);
+```
+See the `Hits<...>Endpoint` tests in each `Clients/<Group>/*Tests.cs` for the pattern.
+
+## Test fixtures (real Finnhub captures)
+
+`tests/Fixtures/finnhub/*.json` holds frozen real responses captured via `tests/Fixtures/finnhub/capture.sh` (needs `FINNHUB_API_KEY`). Client tests load them through `Fixture.LoadFinnHub("name")`.
+
+**Why we don't use synthetic test payloads:** synthetic data masks shape drift — twice now. PR #166 fixed mixed-type values in `/stock/metric` (date strings interleaved with numeric KPIs); PR #167 fixed null `change`/`percent_change` in `/quote` for unknown symbols. Both passed the original synthetic tests and broke live.
+
+Each Infrastructure test csproj copies fixtures into the test bin directory:
+```xml
+<Content Include="..\Fixtures\finnhub\*.json"
+         LinkBase="Fixtures\finnhub"
+         CopyToOutputDirectory="PreserveNewest" />
+```
+
+Refresh fixtures when Finnhub changes a shape or you add an endpoint.
+
+## CI & releases — gated through the `release` branch
+
+**Branch model:**
+- `main` — every feature/fix/ci PR lands here as normal (squash or merge, your call)
+- `release` — the ship gate; releases only happen from here
+
+**Workflow files:**
+- `.github/workflows/dotnet.yml` runs format + build + tests on every push to `main`/`develop`/`release` and every PR targeting `main`/`develop`
+- `.github/workflows/release.yml` triggers **only** on push to `release` — runs `validate` (format + tests) → `release-please` (uses `target-branch: release` — required, see PR #162) → 6-platform build matrix on success
+- `.github/workflows/pr-title.yml` validates PR titles against Conventional Commits
+
+**Validate runs BEFORE release-please.** If tests fail, no tag is created. (PR #169 corrected this — previously failed validate left an orphan tag and GitHub release with no artifacts.)
+
+**Shipping a release:**
+1. Open a `main → release` PR titled `chore(release): promote main to release`
+2. Merge it → validate runs on `release`
+3. release-please opens its own PR against `release` with the version bump + CHANGELOG entry (`release-please--branches--release`)
+4. Merge that → tag + GitHub release + 6-platform build matrix triggers
+
+**Things to know:**
 - `CHANGELOG.md` is generated; don't edit it by hand.
+- After a promotion lands on `release`, GitHub's UI will offer a "compare and pull request" prompt suggesting `release → main`. **It's noise** — that direction is circular (release-please adds CHANGELOG + manifest commits to `release` that main doesn't have; merging them back is meaningless). Dismiss the banner.
+- Recommended: enable branch protection on `release` in repo settings (PR + status checks required). Without it, anyone with push access can bypass the validate gate.
+
+## Coverage
+
+`dotnet test --settings coverlet.runsettings` produces real per-project coverage XML. Codecov ingests the results on every PR and enforces:
+
+- **Project floor: 85% line.** Aggregate coverage across the codebase. PRs that drop below this fail the Codecov check.
+- **Patch floor: 80% line.** New / changed code in a PR must be ≥80% covered.
+
+`Program.cs` is excluded from coverage measurement (`ExcludeByFile` in `coverlet.runsettings`) — it's the host entry point validated by live smoke, not by unit tests. Adding it would force WebApplicationFactory tests that hit lines without validating behaviour.
+
+Baseline at the time of writing (PR #176): **91% line / 84% branch** with `Program.cs` excluded. Both well above the floor.
+
+If coverage drops below the floor, your options are:
+1. Add tests covering the gap (preferred).
+2. Decorate the new code with `[ExcludeFromCodeCoverage]` and document why in the XML doc / commit message (rare — only for genuinely untestable code).
+3. Admin-merge with explicit justification (escape valve, same as for the CI-flake cases).
 
 ## Planning
 
@@ -123,3 +190,9 @@ When any AI agent needs to browse, prefer gstack's `/browse` over `mcp__claude-i
 - Don't introduce a different mocking library — stick with NSubstitute.
 - Don't commit `.env`, API keys, or any secrets.
 - Don't edit `CHANGELOG.md` directly.
+- **Don't use `release:` as a Conventional Commit type.** Promotion PRs are `chore(release): …`. The PR-title validator will block `release:` (PR #171).
+- **Don't `git commit --no-verify`** to skip the commit-msg hook. The server-side PR-title check will still reject the merge, so you'd be deferring pain rather than avoiding it.
+- **Don't strip the trailing-slash normalization in `ConfigureFinnHubClient`.** It looks like dead code but it prevents the URL-resolution bug class from PR #169. The XML comment on the method explains why.
+- **Don't merge GitHub's "compare and pull request" prompt for `release → main`.** It's a circular merge (see "Gated release model" above).
+- **Don't ship synthetic-payload-only client tests.** Real Finnhub fixtures live under `tests/Fixtures/finnhub/`; use them. Mocks bypass URL resolution AND don't catch upstream shape drift.
+- **Don't guess the fix from a code-review reading when a live error is reported** — read the server log first (see "Debugging discipline" above). The financials misdiagnosis cost a release cycle for this exact reason.

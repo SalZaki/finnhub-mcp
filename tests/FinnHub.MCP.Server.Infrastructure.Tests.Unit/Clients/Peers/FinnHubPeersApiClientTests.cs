@@ -117,6 +117,37 @@ public sealed class FinnHubPeersApiClientTests : IDisposable
             CancellationToken.None));
     }
 
+    [Fact]
+    public async Task GetPeersAsync_HttpRequestException_ThrowsHttpException()
+    {
+        this._handler.SetException(new HttpRequestException("network unreachable"));
+
+        await Assert.ThrowsAsync<ApiClientHttpException>(() => this._sut.GetPeersAsync(
+            new GetPeersQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetPeersAsync_TaskCanceledWithTimeout_ThrowsTimeoutException()
+    {
+        this._handler.SetException(new TaskCanceledException("slow", new TimeoutException()));
+
+        await Assert.ThrowsAsync<ApiClientTimeoutException>(() => this._sut.GetPeersAsync(
+            new GetPeersQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetPeersAsync_TokenAlreadyCancelled_ThrowsCancelledException()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<ApiClientCancelledException>(() => this._sut.GetPeersAsync(
+            new GetPeersQuery { QueryId = "q1", Symbol = "AAPL" },
+            cts.Token));
+    }
+
     public void Dispose()
     {
         this._handler.Dispose();
