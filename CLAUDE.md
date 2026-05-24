@@ -144,9 +144,21 @@ Refresh fixtures when Finnhub changes a shape or you add an endpoint.
 - After a promotion lands on `release`, GitHub's UI will offer a "compare and pull request" prompt suggesting `release → main`. **It's noise** — that direction is circular (release-please adds CHANGELOG + manifest commits to `release` that main doesn't have; merging them back is meaningless). Dismiss the banner.
 - Recommended: enable branch protection on `release` in repo settings (PR + status checks required). Without it, anyone with push access can bypass the validate gate.
 
-## Coverage tooling (known broken)
+## Coverage
 
-`dotnet test --settings coverlet.runsettings` currently emits empty coverage XML (`lines-valid="0"`). Don't trust any reported coverage number until this is fixed — file/PR for it separately. The CI workflow uploads to Codecov but the upload is meaningless until the collector is wired correctly.
+`dotnet test --settings coverlet.runsettings` produces real per-project coverage XML. Codecov ingests the results on every PR and enforces:
+
+- **Project floor: 85% line.** Aggregate coverage across the codebase. PRs that drop below this fail the Codecov check.
+- **Patch floor: 80% line.** New / changed code in a PR must be ≥80% covered.
+
+`Program.cs` is excluded from coverage measurement (`ExcludeByFile` in `coverlet.runsettings`) — it's the host entry point validated by live smoke, not by unit tests. Adding it would force WebApplicationFactory tests that hit lines without validating behaviour.
+
+Baseline at the time of writing (PR #176): **91% line / 84% branch** with `Program.cs` excluded. Both well above the floor.
+
+If coverage drops below the floor, your options are:
+1. Add tests covering the gap (preferred).
+2. Decorate the new code with `[ExcludeFromCodeCoverage]` and document why in the XML doc / commit message (rare — only for genuinely untestable code).
+3. Admin-merge with explicit justification (escape valve, same as for the CI-flake cases).
 
 ## Planning
 
