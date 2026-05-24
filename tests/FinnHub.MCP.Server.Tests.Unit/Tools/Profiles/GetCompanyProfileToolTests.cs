@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Profiles.Services;
 using FinnHub.MCP.Server.Tools.Profiles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Profiles;
@@ -72,5 +73,23 @@ public sealed class GetCompanyProfileToolTests
         Assert.Equal("get-financials-snapshot", envelope.NextActions[0].Tool);
         Assert.Equal("get-peers", envelope.NextActions[1].Tool);
         Assert.Equal("get-quote", envelope.NextActions[2].Tool);
+    }
+
+    [Fact]
+    public async Task GetCompanyProfileAsync_Cancelled_PropagatesOperationCanceled()
+    {
+        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetCompanyProfileAsync("AAPL"));
+    }
+
+    [Fact]
+    public async Task GetCompanyProfileAsync_UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetCompanyProfileAsync("AAPL"));
     }
 }

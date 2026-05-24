@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Quotes.Services;
 using FinnHub.MCP.Server.Tools.Quotes;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Quotes;
@@ -55,5 +56,24 @@ public sealed class GetQuoteToolTests
         Assert.Equal(2, envelope.NextActions.Count);
         Assert.Equal("get-news-pulse", envelope.NextActions[0].Tool);
         Assert.Equal("get-price-summary", envelope.NextActions[1].Tool);
+    }
+
+    [Fact]
+    public async Task GetQuoteAsync_Cancelled_PropagatesOperationCanceled()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new OperationCanceledException());
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetQuoteAsync("AAPL"));
+    }
+
+    [Fact]
+    public async Task GetQuoteAsync_UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetQuoteAsync("AAPL"));
+        Assert.Equal("downstream broke", ex.Message);
     }
 }

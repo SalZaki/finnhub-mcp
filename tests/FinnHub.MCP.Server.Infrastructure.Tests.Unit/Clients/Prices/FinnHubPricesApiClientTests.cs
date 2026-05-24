@@ -143,6 +143,37 @@ public sealed class FinnHubPricesApiClientTests : IDisposable
         Assert.Contains("resolution=W", this._handler.LastRequest!.RequestUri!.Query, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task GetSummaryAsync_HttpRequestException_ThrowsHttpException()
+    {
+        this._handler.SetException(new HttpRequestException("network unreachable"));
+
+        await Assert.ThrowsAsync<ApiClientHttpException>(() => this._sut.GetSummaryAsync(
+            new GetPriceSummaryQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_TaskCanceledWithTimeout_ThrowsTimeoutException()
+    {
+        this._handler.SetException(new TaskCanceledException("slow", new TimeoutException()));
+
+        await Assert.ThrowsAsync<ApiClientTimeoutException>(() => this._sut.GetSummaryAsync(
+            new GetPriceSummaryQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetSummaryAsync_TokenAlreadyCancelled_ThrowsCancelledException()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<ApiClientCancelledException>(() => this._sut.GetSummaryAsync(
+            new GetPriceSummaryQuery { QueryId = "q1", Symbol = "AAPL" },
+            cts.Token));
+    }
+
     public void Dispose()
     {
         this._handler.Dispose();
