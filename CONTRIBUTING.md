@@ -161,6 +161,65 @@ If your PR drops coverage below the floor:
 3. Admin-merge with explicit justification (escape valve, same as for
    CI-flake escapes).
 
+## Live-smoke runbook
+
+A scheduled GitHub Actions workflow (`.github/workflows/live-smoke.yml`)
+hits real Finnhub every day at 07:00 UTC, walks every MCP tool with a
+representative ticker, and opens an `upstream-drift`-labeled issue when
+anything fails. It exists because mocked unit tests and real-fixture
+tests cannot detect changes Finnhub makes between our snapshots — the
+URL-resolution regression (PR #169), the financials-mixed-types bug
+(PR #166), and the unknown-symbol nulls (PR #167) all reached production
+because nothing was watching the live API.
+
+The smoke project lives at `tests/FinnHub.MCP.Server.Tests.LiveSmoke/`
+and is tagged `[Trait("Category", "LiveSmoke")]` so the normal `dotnet test`
+(which CI runs on every PR) skips it. Only the live-smoke workflow opts
+in via `--filter Category=LiveSmoke`.
+
+### When the workflow opens an issue
+
+The auto-opened issue tells you which tool failed and which run to
+inspect. Most likely causes, in rough order of frequency:
+
+1. **Finnhub payload shape drift.** A DTO failed to deserialize. Look at
+   the failing tool's stack trace in the run, re-capture the fixture via
+   `tests/Fixtures/finnhub/capture.sh`, update the DTO + add the new
+   field with a sensible default, ship a PR.
+2. **Finnhub endpoint change.** URL returns 404 or redirects. Audit
+   `ConfigureFinnHubClient` (especially the trailing-slash normalization
+   from PR #169) and the per-client `BuildRequestUri` paths.
+3. **Smoke API key issue.** The `FINNHUB_API_KEY` repo secret was
+   rotated upstream, expired, or hit its free-tier quota.
+4. **Premium gating change.** An endpoint became premium-only overnight.
+   If the failing tool is in the free tier today, this is a Finnhub
+   policy change worth tracking — surface it to the team before users
+   start hitting it.
+
+### Rotating the smoke key
+
+The workflow uses a dedicated low-quota Finnhub key stored as the
+`FINNHUB_API_KEY` repo secret — **not** your dev key. Rotation:
+
+1. Log in to finnhub.io, navigate to API keys, generate a new key
+2. Repo Settings → Secrets and variables → Actions → update
+   `FINNHUB_API_KEY` to the new value
+3. Revoke the old key on finnhub.io
+4. Trigger a manual run of `live-smoke.yml` via the Actions tab to
+   confirm the new key works
+
+### Running it locally
+
+```bash
+export FINNHUB_API_KEY=<your-dev-key>
+dotnet test tests/FinnHub.MCP.Server.Tests.LiveSmoke/ \
+  --filter "Category=LiveSmoke"
+```
+
+The smoke test fails fast and loud if `FINNHUB_API_KEY` is not set in
+the environment — a silently-skipping smoke is the exact failure mode
+this whole workflow is meant to prevent.
+
 ## Debugging discipline
 
 When a live error is reported, the **first** step is to read the actual

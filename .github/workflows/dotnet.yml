@@ -79,10 +79,15 @@ jobs:
           mkdir -p TestResults
           mkdir -p Coverage
 
-          # Run all tests with coverage and collect results
+          # Run all tests with coverage and collect results.
+          # --filter "Category!=LiveSmoke" excludes the scheduled live-smoke
+          # project (FinnHub.MCP.Server.Tests.LiveSmoke) which hits real
+          # Finnhub via FINNHUB_API_KEY — that runs on its own cron, not
+          # on every PR build.
           dotnet test ./finnhub-mcp.sln \
             --configuration Release \
             --verbosity normal \
+            --filter "Category!=LiveSmoke" \
             --logger "trx;LogFileName=test-results.trx" \
             --results-directory ./TestResults \
             --collect:"XPlat Code Coverage" \
