@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.20.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.20.0...v1.20.1) (2026-05-24)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** restore PDB generation in Debug builds so coverlet can instrument ([f898319](https://github.com/SalZaki/finnhub-mcp/commit/f89831914acb811e581db126bbbefc493d19f4d8))
+* **ci:** restore PDB generation in Debug builds so coverlet can instrument ([2665cd1](https://github.com/SalZaki/finnhub-mcp/commit/2665cd1814f9ad0493c6c2aed6199b074bced7b7))
+
 ## [1.20.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.19.0...v1.20.0) (2026-05-24)
 
 
