@@ -1,0 +1,68 @@
+name: Sub-task
+description: A granular technical or implementation task within a User Story. The atomic unit of work.
+title: "[Task] <verb-led short title>"
+labels: ["type:subtask"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for **Sub-tasks** — atomic engineering work items inside a User Story.
+
+        - Title should start with a verb: "Add", "Wire", "Capture", "Test", "Refactor".
+        - Each sub-task should be doable in a single sitting and verifiable independently.
+        - If a sub-task is taking more than a day, it probably should have been a Story.
+
+        Hierarchy: **Epic → Feature → User Story → Sub-task**. See [`docs/ISSUE_WORKFLOW.md`](../blob/main/docs/ISSUE_WORKFLOW.md).
+  - type: input
+    id: parent-story
+    attributes:
+      label: Parent Story
+      description: Issue number of the parent User Story.
+      placeholder: "#N"
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One to three sentences. What concretely needs to be done and where in the codebase.
+    validations:
+      required: true
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of done
+      description: Verifiable completion criteria for this single sub-task.
+      value: |
+        - [ ] Implementation merged
+        - [ ] Test added or existing test updated
+        - [ ] Build clean, no new warnings
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Implementation notes
+      description: File paths, existing patterns to mirror, gotchas. Reference specific lines where useful.
+    validations:
+      required: false
+  - type: input
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: "Format: `Blocks: #N, Blocked by: #N`."
+      placeholder: "Blocks: #N, Blocked by: #N"
+    validations:
+      required: false
+  - type: dropdown
+    id: estimate
+    attributes:
+      label: Estimate
+      description: S = ≤2h, M = half day, L = full day.
+      options:
+        - S
+        - M
+        - L
+      default: 0
+    validations:
+      required: true
