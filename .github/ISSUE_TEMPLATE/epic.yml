@@ -1,0 +1,71 @@
+name: Epic
+description: A large body of work that spans multiple Features. Typically aligned to a milestone.
+title: "[Epic] <short title>"
+labels: ["type:epic"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for **Epics** — large initiatives that span multiple Features and usually map to a milestone in `.planning/specs/`.
+
+        - Epics describe **what** and **why**, not **how**.
+        - Each Epic must list explicit Goals that can be ticked off as Features land.
+        - Features are tracked as separate issues and linked to this Epic via the `Sub-issues` panel (GitHub native sub-issues) and a `Parent Epic` reference in their body.
+
+        Hierarchy: **Epic → Feature → User Story → Sub-task**. See [`docs/ISSUE_WORKFLOW.md`](../blob/main/docs/ISSUE_WORKFLOW.md).
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Two to four paragraphs covering the problem this Epic addresses and the outcome at completion. No marketing language.
+      placeholder: |
+        What capability does this Epic deliver? Why now? What is the user-visible / system-visible outcome when this Epic is done?
+    validations:
+      required: true
+  - type: textarea
+    id: goals
+    attributes:
+      label: Goals
+      description: Specific, testable outcomes. Each item should be a checkbox. Features and Stories will close these off.
+      value: |
+        - [ ] Goal 1
+        - [ ] Goal 2
+        - [ ] Goal 3
+    validations:
+      required: true
+  - type: input
+    id: roadmap-ref
+    attributes:
+      label: Roadmap reference
+      description: Path or anchor in `.planning/` that this Epic implements (e.g. `.planning/specs/01-product-surface.md#p6`).
+      placeholder: ".planning/specs/<file>.md#<section>"
+    validations:
+      required: false
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope / Out of scope
+      description: Bullet list what this Epic covers and what it explicitly does not. Out-of-scope items should reference the Epic or milestone that owns them.
+      value: |
+        **In scope**
+        -
+
+        **Out of scope**
+        -
+    validations:
+      required: false
+  - type: input
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Issues that block or are blocked by this Epic. Format `Blocks: #N, Blocked by: #N`.
+      placeholder: "Blocks: #N, Blocked by: #N"
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Technical notes
+      description: Architectural constraints, integration points, contract surfaces. Keep concise — detailed design lives in `.planning/`.
+    validations:
+      required: false

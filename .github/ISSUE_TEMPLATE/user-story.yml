@@ -1,0 +1,73 @@
+name: User Story
+description: A user-facing requirement in standard story format. Belongs to one Feature.
+title: "[User Story] As a <role>, I want <capability>"
+labels: ["type:story"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template for **User Stories** — single, end-user-facing increments of a Feature.
+
+        - The story sentence below must follow the format **`As a <role>, I want <capability>, so that <outcome>.`** strictly. No deviations.
+        - Acceptance criteria should be Given/When/Then or numbered, and individually testable.
+        - Each story should be small enough to ship as one PR.
+
+        Hierarchy: **Epic → Feature → User Story → Sub-task**. See [`docs/ISSUE_WORKFLOW.md`](../blob/main/docs/ISSUE_WORKFLOW.md).
+  - type: input
+    id: parent-feature
+    attributes:
+      label: Parent Feature
+      description: Issue number of the parent Feature.
+      placeholder: "#N"
+    validations:
+      required: true
+  - type: input
+    id: story
+    attributes:
+      label: Story
+      description: "Strict format: `As a <role>, I want <capability>, so that <outcome>.`"
+      placeholder: "As an LLM client, I want to discover tools by intent, so that I don't load every tool schema into context at session start."
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance criteria
+      description: Given/When/Then scenarios or numbered assertions. Each must be independently verifiable by a test or live observation.
+      value: |
+        - [ ] Given <context>, when <action>, then <observable outcome>.
+        - [ ] Given <context>, when <action>, then <observable outcome>.
+    validations:
+      required: true
+  - type: textarea
+    id: definition-of-done
+    attributes:
+      label: Definition of done
+      description: Engineering completeness for this story.
+      value: |
+        - [ ] Code change merged on a branch matching `<type>/<short-description>`
+        - [ ] Unit tests added or updated
+        - [ ] All sub-tasks closed
+        - [ ] PR title is Conventional Commits compliant
+    validations:
+      required: true
+  - type: input
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: "Format: `Blocks: #N, Blocked by: #N`."
+      placeholder: "Blocks: #N, Blocked by: #N"
+    validations:
+      required: false
+  - type: dropdown
+    id: estimate
+    attributes:
+      label: Estimate
+      description: S = a few hours, M = half-day to day, L = multi-day.
+      options:
+        - S
+        - M
+        - L
+      default: 0
+    validations:
+      required: true
