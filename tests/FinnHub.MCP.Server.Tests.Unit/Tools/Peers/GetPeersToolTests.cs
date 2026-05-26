@@ -112,4 +112,24 @@ public sealed class GetPeersToolTests
 
         Assert.Empty(envelope.NextActions);
     }
+
+    [Fact]
+    public async Task GetPeersAsync_SummaryView_ExplanationCountMatchesProjectedTotal()
+    {
+        // Regression: previously the tool projected `data.peers` to 10 but read
+        // the original 30-peer result for the explanation string, producing an
+        // envelope where data.total_count=10 but the explanation said
+        // "Found 30 peer(s)". Both must derive from the same projected result.
+        var manyPeers = Enumerable.Range(1, 30).Select(i => $"P{i}").ToArray();
+        this._service
+            .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new Result<GetPeersResponse>().Success(
+                new GetPeersResponse { Peers = manyPeers, Grouping = "industry" }));
+
+        var envelope = await this._sut.GetPeersAsync("AAPL", view: "summary");
+
+        Assert.Equal(10, envelope.Data!.TotalCount);
+        Assert.Contains("10 peer(s)", envelope.Explanation);
+        Assert.DoesNotContain("30 peer(s)", envelope.Explanation);
+    }
 }
