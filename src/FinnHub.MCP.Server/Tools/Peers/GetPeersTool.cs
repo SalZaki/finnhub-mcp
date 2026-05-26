@@ -66,15 +66,21 @@ public sealed class GetPeersTool(
 
             var result = await peersService.GetPeersAsync(query, cancellationToken);
 
+            // Project once, derive everything else from the projected result so
+            // total_count, explanation, and next_actions can't disagree on the
+            // peer count. Was a real bug: a 30-peer upstream result on a summary
+            // call produced data.total_count=10 but explanation="Found 30 peer(s)".
+            var projectedResult = ProjectByView(result, validatedView);
+
             logger.LogInformation(
                 "Peers completed for {Symbol} in {ElapsedMs}ms: {Count} peers",
-                validatedSymbol, stopwatch.ElapsedMilliseconds, result.Data?.TotalCount ?? 0);
+                validatedSymbol, stopwatch.ElapsedMilliseconds, projectedResult.Data?.TotalCount ?? 0);
 
             return EnvelopeFactory.FromResult(
-                ProjectByView(result, validatedView),
+                projectedResult,
                 validatedView,
-                nextActions: BuildNextActions(result, validatedSymbol),
-                explanation: BuildExplanation(result, validatedSymbol));
+                nextActions: BuildNextActions(projectedResult, validatedSymbol),
+                explanation: BuildExplanation(projectedResult, validatedSymbol));
         }
         catch (OperationCanceledException ex)
         {
