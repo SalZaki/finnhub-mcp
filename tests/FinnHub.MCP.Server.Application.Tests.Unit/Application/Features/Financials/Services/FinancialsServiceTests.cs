@@ -6,11 +6,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Financials.Clients;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Financials.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -21,18 +21,11 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Financi
 public sealed class FinancialsServiceTests
 {
     private readonly IFinancialsApiClient _apiClient = Substitute.For<IFinancialsApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly FinancialsService _sut;
 
     public FinancialsServiceTests()
     {
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<GetFinancialsSnapshotResponse>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<GetFinancialsSnapshotResponse>>>()(CancellationToken.None));
 
         this._sut = new FinancialsService(this._apiClient, this._cache, NullLogger<FinancialsService>.Instance);
     }

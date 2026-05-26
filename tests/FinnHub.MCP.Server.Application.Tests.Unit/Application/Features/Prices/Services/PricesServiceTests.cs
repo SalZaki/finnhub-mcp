@@ -6,11 +6,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Prices.Clients;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
 using FinnHub.MCP.Server.Application.Prices.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -21,18 +21,11 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Prices.
 public sealed class PricesServiceTests
 {
     private readonly IPricesApiClient _apiClient = Substitute.For<IPricesApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly PricesService _sut;
 
     public PricesServiceTests()
     {
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<GetPriceSummaryResponse>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<GetPriceSummaryResponse>>>()(CancellationToken.None));
 
         this._sut = new PricesService(this._apiClient, this._cache, NullLogger<PricesService>.Instance);
     }

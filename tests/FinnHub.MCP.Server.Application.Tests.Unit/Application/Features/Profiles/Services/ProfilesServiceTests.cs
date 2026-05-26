@@ -5,11 +5,11 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Profiles.Clients;
 using FinnHub.MCP.Server.Application.Profiles.Features.GetCompanyProfile;
 using FinnHub.MCP.Server.Application.Profiles.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -20,18 +20,11 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Profile
 public sealed class ProfilesServiceTests
 {
     private readonly IProfilesApiClient _apiClient = Substitute.For<IProfilesApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly ProfilesService _sut;
 
     public ProfilesServiceTests()
     {
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<GetCompanyProfileResponse>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<GetCompanyProfileResponse>>>()(CancellationToken.None));
 
         this._sut = new ProfilesService(this._apiClient, this._cache, NullLogger<ProfilesService>.Instance);
     }

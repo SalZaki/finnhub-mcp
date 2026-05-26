@@ -5,11 +5,11 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.News.Clients;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
 using FinnHub.MCP.Server.Application.News.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -20,27 +20,11 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.News.Se
 public sealed class NewsServiceTests
 {
     private readonly INewsApiClient _apiClient = Substitute.For<INewsApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly NewsService _sut;
 
     public NewsServiceTests()
     {
-        // Cache delegates passthrough for both list and sentiment payloads.
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<IReadOnlyList<CompanyNewsArticle>>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<IReadOnlyList<CompanyNewsArticle>>>>()(CancellationToken.None));
-
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<NewsSentiment>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<NewsSentiment>>>()(CancellationToken.None));
 
         this._sut = new NewsService(this._apiClient, this._cache, NullLogger<NewsService>.Instance);
     }
