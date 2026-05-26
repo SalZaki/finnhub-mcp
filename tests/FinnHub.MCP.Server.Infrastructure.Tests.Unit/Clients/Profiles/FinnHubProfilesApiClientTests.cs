@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Profiles.Features.GetCompanyProfile;
 using FinnHub.MCP.Server.Infrastructure.Clients.Profiles;
+using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -158,6 +159,29 @@ public sealed class FinnHubProfilesApiClientTests : IDisposable
         await Assert.ThrowsAsync<ApiClientCancelledException>(() => this._sut.GetProfileAsync(
             new GetCompanyProfileQuery { QueryId = "q1", Symbol = "AAPL" },
             cts.Token));
+    }
+
+    /// <summary>
+    /// Real captured Finnhub /stock/profile2 response for AAPL. Proves the parser
+    /// handles the actual wire shape including fields the synthetic SamplePayload
+    /// doesn't carry (e.g. estimateCurrency). Catches Finnhub shape drift on the
+    /// next fixture refresh — see CLAUDE.md "Don't ship synthetic-payload-only client tests".
+    /// </summary>
+    [Fact]
+    public async Task GetProfileAsync_RealAaplFixture_MapsAllFields()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("profile-AAPL"));
+
+        var result = await this._sut.GetProfileAsync(
+            new GetCompanyProfileQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None);
+
+        Assert.Equal("AAPL", result.Ticker);
+        Assert.Equal("US", result.Country);
+        Assert.Equal("USD", result.Currency);
+        Assert.False(string.IsNullOrEmpty(result.Exchange));
+        Assert.False(string.IsNullOrEmpty(result.Industry));
+        Assert.True(result.MarketCap > 0);
     }
 
     public void Dispose()

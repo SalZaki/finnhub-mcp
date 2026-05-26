@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
+using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -146,6 +147,24 @@ public sealed class FinnHubPeersApiClientTests : IDisposable
         await Assert.ThrowsAsync<ApiClientCancelledException>(() => this._sut.GetPeersAsync(
             new GetPeersQuery { QueryId = "q1", Symbol = "AAPL" },
             cts.Token));
+    }
+
+    /// <summary>
+    /// Real captured Finnhub /stock/peers response for AAPL (industry grouping).
+    /// Catches Finnhub shape drift on the next fixture refresh — see CLAUDE.md
+    /// "Don't ship synthetic-payload-only client tests".
+    /// </summary>
+    [Fact]
+    public async Task GetPeersAsync_RealAaplFixture_ParsesPeerArray()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("peers-AAPL-industry"));
+
+        var result = await this._sut.GetPeersAsync(
+            new GetPeersQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None);
+
+        Assert.NotEmpty(result.Peers);
+        Assert.Contains("AAPL", result.Peers);
     }
 
     public void Dispose()
