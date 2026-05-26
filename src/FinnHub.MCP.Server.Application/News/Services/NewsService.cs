@@ -90,6 +90,16 @@ public sealed class NewsService(
                     ResultErrorType.NotFound)
                 : new Result<GetNewsPulseResponse>().Success(response);
         }
+        catch (ApiClientPremiumRequiredException ex)
+        {
+            // Finnhub has gated /news-sentiment behind premium before; if they ever do
+            // the same for /company-news, surface a typed PremiumRequired envelope so
+            // the LLM sees premium=true and can hint at an upgrade. Matches the 6
+            // sibling services that all carry this catch (FinancialsService.cs:48-52
+            // and similar).
+            logger.LogWarning(ex, "News endpoint is premium-locked for {Symbol}", query.Symbol);
+            return new Result<GetNewsPulseResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+        }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching news for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
