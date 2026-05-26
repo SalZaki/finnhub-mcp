@@ -13,6 +13,7 @@ using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
+using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -403,6 +404,27 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         Assert.Equal(string.Empty, result.Symbols[0].Description);
         Assert.Equal(string.Empty, result.Symbols[0].DisplaySymbol);
         Assert.Equal(string.Empty, result.Symbols[0].Type);
+    }
+
+    /// <summary>
+    /// Real captured Finnhub /search?q=apple response. Catches Finnhub shape drift
+    /// on the next fixture refresh — see CLAUDE.md "Don't ship synthetic-payload-only
+    /// client tests". The synthetic JsonSerializer.Serialize round-trips in the other
+    /// tests assert the parser handles the shape we just generated; this proves it
+    /// handles the actual upstream shape.
+    /// </summary>
+    [Fact]
+    public async Task SearchSymbolAsync_RealAppleFixture_ParsesAllSymbols()
+    {
+        this._messageHandler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("search-apple"));
+
+        var result = await this._sut.SearchSymbolAsync(
+            new SearchSymbolQuery { Query = "apple", QueryId = "q1" },
+            CancellationToken.None);
+
+        Assert.NotEmpty(result.Symbols);
+        Assert.Contains(result.Symbols, s => s.Symbol == "AAPL");
+        Assert.All(result.Symbols, s => Assert.False(string.IsNullOrEmpty(s.Symbol)));
     }
 
     public void Dispose()

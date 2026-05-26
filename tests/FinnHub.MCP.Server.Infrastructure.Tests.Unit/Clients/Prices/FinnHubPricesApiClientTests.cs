@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
 using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
+using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -172,6 +173,23 @@ public sealed class FinnHubPricesApiClientTests : IDisposable
         await Assert.ThrowsAsync<ApiClientCancelledException>(() => this._sut.GetSummaryAsync(
             new GetPriceSummaryQuery { QueryId = "q1", Symbol = "AAPL" },
             cts.Token));
+    }
+
+    /// <summary>
+    /// Real captured Finnhub /stock/candle response — currently the premium-locked
+    /// error shape (free-tier accounts can't reach this endpoint). When served as a
+    /// 403 Forbidden, the client correctly throws ApiClientPremiumRequiredException.
+    /// Re-capture the fixture once a paid key is available to replace with happy-path
+    /// candle data.
+    /// </summary>
+    [Fact]
+    public async Task GetSummaryAsync_RealAaplCandleFixture_PremiumLocked_ThrowsPremiumRequired()
+    {
+        this._handler.SetResponse(HttpStatusCode.Forbidden, Fixture.LoadFinnHub("candle-AAPL"));
+
+        await Assert.ThrowsAsync<ApiClientPremiumRequiredException>(() => this._sut.GetSummaryAsync(
+            new GetPriceSummaryQuery { QueryId = "q1", Symbol = "AAPL" },
+            CancellationToken.None));
     }
 
     public void Dispose()
