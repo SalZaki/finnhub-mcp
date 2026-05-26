@@ -71,6 +71,13 @@ public sealed class PricesService(
             logger.LogError(ex, "Failed to deserialize candle response for {Symbol}", query.Symbol);
             return new Result<GetPriceSummaryResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
+        }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected candle failure for {Symbol}", query.Symbol);

@@ -81,4 +81,20 @@ public sealed class QuotesServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal("ServiceUnavailable", result.ErrorType);
     }
+
+    [Fact]
+    public async Task GetQuoteAsync_Cancelled_RethrowsTypedException_DoesNotDemoteToUnknown()
+    {
+        // Regression: previously the catch (ApiClientException ex) catch-all
+        // turned ApiClientCancelledException into ResultErrorType.Unknown with
+        // a generic "lookup failed unexpectedly" message — indistinguishable
+        // from a real upstream failure. Now the typed catch arm rethrows.
+        var query = new GetQuoteQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetQuoteAsync(query, Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ApiClientCancelledException("cancelled by caller"));
+
+        var ex = await Assert.ThrowsAsync<ApiClientCancelledException>(
+            () => this._sut.GetQuoteAsync(query));
+        Assert.Equal("cancelled by caller", ex.Message);
+    }
 }

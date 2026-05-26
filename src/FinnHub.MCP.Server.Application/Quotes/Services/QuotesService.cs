@@ -73,6 +73,13 @@ public sealed class QuotesService(
             logger.LogError(ex, "Failed to deserialize quote response for {Symbol}", query.Symbol);
             return new Result<GetQuoteResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
+        }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected quote failure for {Symbol}", query.Symbol);
