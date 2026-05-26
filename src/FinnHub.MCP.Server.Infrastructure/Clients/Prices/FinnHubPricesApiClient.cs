@@ -74,7 +74,10 @@ public sealed class FinnHubPricesApiClient : IPricesApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub candle failed: {Uri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub candle failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub candle failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {

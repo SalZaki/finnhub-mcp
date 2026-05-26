@@ -118,13 +118,24 @@ public sealed class FinnHubQuotesApiClientTests : IDisposable
     }
 
     [Fact]
-    public async Task GetQuoteAsync_HttpRequestException_ThrowsHttpException()
+    public async Task GetQuoteAsync_HttpRequestException_PreservesInnerExceptionAndUsesServiceUnavailable()
     {
-        this._handler.SetException(new HttpRequestException("network unreachable"));
+        // Regression: previously this catch block constructed
+        // ApiClientHttpException(..., HttpStatusCode.InternalServerError) with no
+        // inner exception. The wrapped HttpRequestException's stack trace and
+        // underlying socket/DNS detail were dropped (undermining CLAUDE.md
+        // "read the server logs first" debugging discipline), and the status
+        // code falsely claimed Finnhub returned 500 when the request never
+        // reached Finnhub (DNS failure, socket reset, TLS error).
+        var network = new HttpRequestException("DNS resolution failed");
+        this._handler.SetException(network);
 
-        await Assert.ThrowsAsync<ApiClientHttpException>(() => this._sut.GetQuoteAsync(
+        var ex = await Assert.ThrowsAsync<ApiClientHttpException>(() => this._sut.GetQuoteAsync(
             new GetQuoteQuery { QueryId = "q1", Symbol = "AAPL" },
             CancellationToken.None));
+
+        Assert.Same(network, ex.InnerException);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, ex.StatusCode);
     }
 
     [Fact]

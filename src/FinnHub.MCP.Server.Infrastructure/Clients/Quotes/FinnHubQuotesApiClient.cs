@@ -64,7 +64,10 @@ public sealed class FinnHubQuotesApiClient : IQuotesApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub quote failed: {Uri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub quote failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub quote failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {

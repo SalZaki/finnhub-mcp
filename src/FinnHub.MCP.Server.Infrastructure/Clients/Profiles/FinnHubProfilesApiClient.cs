@@ -66,7 +66,10 @@ public sealed class FinnHubProfilesApiClient : IProfilesApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub profile failed: {Uri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub profile failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub profile failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
