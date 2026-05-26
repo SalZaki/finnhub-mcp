@@ -98,6 +98,25 @@ public sealed class NewsServiceTests
     }
 
     [Fact]
+    public async Task GetPulseAsync_PremiumOnCompanyNews_ReturnsPremiumRequired()
+    {
+        // Regression: NewsService previously only caught ApiClientPremiumRequiredException
+        // on the sentiment call. If Finnhub ever gates /company-news behind premium
+        // (they've done this to /news-sentiment), the failure became `Unknown` instead
+        // of `PremiumRequired`, breaking the envelope's premium=true flag.
+        var query = new GetNewsPulseQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetSentimentAsync(query.Symbol, Arg.Any<CancellationToken>())
+            .Returns(new NewsSentiment(null, null, null));
+        this._apiClient.GetCompanyNewsAsync(query.Symbol, Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ApiClientPremiumRequiredException("/api/v1/company-news"));
+
+        var result = await this._sut.GetPulseAsync(query);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("PremiumRequired", result.ErrorType);
+    }
+
+    [Fact]
     public async Task GetPulseAsync_NoArticles_ReturnsNotFound()
     {
         var query = new GetNewsPulseQuery { QueryId = "q1", Symbol = "UNKN" };
