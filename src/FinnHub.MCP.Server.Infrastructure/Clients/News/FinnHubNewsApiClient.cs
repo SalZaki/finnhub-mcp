@@ -136,7 +136,10 @@ public sealed class FinnHubNewsApiClient : INewsApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub news failed: {Uri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub news failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub news failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {

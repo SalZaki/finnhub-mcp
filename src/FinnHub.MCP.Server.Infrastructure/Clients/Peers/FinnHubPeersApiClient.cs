@@ -70,7 +70,10 @@ public sealed class FinnHubPeersApiClient : IPeersApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub peers failed: {Uri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub peers failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub peers failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
