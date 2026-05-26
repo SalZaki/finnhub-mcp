@@ -226,6 +226,43 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         Assert.Contains("exchange=NASDAQ", requestUri);
     }
 
+    /// <summary>
+    /// Regression: pin the full on-wire URL so the slash-tolerant <c>BuildRequestUri</c>
+    /// in this client can't silently regress into the PR #169 bug class (relative path +
+    /// missing trailing slash on <c>BaseAddress</c> dropping <c>/v1</c>, surfacing as
+    /// HTML deserialization on the Finnhub landing page). Mirrors the
+    /// <c>Hits&lt;…&gt;Endpoint</c> pattern in every other client test.
+    /// </summary>
+    [Fact]
+    public async Task SearchSymbolAsync_HitsApiV1SearchEndpoint()
+    {
+        this._messageHandler.SetResponse(HttpStatusCode.OK, """{"count":0,"result":[]}""");
+
+        await this._sut.SearchSymbolAsync(
+            new SearchSymbolQuery { Query = "AAPL", QueryId = "q1" },
+            CancellationToken.None);
+
+        Assert.NotNull(this._messageHandler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/search?q=AAPL",
+            this._messageHandler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task SearchSymbolAsync_HitsApiV1SearchEndpoint_WithExchange()
+    {
+        this._messageHandler.SetResponse(HttpStatusCode.OK, """{"count":0,"result":[]}""");
+
+        await this._sut.SearchSymbolAsync(
+            new SearchSymbolQuery { Query = "AAPL", Exchange = "NASDAQ", QueryId = "q1" },
+            CancellationToken.None);
+
+        Assert.NotNull(this._messageHandler.LastRequest?.RequestUri);
+        Assert.Equal(
+            "https://finnhub.io/api/v1/search?q=AAPL&exchange=NASDAQ",
+            this._messageHandler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
     [Fact]
     public async Task SearchSymbolAsync_WithEmptyResponse_ReturnsEmptySymbolsList()
     {
