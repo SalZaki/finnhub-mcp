@@ -144,6 +144,13 @@ public sealed partial class SymbolResolver(
             logger.LogError(ex, "Deserialisation error resolving symbol for input '{Input}'.", originalInput);
             return new Result<ResolvedSymbol>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
+        }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected resolver failure for input '{Input}'.", originalInput);

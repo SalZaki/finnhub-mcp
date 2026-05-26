@@ -115,6 +115,13 @@ public sealed class NewsService(
             logger.LogError(ex, "Failed to deserialize news response for {Symbol}", query.Symbol);
             return new Result<GetNewsPulseResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
+        }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected news failure for {Symbol}", query.Symbol);

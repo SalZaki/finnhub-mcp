@@ -65,6 +65,13 @@ public sealed class FinancialsService(
             logger.LogError(ex, "Failed to deserialize financials response for {Symbol}", query.Symbol);
             return new Result<GetFinancialsSnapshotResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
+        }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected financials failure for {Symbol}", query.Symbol);

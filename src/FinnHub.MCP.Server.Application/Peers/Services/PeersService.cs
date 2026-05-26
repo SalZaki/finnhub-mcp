@@ -71,6 +71,13 @@ public sealed class PeersService(
             logger.LogError(ex, "Failed to deserialize peers response for {Symbol}", query.Symbol);
             return new Result<GetPeersResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
+        }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected peers failure for {Symbol}", query.Symbol);
