@@ -6,11 +6,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Quotes.Clients;
 using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
 using FinnHub.MCP.Server.Application.Quotes.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -21,18 +21,11 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Quotes.
 public sealed class QuotesServiceTests
 {
     private readonly IQuotesApiClient _apiClient = Substitute.For<IQuotesApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly QuotesService _sut;
 
     public QuotesServiceTests()
     {
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<GetQuoteResponse>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<GetQuoteResponse>>>()(CancellationToken.None));
 
         this._sut = new QuotesService(this._apiClient, this._cache, NullLogger<QuotesService>.Instance);
     }
@@ -54,6 +47,26 @@ public sealed class QuotesServiceTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal(261.74, result.Data!.Current);
+    }
+
+    [Fact]
+    public async Task GetQuoteAsync_TwoIdenticalCalls_HitsApiClientExactlyOnce()
+    {
+        // Real cache semantics — FakeFinnHubCache returns the cached value on
+        // the second call instead of re-invoking the factory. This locks in
+        // the "two consecutive identical calls hit upstream exactly once"
+        // contract from .planning/specs/01-product-surface.md §3 P2 — the
+        // contract every Wave A/B service was supposed to satisfy but only
+        // SearchService had a regression test for.
+        var query = new GetQuoteQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetQuoteAsync(query, Arg.Any<CancellationToken>())
+            .Returns(new GetQuoteResponse { Symbol = "AAPL", Current = 261.74 });
+
+        await this._sut.GetQuoteAsync(query);
+        await this._sut.GetQuoteAsync(query);
+
+        Assert.Equal(1, this._cache.FactoryInvocationCount);
+        await this._apiClient.Received(1).GetQuoteAsync(query, Arg.Any<CancellationToken>());
     }
 
     [Fact]
