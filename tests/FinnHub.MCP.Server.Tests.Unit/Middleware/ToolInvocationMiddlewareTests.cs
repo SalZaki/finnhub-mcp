@@ -99,6 +99,26 @@ public sealed class ToolInvocationMiddlewareTests
     }
 
     [Fact]
+    public async Task InvokeAsync_StandardOverBudget_EnvelopeReportsStandardView()
+    {
+        // Regression: BudgetExceeded envelope previously hardcoded view="summary"
+        // regardless of the actually-declared view, and the recovery hint advised
+        // "retry with view=standard" even for callers who already did. Now both
+        // the view field and the recovery hint must reflect the declared view.
+        var inner = MakeInnerTool(SmallEnvelopeJson());
+        var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(2_001), this._rateLimitTracker, this._logger);
+
+        var result = await middleware.InvokeAsync(MakeRequest("standard"), CancellationToken.None);
+
+        Assert.True(result.IsError);
+        var node = ReadEnvelope(result);
+        Assert.Equal("standard", (string?)node!["view"]);
+        var explanation = (string?)node["explanation"] ?? string.Empty;
+        Assert.DoesNotContain("view=standard", explanation);
+        Assert.Contains("view=full", explanation);
+    }
+
+    [Fact]
     public async Task InvokeAsync_TextOnlyResult_PatchesApproxTokens()
     {
         // The SDK's AIFunctionMcpServerTool emits the envelope into Content[0].Text
