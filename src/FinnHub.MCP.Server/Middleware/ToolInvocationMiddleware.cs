@@ -71,7 +71,7 @@ public sealed class ToolInvocationMiddleware(
                 "tool {ToolName} view={View} tokens={ApproxTokens} budget={Budget} budget_exceeded=true duration_ms={ElapsedMs}",
                 toolName, declaredView, approxTokens, ceiling, stopwatch.ElapsedMilliseconds);
 
-            return BuildBudgetExceededResult(approxTokens, ceiling, rateLimit);
+            return BuildBudgetExceededResult(approxTokens, ceiling, declaredView, rateLimit);
         }
 
         PatchEnvelopeMetadata(result, approxTokens, rateLimit);
@@ -159,19 +159,32 @@ public sealed class ToolInvocationMiddleware(
         }
     }
 
-    private static CallToolResult BuildBudgetExceededResult(int approxTokens, int ceiling, RateLimitInfo? rateLimit)
+    private static CallToolResult BuildBudgetExceededResult(
+        int approxTokens,
+        int ceiling,
+        ToolView declaredView,
+        RateLimitInfo? rateLimit)
     {
+        // Recovery hint must match the view the caller actually asked for.
+        // Telling a Standard caller to "retry with view=standard" sends them
+        // around in a circle. Full never trips this path (int.MaxValue ceiling).
+        var recoveryHint = declaredView switch
+        {
+            ToolView.Standard => "Retry with view=full, or a sparser fields projection.",
+            _ => "Retry with view=standard, view=full, or a sparser fields projection."
+        };
+
         var envelope = new JsonObject
         {
             ["is_success"] = false,
             ["data"] = null,
             ["error_message"] = "response exceeded token budget for declared view",
             ["error_type"] = nameof(ResultErrorType.BudgetExceeded),
-            ["view"] = "summary",
+            ["view"] = declaredView.ToString().ToLowerInvariant(),
             ["next_actions"] = new JsonArray(),
             ["explanation"] =
                 $"Response would be ~{approxTokens} tokens against a {ceiling}-token ceiling. " +
-                "Retry with view=standard, view=full, or a sparser fields projection.",
+                recoveryHint,
             ["approx_tokens"] = approxTokens,
             ["rate_limit"] = BuildRateLimitNode(rateLimit),
             ["sentiment_source"] = null,
