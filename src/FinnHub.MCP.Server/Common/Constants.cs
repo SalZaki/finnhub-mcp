@@ -481,14 +481,21 @@ public static class Constants
 
                 /// <summary>Kind parameter description.</summary>
                 public const string KindDescription =
-                    "Calendar feed to dispatch to: 'earnings' or 'ipo'. (Economic is added by a follow-up release.)";
+                    "Calendar feed to dispatch to: 'earnings', 'ipo', or 'economic'.";
 
                 /// <summary>Symbol parameter name.</summary>
                 public const string SymbolName = "symbol";
 
                 /// <summary>Symbol parameter description.</summary>
                 public const string SymbolDescription =
-                    "Optional uppercase ticker filter, e.g. 'AAPL'. Only valid with kind='earnings'; omit for kind='ipo' (the upstream does not filter IPOs by ticker).";
+                    "Optional uppercase ticker filter, e.g. 'AAPL'. Only valid with kind='earnings'; omit for kind='ipo' and kind='economic' (those upstreams do not filter by ticker).";
+
+                /// <summary>Country parameter name.</summary>
+                public const string CountryName = "country";
+
+                /// <summary>Country parameter description.</summary>
+                public const string CountryDescription =
+                    "Optional ISO 3166-1 alpha-2 country code (e.g. 'US', 'GB', 'DE') or Finnhub pseudo-code ('EU', 'WW' for global). Only valid with kind='economic'. When omitted, the full global feed is returned (subject to view caps).";
 
                 /// <summary>From-date parameter name.</summary>
                 public const string FromName = "from";
@@ -502,7 +509,7 @@ public static class Constants
 
                 /// <summary>To-date parameter description.</summary>
                 public const string ToDescription =
-                    "Inclusive end of the date window as ISO yyyy-MM-dd. Defaults to from + the kind's max window. Maximum window: 90 days for earnings, 365 days for IPO.";
+                    "Inclusive end of the date window as ISO yyyy-MM-dd. Defaults to from + the kind's max window. Maximum window: 90 days for earnings and economic, 365 days for IPO.";
 
                 /// <summary>View parameter name.</summary>
                 public const string ViewName = "view";
@@ -514,23 +521,26 @@ public static class Constants
             /// <summary>Tool description registered with the MCP server.</summary>
             public const string Description =
                 """
-                Get the dispatched calendar for a date window — earnings or IPO listings (economic kind upcoming).
+                Get the dispatched calendar for a date window — corporate earnings, IPO listings, or macro releases.
 
                 ## Examples:
                 - kind='earnings', symbol='AAPL', from='2026-05-01', to='2026-08-01'
                 - kind='earnings', from='2026-05-26', to='2026-06-02'   (full week, all symbols)
                 - kind='ipo', from='2026-06-01', to='2026-12-31'        (next 6 months of listings)
+                - kind='economic', country='US', from='2026-06-01', to='2026-06-30'  (US macro releases for the month)
 
                 ## Request Parameters:
-                - kind (string, required): 'earnings' or 'ipo'
+                - kind (string, required): 'earnings', 'ipo', or 'economic'
                 - symbol (string, optional): uppercase ticker filter — only valid with kind='earnings'
+                - country (string, optional): ISO 3166-1 alpha-2 code — only valid with kind='economic'
                 - from (string, optional, ISO yyyy-MM-dd): inclusive start; defaults to today (UTC)
-                - to (string, optional, ISO yyyy-MM-dd): inclusive end; defaults to from + the kind's max window. Max: 90 days for earnings, 365 days for IPO.
+                - to (string, optional, ISO yyyy-MM-dd): inclusive end; defaults to from + the kind's max window. Max: 90 days for earnings and economic, 365 days for IPO.
 
                 ## Response Fields:
                 - kind (string): echo of the dispatched feed
                 - from, to (ISO date): echo of the window
-                - symbol (string, nullable): echo of the symbol filter (always null for kind='ipo')
+                - symbol (string, nullable): echo of the symbol filter (always null for kind='ipo'/'economic')
+                - country (string, nullable): echo of the country filter (only populated for kind='economic')
                 - total_count (int)
                 - earnings_events (array, populated when kind='earnings'):
                   - symbol, date (ISO), hour (bmo|amc|dmh|null), quarter, year
@@ -539,12 +549,17 @@ public static class Constants
                   - symbol (nullable; null on withdrawn/unpriced), name, date (ISO), exchange
                   - price (nullable double, parsed from upstream string), number_of_shares, total_shares_value
                   - status (e.g. 'priced', 'filed', 'withdrawn', 'expected')
+                - economic_events (array, populated when kind='economic', sorted earliest-first):
+                  - country, event_name, time_utc (ISO 8601)
+                  - impact (low|medium|high|null)
+                  - actual, estimate, prev (all nullable doubles), unit (e.g. '%', '$')
 
                 ## Notes:
                 - summary view caps at 10 events; standard at 25; full returns the complete window.
                 - Cached at the News tier — calendars revise as analysts update estimates and SEC filings land.
                 - kind='earnings' suggests get-financials-snapshot + get-news-pulse for the queried symbol.
                 - kind='ipo' suggests get-company-profile for the most recent IPO with a tradable ticker.
+                - kind='economic' returns no next_actions — macro releases are not symbol-scoped.
 
                 Approx tokens: summary ~250, standard varies with event count (~1000 at 25 events), full no ceiling.
                 """;

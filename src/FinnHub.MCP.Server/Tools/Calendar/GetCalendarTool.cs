@@ -17,8 +17,7 @@ namespace FinnHub.MCP.Server.Tools.Calendar;
 
 /// <summary>
 /// MCP tool exposing the Finnhub <c>/calendar/*</c> endpoint family as a single
-/// parameter-dispatched lookup. v1 ships earnings; IPO and economic kinds are
-/// added by follow-up stories.
+/// parameter-dispatched lookup. Ships earnings, IPO, and economic kinds.
 /// </summary>
 [McpServerToolType]
 public sealed class GetCalendarTool(
@@ -27,7 +26,7 @@ public sealed class GetCalendarTool(
 {
     /// <summary>
     /// Dispatched calendar lookup. Returns the events for <paramref name="kind"/> within
-    /// the supplied window, optionally filtered to a single ticker.
+    /// the supplied window, optionally filtered to a single ticker (earnings) or country (economic).
     /// </summary>
     [McpServerTool(
         Name = Constants.Tools.Calendar.Name,
@@ -42,6 +41,8 @@ public sealed class GetCalendarTool(
         string kind,
         [Description(Constants.Tools.Calendar.Parameters.SymbolDescription)]
         string? symbol = null,
+        [Description(Constants.Tools.Calendar.Parameters.CountryDescription)]
+        string? country = null,
         [Description(Constants.Tools.Calendar.Parameters.FromDescription)]
         string? from = null,
         [Description(Constants.Tools.Calendar.Parameters.ToDescription)]
@@ -59,6 +60,7 @@ public sealed class GetCalendarTool(
 
             var validatedKind = CalendarInputValidator.ValidateKind(kind);
             var validatedSymbol = CalendarInputValidator.ValidateSymbolForKind(symbol, validatedKind);
+            var validatedCountry = CalendarInputValidator.ValidateCountryForKind(country, validatedKind);
             var (validatedFrom, validatedTo) = CalendarInputValidator.ValidateWindow(
                 from, to, DateOnly.FromDateTime(DateTime.UtcNow), validatedKind);
             var validatedView = CalendarInputValidator.ValidateView(view);
@@ -68,6 +70,7 @@ public sealed class GetCalendarTool(
                 QueryId = Guid.NewGuid().ToString("N"),
                 Kind = validatedKind,
                 Symbol = validatedSymbol,
+                Country = validatedCountry,
                 From = validatedFrom,
                 To = validatedTo
             };
@@ -77,14 +80,14 @@ public sealed class GetCalendarTool(
             var projected = ProjectForView(result, validatedView);
 
             logger.LogInformation(
-                "Calendar completed for kind={Kind} symbol={Symbol} ({From}..{To}) in {ElapsedMs}ms",
-                validatedKind, validatedSymbol ?? "(all)", validatedFrom, validatedTo, stopwatch.ElapsedMilliseconds);
+                "Calendar completed for kind={Kind} symbol={Symbol} country={Country} ({From}..{To}) in {ElapsedMs}ms",
+                validatedKind, validatedSymbol ?? "(none)", validatedCountry ?? "(none)", validatedFrom, validatedTo, stopwatch.ElapsedMilliseconds);
 
             return EnvelopeFactory.FromResult(
                 projected,
                 validatedView,
                 nextActions: BuildNextActions(projected, validatedSymbol),
-                explanation: BuildExplanation(projected, validatedKind, validatedFrom, validatedTo));
+                explanation: BuildExplanation(projected, validatedKind, validatedFrom, validatedTo, validatedCountry));
         }
         catch (OperationCanceledException ex)
         {
@@ -137,6 +140,7 @@ public sealed class GetCalendarTool(
                 From = source.Data.From,
                 To = source.Data.To,
                 Symbol = source.Data.Symbol,
+                Country = source.Data.Country,
                 TotalCount = capped.Count,
                 EarningsEvents = capped
             });
@@ -151,8 +155,24 @@ public sealed class GetCalendarTool(
                 From = source.Data.From,
                 To = source.Data.To,
                 Symbol = source.Data.Symbol,
+                Country = source.Data.Country,
                 TotalCount = capped.Count,
                 IpoEvents = capped
+            });
+        }
+
+        if (source.Data.EconomicEvents is { } economic && economic.Count > cap)
+        {
+            var capped = economic.Take(cap).ToList().AsReadOnly();
+            return Result<GetCalendarResponse>.Success(new GetCalendarResponse
+            {
+                Kind = source.Data.Kind,
+                From = source.Data.From,
+                To = source.Data.To,
+                Symbol = source.Data.Symbol,
+                Country = source.Data.Country,
+                TotalCount = capped.Count,
+                EconomicEvents = capped
             });
         }
 
@@ -190,6 +210,12 @@ public sealed class GetCalendarTool(
             ];
         }
 
+        // Economic events have no symbol scope — no obvious cross-link to other tools.
+        if (result.Data.EconomicEvents is not null)
+        {
+            return [];
+        }
+
         if (string.IsNullOrEmpty(symbol))
         {
             return [];
@@ -204,19 +230,33 @@ public sealed class GetCalendarTool(
         ];
     }
 
-    private static string BuildExplanation(Result<GetCalendarResponse> result, CalendarKind kind, DateOnly from, DateOnly to)
+    private static string BuildExplanation(
+        Result<GetCalendarResponse> result,
+        CalendarKind kind,
+        DateOnly from,
+        DateOnly to,
+        string? country)
     {
-        var label = kind == CalendarKind.Ipo ? "IPO" : "earnings";
+        var label = kind switch
+        {
+            CalendarKind.Ipo => "IPO",
+            CalendarKind.Economic => "economic",
+            _ => "earnings"
+        };
+
+        var scope = kind == CalendarKind.Economic && country is not null
+            ? $" for {country}"
+            : string.Empty;
 
         if (!result.IsSuccess || result.Data is null)
         {
             return string.Create(
                 CultureInfo.InvariantCulture,
-                $"No {label} events in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
+                $"No {label} events{scope} in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
         }
 
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"Found {result.Data.TotalCount} {label} event(s) in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
+            $"Found {result.Data.TotalCount} {label} event(s){scope} in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
     }
 }

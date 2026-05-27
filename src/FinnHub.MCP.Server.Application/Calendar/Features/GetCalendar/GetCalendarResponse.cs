@@ -15,8 +15,7 @@ namespace FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
 /// </summary>
 /// <remarks>
 /// The wire envelope is flat across kinds — only the populated event list depends
-/// on <see cref="Kind"/>. Economic events are added by a follow-up story alongside
-/// the existing earnings + IPO lists.
+/// on <see cref="Kind"/>.
 /// </remarks>
 [ExcludeFromCodeCoverage]
 public sealed class GetCalendarResponse
@@ -37,6 +36,10 @@ public sealed class GetCalendarResponse
     [JsonPropertyName("symbol")]
     public string? Symbol { get; init; }
 
+    /// <summary>Echo of the country filter, when one was requested (economic kind only).</summary>
+    [JsonPropertyName("country")]
+    public string? Country { get; init; }
+
     /// <summary>Number of events in the response.</summary>
     [JsonPropertyName("total_count")]
     public int TotalCount { get; init; }
@@ -54,4 +57,11 @@ public sealed class GetCalendarResponse
     /// </summary>
     [JsonPropertyName("ipo_events")]
     public IReadOnlyList<IpoEvent>? IpoEvents { get; init; }
+
+    /// <summary>
+    /// Economic releases in the requested window, ordered by <see cref="EconomicEvent.Time"/> ascending.
+    /// Populated only when <see cref="Kind"/> is <c>economic</c>.
+    /// </summary>
+    [JsonPropertyName("economic_events")]
+    public IReadOnlyList<EconomicEvent>? EconomicEvents { get; init; }
 }

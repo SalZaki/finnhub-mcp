@@ -32,4 +32,13 @@ public interface ICalendarApiClient
         DateOnly from,
         DateOnly to,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fetches macro releases within the supplied window. The upstream endpoint does
+    /// not accept a country filter; callers apply it at the service layer.
+    /// </summary>
+    Task<IReadOnlyList<EconomicEvent>> GetEconomicCalendarAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken);
 }

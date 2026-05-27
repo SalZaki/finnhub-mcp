@@ -35,7 +35,8 @@ public sealed class FinnHubCalendarApiClientTests : IDisposable
             EndPoints =
             [
                 new FinnHubEndPoint { Name = "calendar-earnings", Url = "calendar/earnings", IsActive = true },
-                new FinnHubEndPoint { Name = "calendar-ipo", Url = "calendar/ipo", IsActive = true }
+                new FinnHubEndPoint { Name = "calendar-ipo", Url = "calendar/ipo", IsActive = true },
+                new FinnHubEndPoint { Name = "calendar-economic", Url = "calendar/economic", IsActive = true }
             ]
         });
 
@@ -346,6 +347,174 @@ public sealed class FinnHubCalendarApiClientTests : IDisposable
 
         await Assert.ThrowsAsync<ArgumentException>(() => client.GetIpoCalendarAsync(
             new DateOnly(2026, 6, 1), new DateOnly(2026, 12, 31), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_RealFixture_MapsCountryEventTimeAndImpact()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("calendar-economic-2026"));
+
+        var events = await this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None);
+
+        Assert.NotEmpty(events);
+
+        // The fixture starts with a KR Balance of Trade entry at 2026-06-01 00:00:00 UTC.
+        var first = events[0];
+        Assert.Equal("KR", first.Country);
+        Assert.Equal("Balance of Trade", first.EventName);
+        Assert.Equal(new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), first.Time);
+        Assert.Equal("low", first.Impact);
+        Assert.Null(first.Actual);
+        Assert.Null(first.Estimate);
+        Assert.Equal(23.77, first.Prev);
+        Assert.Equal("$", first.Unit);
+
+        // The fixture contains US entries; one of them is the S&P Global Manufacturing PMI Final.
+        var usPmi = events.First(e =>
+            string.Equals(e.Country, "US", StringComparison.Ordinal)
+            && string.Equals(e.EventName, "S&P Global Manufacturing PMI Final", StringComparison.Ordinal));
+        Assert.Equal(new DateTime(2026, 6, 1, 13, 45, 0, DateTimeKind.Utc), usPmi.Time);
+        Assert.Equal(55.3, usPmi.Estimate);
+        Assert.Equal(54.5, usPmi.Prev);
+    }
+
+    /// <summary>
+    /// Regression: catches URL-construction drift for the economic path. The endpoint
+    /// must NOT append a country parameter — Finnhub does not accept country natively;
+    /// CalendarService filters server-side. See PR #169 for the bug class this protects against.
+    /// </summary>
+    [Fact]
+    public async Task GetEconomicCalendarAsync_HitsApiV1CalendarEconomicEndpoint()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "{}");
+
+        await this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None);
+
+        Assert.Equal(
+            "https://finnhub.io/api/v1/calendar/economic?from=2026-06-01&to=2026-06-30",
+            this._handler.LastRequest!.RequestUri!.AbsoluteUri);
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_EmptyEnvelope_ReturnsEmptyList()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "{\"economicCalendar\":[]}");
+
+        var events = await this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None);
+
+        Assert.Empty(events);
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_EntryWithMalformedTime_IsSkipped()
+    {
+        this._handler.SetResponse(
+            HttpStatusCode.OK,
+            "{\"economicCalendar\":[{\"country\":\"US\",\"event\":\"Bad\",\"time\":\"not-a-date\"},{\"country\":\"US\",\"event\":\"Good\",\"time\":\"2026-06-15 13:30:00\"}]}");
+
+        var events = await this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None);
+
+        Assert.Single(events);
+        Assert.Equal("Good", events[0].EventName);
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_EntryWithMissingCountry_IsSkipped()
+    {
+        this._handler.SetResponse(
+            HttpStatusCode.OK,
+            "{\"economicCalendar\":[{\"event\":\"Bad\",\"time\":\"2026-06-15 13:30:00\"},{\"country\":\"US\",\"event\":\"Good\",\"time\":\"2026-06-15 13:30:00\"}]}");
+
+        var events = await this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None);
+
+        Assert.Single(events);
+        Assert.Equal("US", events[0].Country);
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_EntryWithMissingEventName_IsSkipped()
+    {
+        this._handler.SetResponse(
+            HttpStatusCode.OK,
+            "{\"economicCalendar\":[{\"country\":\"US\",\"time\":\"2026-06-15 13:30:00\"},{\"country\":\"GB\",\"event\":\"Good\",\"time\":\"2026-06-15 13:30:00\"}]}");
+
+        var events = await this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None);
+
+        Assert.Single(events);
+        Assert.Equal("GB", events[0].Country);
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_Forbidden_ThrowsPremiumRequired()
+    {
+        this._handler.SetResponse(HttpStatusCode.Forbidden, "premium");
+
+        await Assert.ThrowsAsync<ApiClientPremiumRequiredException>(() => this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_InvalidJson_ThrowsDeserialization()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, "not-json");
+
+        await Assert.ThrowsAsync<ApiClientDeserializationException>(() => this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_HttpRequestException_PreservesInnerExceptionAndUsesServiceUnavailable()
+    {
+        var network = new HttpRequestException("DNS resolution failed");
+        this._handler.SetException(network);
+
+        var ex = await Assert.ThrowsAsync<ApiClientHttpException>(() => this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None));
+
+        Assert.Same(network, ex.InnerException);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, ex.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_TaskCanceledWithTimeout_ThrowsTimeoutException()
+    {
+        this._handler.SetException(new TaskCanceledException("slow", new TimeoutException()));
+
+        await Assert.ThrowsAsync<ApiClientTimeoutException>(() => this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_TokenAlreadyCancelled_ThrowsCancelledException()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        await Assert.ThrowsAsync<ApiClientCancelledException>(() => this._sut.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), cts.Token));
+    }
+
+    [Fact]
+    public async Task GetEconomicCalendarAsync_NoConfiguredEndpoint_Throws()
+    {
+        var options = Substitute.For<IOptions<FinnHubOptions>>();
+        options.Value.Returns(new FinnHubOptions
+        {
+            BaseUrl = "https://finnhub.io/api/v1/",
+            ApiKey = "test-key",
+            EndPoints = []
+        });
+
+        var client = new FinnHubCalendarApiClient(this._httpClient, options, NullLogger<FinnHubCalendarApiClient>.Instance);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => client.GetEconomicCalendarAsync(
+            new DateOnly(2026, 6, 1), new DateOnly(2026, 6, 30), CancellationToken.None));
     }
 
     public void Dispose()
