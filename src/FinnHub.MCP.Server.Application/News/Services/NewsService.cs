@@ -85,10 +85,10 @@ public sealed class NewsService(
                 query.Symbol, response.Count, prevWeek.Count, response.SentimentSource ?? "none");
 
             return response.Count == 0
-                ? new Result<GetNewsPulseResponse>().Failure(
+                ? Result<GetNewsPulseResponse>.Failure(
                     $"No news found for {query.Symbol} in the past week.",
                     ResultErrorType.NotFound)
-                : new Result<GetNewsPulseResponse>().Success(response);
+                : Result<GetNewsPulseResponse>.Success(response);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
@@ -98,22 +98,22 @@ public sealed class NewsService(
             // sibling services that all carry this catch (FinancialsService.cs:48-52
             // and similar).
             logger.LogWarning(ex, "News endpoint is premium-locked for {Symbol}", query.Symbol);
-            return new Result<GetNewsPulseResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<GetNewsPulseResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching news for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetNewsPulseResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetNewsPulseResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "News request timed out for {Symbol}", query.Symbol);
-            return new Result<GetNewsPulseResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetNewsPulseResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize news response for {Symbol}", query.Symbol);
-            return new Result<GetNewsPulseResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetNewsPulseResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
         catch (ApiClientCancelledException)
         {
@@ -125,7 +125,7 @@ public sealed class NewsService(
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected news failure for {Symbol}", query.Symbol);
-            return new Result<GetNewsPulseResponse>().Failure("News pulse failed unexpectedly");
+            return Result<GetNewsPulseResponse>.Failure("News pulse failed unexpectedly");
         }
     }
 

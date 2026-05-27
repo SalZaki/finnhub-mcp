@@ -37,7 +37,7 @@ public sealed class GetFinancialsSnapshotToolTests
     {
         this._service
             .GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetFinancialsSnapshotResponse>().Success(
+            .Returns(Result<GetFinancialsSnapshotResponse>.Success(
                 new GetFinancialsSnapshotResponse { Symbol = "AAPL" }));
 
         await this._sut.GetFinancialsSnapshotAsync("aapl");
@@ -52,7 +52,7 @@ public sealed class GetFinancialsSnapshotToolTests
     {
         this._service
             .GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetFinancialsSnapshotResponse>().Success(
+            .Returns(Result<GetFinancialsSnapshotResponse>.Success(
                 new GetFinancialsSnapshotResponse { Symbol = "AAPL" }));
 
         await this._sut.GetFinancialsSnapshotAsync("AAPL", view: "full");
@@ -91,7 +91,7 @@ public sealed class GetFinancialsSnapshotToolTests
     public async Task GetFinancialsSnapshotAsync_FailureResult_ReturnsEmptyNextActions()
     {
         this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetFinancialsSnapshotResponse>().Failure("upstream-error"));
+            .Returns(Result<GetFinancialsSnapshotResponse>.Failure("upstream-error"));
 
         var envelope = await this._sut.GetFinancialsSnapshotAsync("AAPL");
 

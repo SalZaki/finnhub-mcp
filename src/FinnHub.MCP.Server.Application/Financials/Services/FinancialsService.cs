@@ -43,27 +43,27 @@ public sealed class FinancialsService(
 
             logger.LogInformation("Retrieved financials snapshot for {Symbol}", query.Symbol);
 
-            return new Result<GetFinancialsSnapshotResponse>().Success(response);
+            return Result<GetFinancialsSnapshotResponse>.Success(response);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
             logger.LogWarning(ex, "Premium-only financials endpoint for {Symbol}", query.Symbol);
-            return new Result<GetFinancialsSnapshotResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<GetFinancialsSnapshotResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching financials for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetFinancialsSnapshotResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetFinancialsSnapshotResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "Financials request timed out for {Symbol}", query.Symbol);
-            return new Result<GetFinancialsSnapshotResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetFinancialsSnapshotResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize financials response for {Symbol}", query.Symbol);
-            return new Result<GetFinancialsSnapshotResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetFinancialsSnapshotResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
         catch (ApiClientCancelledException)
         {
@@ -75,7 +75,7 @@ public sealed class FinancialsService(
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected financials failure for {Symbol}", query.Symbol);
-            return new Result<GetFinancialsSnapshotResponse>().Failure("Financials lookup failed unexpectedly");
+            return Result<GetFinancialsSnapshotResponse>.Failure("Financials lookup failed unexpectedly");
         }
     }
 

@@ -44,30 +44,30 @@ public sealed class ProfilesService(
             logger.LogInformation("Retrieved profile for {Symbol}", query.Symbol);
 
             return string.IsNullOrEmpty(response.Name)
-                ? new Result<GetCompanyProfileResponse>().Failure(
+                ? Result<GetCompanyProfileResponse>.Failure(
                     $"No profile found for {query.Symbol}.",
                     ResultErrorType.NotFound)
-                : new Result<GetCompanyProfileResponse>().Success(response);
+                : Result<GetCompanyProfileResponse>.Success(response);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
             logger.LogWarning(ex, "Premium-only profile endpoint for {Symbol}", query.Symbol);
-            return new Result<GetCompanyProfileResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<GetCompanyProfileResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching profile for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetCompanyProfileResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetCompanyProfileResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "Profile request timed out for {Symbol}", query.Symbol);
-            return new Result<GetCompanyProfileResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetCompanyProfileResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize profile response for {Symbol}", query.Symbol);
-            return new Result<GetCompanyProfileResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetCompanyProfileResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
         catch (ApiClientCancelledException)
         {
@@ -79,7 +79,7 @@ public sealed class ProfilesService(
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected profile failure for {Symbol}", query.Symbol);
-            return new Result<GetCompanyProfileResponse>().Failure("Profile lookup failed unexpectedly");
+            return Result<GetCompanyProfileResponse>.Failure("Profile lookup failed unexpectedly");
         }
     }
 }

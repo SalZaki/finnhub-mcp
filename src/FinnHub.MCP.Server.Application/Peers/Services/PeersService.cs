@@ -46,30 +46,30 @@ public sealed class PeersService(
                 response.TotalCount, query.Symbol, query.Grouping);
 
             return response.HasResults
-                ? new Result<GetPeersResponse>().Success(response)
-                : new Result<GetPeersResponse>().Failure(
+                ? Result<GetPeersResponse>.Success(response)
+                : Result<GetPeersResponse>.Failure(
                     $"No peers found for {query.Symbol}.",
                     ResultErrorType.NotFound);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
             logger.LogWarning(ex, "Premium-only peers endpoint for {Symbol}", query.Symbol);
-            return new Result<GetPeersResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<GetPeersResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching peers for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetPeersResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetPeersResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "Peers request timed out for {Symbol}", query.Symbol);
-            return new Result<GetPeersResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetPeersResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize peers response for {Symbol}", query.Symbol);
-            return new Result<GetPeersResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetPeersResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
         catch (ApiClientCancelledException)
         {
@@ -81,7 +81,7 @@ public sealed class PeersService(
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected peers failure for {Symbol}", query.Symbol);
-            return new Result<GetPeersResponse>().Failure("Peers lookup failed unexpectedly");
+            return Result<GetPeersResponse>.Failure("Peers lookup failed unexpectedly");
         }
     }
 

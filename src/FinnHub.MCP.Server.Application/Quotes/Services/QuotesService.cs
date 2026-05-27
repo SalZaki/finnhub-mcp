@@ -48,30 +48,30 @@ public sealed class QuotesService(
             // Finnhub returns all-zero/null for unknown symbols. Anything with a
             // non-zero current price OR a real timestamp is treated as a live quote.
             return (response.Current is > 0) || response.TimestampUtc is not null
-                ? new Result<GetQuoteResponse>().Success(response)
-                : new Result<GetQuoteResponse>().Failure(
+                ? Result<GetQuoteResponse>.Success(response)
+                : Result<GetQuoteResponse>.Failure(
                     $"No live quote for {query.Symbol}.",
                     ResultErrorType.NotFound);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
             logger.LogWarning(ex, "Premium-only quote endpoint for {Symbol}", query.Symbol);
-            return new Result<GetQuoteResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<GetQuoteResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching quote for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetQuoteResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetQuoteResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "Quote request timed out for {Symbol}", query.Symbol);
-            return new Result<GetQuoteResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetQuoteResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize quote response for {Symbol}", query.Symbol);
-            return new Result<GetQuoteResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetQuoteResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
         catch (ApiClientCancelledException)
         {
@@ -83,7 +83,7 @@ public sealed class QuotesService(
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected quote failure for {Symbol}", query.Symbol);
-            return new Result<GetQuoteResponse>().Failure("Quote lookup failed unexpectedly");
+            return Result<GetQuoteResponse>.Failure("Quote lookup failed unexpectedly");
         }
     }
 }

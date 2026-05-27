@@ -36,7 +36,7 @@ public sealed class GetCompanyProfileToolTests
     public async Task GetCompanyProfileAsync_SummaryView_OmitsCosmeticFields()
     {
         this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Success(
+            .Returns(Result<GetCompanyProfileResponse>.Success(
                 new GetCompanyProfileResponse { Ticker = "AAPL", Name = "Apple" }));
 
         await this._sut.GetCompanyProfileAsync("AAPL", view: "summary");
@@ -50,7 +50,7 @@ public sealed class GetCompanyProfileToolTests
     public async Task GetCompanyProfileAsync_StandardView_RequestsCosmeticFields()
     {
         this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Success(
+            .Returns(Result<GetCompanyProfileResponse>.Success(
                 new GetCompanyProfileResponse { Ticker = "AAPL", Name = "Apple" }));
 
         await this._sut.GetCompanyProfileAsync("AAPL", view: "standard");
@@ -64,7 +64,7 @@ public sealed class GetCompanyProfileToolTests
     public async Task GetCompanyProfileAsync_Success_PopulatesNextActions()
     {
         this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Success(
+            .Returns(Result<GetCompanyProfileResponse>.Success(
                 new GetCompanyProfileResponse { Ticker = "AAPL", Name = "Apple" }));
 
         var envelope = await this._sut.GetCompanyProfileAsync("AAPL");
@@ -97,7 +97,7 @@ public sealed class GetCompanyProfileToolTests
     public async Task GetCompanyProfileAsync_FailureResult_ReturnsEmptyNextActions()
     {
         this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Failure("upstream-error"));
+            .Returns(Result<GetCompanyProfileResponse>.Failure("upstream-error"));
 
         var envelope = await this._sut.GetCompanyProfileAsync("AAPL");
 
