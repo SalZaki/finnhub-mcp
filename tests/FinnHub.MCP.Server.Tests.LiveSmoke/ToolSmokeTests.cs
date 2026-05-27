@@ -7,6 +7,7 @@
 
 using FinnHub.MCP.Server.Application.Calendar.Services;
 using FinnHub.MCP.Server.Application.Financials.Services;
+using FinnHub.MCP.Server.Application.Insiders.Services;
 using FinnHub.MCP.Server.Application.News.Services;
 using FinnHub.MCP.Server.Application.Peers.Services;
 using FinnHub.MCP.Server.Application.Prices.Services;
@@ -16,6 +17,7 @@ using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Tools.Calendar;
 using FinnHub.MCP.Server.Tools.Financials;
+using FinnHub.MCP.Server.Tools.Insiders;
 using FinnHub.MCP.Server.Tools.News;
 using FinnHub.MCP.Server.Tools.Peers;
 using FinnHub.MCP.Server.Tools.Prices;
@@ -183,6 +185,20 @@ public sealed class ToolSmokeTests : IClassFixture<LiveSmokeFactory>
             "ipo",
             from: today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             to: today.AddDays(365).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+
+        AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task GetInsiderSignal_AAPL_ReturnsSignalOrDegrades()
+    {
+        // AAPL insider activity can lull for stretches; tolerate NotFound alongside
+        // Success / PremiumRequired so the smoke doesn't flap on quiet weeks.
+        var tool = new GetInsiderSignalTool(
+            this._services.GetRequiredService<IInsidersService>(),
+            NullLogger<GetInsiderSignalTool>.Instance);
+
+        var envelope = await tool.GetInsiderSignalAsync(Symbol);
 
         AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
     }

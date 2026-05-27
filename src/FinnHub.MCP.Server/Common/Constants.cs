@@ -565,6 +565,79 @@ public static class Constants
                 """;
         }
 
+        /// <summary>Constants for the <c>get-insider-signal</c> tool — aggregated insider net buy/sell signal.</summary>
+        public static class InsiderSignal
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-insider-signal";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Insider Signal";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>From-date parameter name.</summary>
+                public const string FromName = "from";
+
+                /// <summary>From-date parameter description.</summary>
+                public const string FromDescription =
+                    "Inclusive start of the lookup window as ISO yyyy-MM-dd, e.g. '2026-05-01'. Defaults to today − 30 days (UTC).";
+
+                /// <summary>To-date parameter name.</summary>
+                public const string ToName = "to";
+
+                /// <summary>To-date parameter description.</summary>
+                public const string ToDescription =
+                    "Inclusive end of the lookup window as ISO yyyy-MM-dd. Defaults to today (UTC). Maximum window: 90 days.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Get an aggregated insider-transaction signal for a symbol — net buy/sell volume over the trailing 30 days,
+                the most active named insiders, and the latest filed transaction.
+
+                ## Example:
+                - symbol='AAPL'
+                - symbol='AAPL', from='2026-04-27', to='2026-05-27'
+
+                ## Request Parameters:
+                - symbol (string, required): uppercase ticker
+                - from (string, optional, ISO yyyy-MM-dd): inclusive start; defaults to today − 30 days (UTC)
+                - to (string, optional, ISO yyyy-MM-dd): inclusive end; defaults to today (UTC). Max window: 90 days.
+
+                ## Response Fields:
+                - symbol (string)
+                - from, to (ISO date): echo of the window
+                - net_buy_sell_30d (long): sum of signed share changes across the window — positive when insiders
+                  are net acquirers, negative when net sellers.
+                - notable_names (array of strings): top 5 unique insiders ranked by absolute trade volume (most active first)
+                - total_count (int)
+                - latest (object, nullable): most-recent transaction in the window — { name, change, share, transaction_date,
+                  filing_date, transaction_price, transaction_code, is_derivative, currency }
+                - transactions (array, optional): full transaction list post-DTO mapping, populated only when view='full'
+
+                ## Notes:
+                - Cached at the News tier — insider filings revise as supplemental Form 4s land.
+                - Suggests get-company-profile and get-quote for the queried symbol on successful response.
+
+                Approx tokens: summary ~250, standard ~250, full varies with transaction count (~80 tokens per transaction).
+                """;
+        }
+
         /// <summary>Constants for the <c>get-company-profile</c> tool — company snapshot.</summary>
         public static class CompanyProfile
         {

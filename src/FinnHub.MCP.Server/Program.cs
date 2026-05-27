@@ -18,6 +18,7 @@ using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Resources.Status;
 using FinnHub.MCP.Server.Tools.Calendar;
 using FinnHub.MCP.Server.Tools.Financials;
+using FinnHub.MCP.Server.Tools.Insiders;
 using FinnHub.MCP.Server.Tools.News;
 using FinnHub.MCP.Server.Tools.Peers;
 using FinnHub.MCP.Server.Tools.Prices;
@@ -120,6 +121,7 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<GetQuoteTool>()
 .WithWrappedTools<GetCompanyProfileTool>()
 .WithWrappedTools<GetCalendarTool>()
+.WithWrappedTools<GetInsiderSignalTool>()
 .WithResources<ExchangesResource>()
 .WithResources<ApiStatusResource>();
 
