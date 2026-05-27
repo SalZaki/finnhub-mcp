@@ -41,3 +41,8 @@ fetch profile-AAPL             "stock/profile2?symbol=AAPL"
 fetch candle-AAPL              "stock/candle?symbol=AAPL&resolution=D&from=$WEEK_AGO&to=$NOW"
 fetch company-news-AAPL        "company-news?symbol=AAPL&from=$FROM&to=$TO"
 fetch news-sentiment-AAPL      "news-sentiment?symbol=AAPL"
+# Calendar (parameter-dispatched tool: kind=earnings|ipo|economic).
+# Earnings fixture: AAPL-scoped, current quarter window.
+CAL_FROM=$(date -u +%Y-%m-01)
+CAL_TO=$(date -u -v+3m +%Y-%m-%d 2>/dev/null || date -u -d '+3 months' +%Y-%m-%d)
+fetch calendar-earnings-aapl   "calendar/earnings?from=$CAL_FROM&to=$CAL_TO&symbol=AAPL"

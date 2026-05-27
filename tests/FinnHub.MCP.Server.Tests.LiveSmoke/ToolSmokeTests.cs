@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using FinnHub.MCP.Server.Application.Calendar.Services;
 using FinnHub.MCP.Server.Application.Financials.Services;
 using FinnHub.MCP.Server.Application.News.Services;
 using FinnHub.MCP.Server.Application.Peers.Services;
@@ -13,6 +14,7 @@ using FinnHub.MCP.Server.Application.Profiles.Services;
 using FinnHub.MCP.Server.Application.Quotes.Services;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Application.Symbols;
+using FinnHub.MCP.Server.Tools.Calendar;
 using FinnHub.MCP.Server.Tools.Financials;
 using FinnHub.MCP.Server.Tools.News;
 using FinnHub.MCP.Server.Tools.Peers;
@@ -150,6 +152,21 @@ public sealed class ToolSmokeTests : IClassFixture<LiveSmokeFactory>
         var envelope = await tool.GetPeersAsync(Symbol);
 
         AssertSuccessOrPremium(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task GetCalendar_EarningsAapl_ReturnsScheduleOrDegrades()
+    {
+        // AAPL has scheduled earnings most quarters but the next event can be
+        // outside a 90-day window depending on when this runs; tolerate NotFound
+        // alongside Success/PremiumRequired so the smoke doesn't flap.
+        var tool = new GetCalendarTool(
+            this._services.GetRequiredService<ICalendarService>(),
+            NullLogger<GetCalendarTool>.Instance);
+
+        var envelope = await tool.GetCalendarAsync("earnings", symbol: Symbol);
+
+        AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
     }
 
     [Fact]
