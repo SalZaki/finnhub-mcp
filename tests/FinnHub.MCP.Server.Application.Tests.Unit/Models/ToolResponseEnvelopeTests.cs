@@ -63,7 +63,7 @@ public sealed class ToolResponseEnvelopeTests
     public void FromResult_SuccessResult_MapsToSuccessEnvelope()
     {
         var data = new SearchSymbolResponse { Symbols = [] };
-        var result = new Result<SearchSymbolResponse>().Success(data);
+        var result = Result<SearchSymbolResponse>.Success(data);
 
         var envelope = EnvelopeFactory.FromResult(result, ToolView.Standard, explanation: "found");
 
@@ -76,8 +76,7 @@ public sealed class ToolResponseEnvelopeTests
     [Fact]
     public void FromResult_FailureResult_MapsToFailureEnvelopeWithParsedErrorType()
     {
-        var result = new Result<SearchSymbolResponse>()
-            .Failure("boom", ResultErrorType.ServiceUnavailable);
+        var result = Result<SearchSymbolResponse>.Failure("boom", ResultErrorType.ServiceUnavailable);
 
         var envelope = EnvelopeFactory.FromResult(result);
 
@@ -90,7 +89,7 @@ public sealed class ToolResponseEnvelopeTests
     [Fact]
     public void FromResult_UnknownErrorTypeString_FallsBackToUnknown()
     {
-        var result = new Result<SearchSymbolResponse>().Failure("???", ResultErrorType.Unknown);
+        var result = Result<SearchSymbolResponse>.Failure("???", ResultErrorType.Unknown);
 
         var envelope = EnvelopeFactory.FromResult(result);
 
@@ -107,8 +106,7 @@ public sealed class ToolResponseEnvelopeTests
     [Fact]
     public void FromResult_PremiumRequiredFailure_AutoSetsPremiumFlag()
     {
-        var result = new Result<SearchSymbolResponse>()
-            .Failure("premium-only", ResultErrorType.PremiumRequired);
+        var result = Result<SearchSymbolResponse>.Failure("premium-only", ResultErrorType.PremiumRequired);
 
         var envelope = EnvelopeFactory.FromResult(result);
 
@@ -120,8 +118,7 @@ public sealed class ToolResponseEnvelopeTests
     [Fact]
     public void FromResult_NonPremiumFailure_LeavesPremiumFalse()
     {
-        var result = new Result<SearchSymbolResponse>()
-            .Failure("nope", ResultErrorType.NotFound);
+        var result = Result<SearchSymbolResponse>.Failure("nope", ResultErrorType.NotFound);
 
         var envelope = EnvelopeFactory.FromResult(result);
 

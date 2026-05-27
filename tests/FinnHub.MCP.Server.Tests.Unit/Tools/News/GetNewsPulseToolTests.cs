@@ -37,7 +37,7 @@ public sealed class GetNewsPulseToolTests
     {
         this._service
             .GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetNewsPulseResponse>().Success(
+            .Returns(Result<GetNewsPulseResponse>.Success(
                 new GetNewsPulseResponse { Symbol = "AAPL", Count = 1, SentimentSource = "finnhub" }));
 
         await this._sut.GetNewsPulseAsync("aapl");
@@ -52,7 +52,7 @@ public sealed class GetNewsPulseToolTests
     {
         this._service
             .GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetNewsPulseResponse>().Success(
+            .Returns(Result<GetNewsPulseResponse>.Success(
                 new GetNewsPulseResponse { Symbol = "AAPL", Count = 1 }));
 
         await this._sut.GetNewsPulseAsync("AAPL", view: "full");
@@ -91,7 +91,7 @@ public sealed class GetNewsPulseToolTests
     public async Task GetNewsPulseAsync_FailureResult_ReturnsEmptyNextActions()
     {
         this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetNewsPulseResponse>().Failure("upstream-error"));
+            .Returns(Result<GetNewsPulseResponse>.Failure("upstream-error"));
 
         var envelope = await this._sut.GetNewsPulseAsync("AAPL");
 

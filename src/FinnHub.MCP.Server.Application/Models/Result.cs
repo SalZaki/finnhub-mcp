@@ -39,6 +39,8 @@ namespace FinnHub.MCP.Server.Application.Models;
 /// </code>
 /// </example>
 [ExcludeFromCodeCoverage]
+[SuppressMessage("Design", "CA1000:Do not declare static members on generic types",
+    Justification = "Success/Failure are factory methods returning Result<T> itself — the established Result-pattern convention. T is inferred from the data argument on Success(data); Failure<T>(...) requires an explicit type argument. A non-generic helper class would force every Success call to also specify the type argument, which is the worse ergonomic tradeoff.")]
 public sealed class Result<T>
 {
     /// <summary>
@@ -86,18 +88,14 @@ public sealed class Result<T>
     /// </summary>
     /// <param name="data">The data to include in the successful result.</param>
     /// <returns>A new <see cref="Result{T}"/> instance representing a successful operation.</returns>
-    /// <remarks>
-    /// This method creates a result where <see cref="IsSuccess"/> is <c>true</c> and
-    /// <see cref="Data"/> contains the provided value. Error properties will be <c>null</c>.
-    /// </remarks>
     /// <example>
     /// <code>
-    /// var result = new Result&lt;User&gt;().Success(new User { Name = "John Doe" });
+    /// var result = Result&lt;User&gt;.Success(new User { Name = "John Doe" });
     /// Console.WriteLine(result.IsSuccess); // True
     /// Console.WriteLine(result.Data.Name); // "John Doe"
     /// </code>
     /// </example>
-    public Result<T> Success(T data) => new()
+    public static Result<T> Success(T data) => new()
     {
         IsSuccess = true,
         Data = data
@@ -109,20 +107,15 @@ public sealed class Result<T>
     /// <param name="errorMessage">A descriptive message explaining why the operation failed.</param>
     /// <param name="errorType">The category of error that occurred. Defaults to <see cref="ResultErrorType.Unknown"/>.</param>
     /// <returns>A new <see cref="Result{T}"/> instance representing a failed operation.</returns>
-    /// <remarks>
-    /// This method creates a result where <see cref="IsSuccess"/> is <c>false</c>,
-    /// <see cref="ErrorMessage"/> contains the provided message, and <see cref="ErrorType"/>
-    /// contains the string representation of the error type. The <see cref="Data"/> property will be <c>null</c>.
-    /// </remarks>
     /// <example>
     /// <code>
-    /// var result = new Result&lt;User&gt;().Failure("User not found", ResultErrorType.NotFound);
+    /// var result = Result&lt;User&gt;.Failure("User not found", ResultErrorType.NotFound);
     /// Console.WriteLine(result.IsSuccess); // False
     /// Console.WriteLine(result.ErrorMessage); // "User not found"
     /// Console.WriteLine(result.ErrorType); // "NotFound"
     /// </code>
     /// </example>
-    public Result<T> Failure(
+    public static Result<T> Failure(
         string errorMessage,
         ResultErrorType errorType = ResultErrorType.Unknown) => new()
         {

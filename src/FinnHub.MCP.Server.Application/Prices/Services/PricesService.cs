@@ -46,30 +46,30 @@ public sealed class PricesService(
                 query.Symbol, query.Period, response.CandleCount);
 
             return response.CandleCount > 0
-                ? new Result<GetPriceSummaryResponse>().Success(response)
-                : new Result<GetPriceSummaryResponse>().Failure(
+                ? Result<GetPriceSummaryResponse>.Success(response)
+                : Result<GetPriceSummaryResponse>.Failure(
                     $"No price data for {query.Symbol} over {query.Period}.",
                     ResultErrorType.NotFound);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
             logger.LogWarning(ex, "Premium-only candle endpoint for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<GetPriceSummaryResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching candles for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetPriceSummaryResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetPriceSummaryResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "Candle request timed out for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetPriceSummaryResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize candle response for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetPriceSummaryResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
         catch (ApiClientCancelledException)
         {
@@ -81,7 +81,7 @@ public sealed class PricesService(
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected candle failure for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure("Price summary failed unexpectedly");
+            return Result<GetPriceSummaryResponse>.Failure("Price summary failed unexpectedly");
         }
     }
 

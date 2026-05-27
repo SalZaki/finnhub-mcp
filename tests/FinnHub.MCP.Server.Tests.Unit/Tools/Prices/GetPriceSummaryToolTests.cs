@@ -44,7 +44,7 @@ public sealed class GetPriceSummaryToolTests
     {
         this._service
             .GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPriceSummaryResponse>().Success(
+            .Returns(Result<GetPriceSummaryResponse>.Success(
                 new GetPriceSummaryResponse { Symbol = "AAPL", Period = "30d", Resolution = "D", CandleCount = 1 }));
 
         await this._sut.GetPriceSummaryAsync("AAPL", view: "full");
@@ -59,7 +59,7 @@ public sealed class GetPriceSummaryToolTests
     {
         this._service
             .GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPriceSummaryResponse>().Success(
+            .Returns(Result<GetPriceSummaryResponse>.Success(
                 new GetPriceSummaryResponse { Symbol = "AAPL", Period = "90d", Resolution = "D", CandleCount = 1 }));
 
         await this._sut.GetPriceSummaryAsync("AAPL", period: "90d");
@@ -91,7 +91,7 @@ public sealed class GetPriceSummaryToolTests
     public async Task GetPriceSummaryAsync_FailureResult_ReturnsEmptyNextActions()
     {
         this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPriceSummaryResponse>().Failure("upstream-error"));
+            .Returns(Result<GetPriceSummaryResponse>.Failure("upstream-error"));
 
         var envelope = await this._sut.GetPriceSummaryAsync("AAPL");
 

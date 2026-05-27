@@ -65,8 +65,8 @@ public sealed class SearchService(
                 response.TotalCount, query);
 
             return response.HasResults
-                ? new Result<SearchSymbolResponse>().Success(response)
-                : new Result<SearchSymbolResponse>().Failure("No search symbol(s) found.", ResultErrorType.NotFound);
+                ? Result<SearchSymbolResponse>.Success(response)
+                : Result<SearchSymbolResponse>.Failure("No search symbol(s) found.", ResultErrorType.NotFound);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
@@ -75,22 +75,22 @@ public sealed class SearchService(
                 "Premium-only endpoint hit for query: {Query} (Endpoint: {Endpoint})",
                 query.Query,
                 ex.Endpoint);
-            return new Result<SearchSymbolResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<SearchSymbolResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error from FinnHub API for query: {Query} (Status: {StatusCode})", query.Query, ex.StatusCode.ToString());
-            return new Result<SearchSymbolResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<SearchSymbolResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.Log(LogLevel.Warning, ex, "Request to FinnHub Api timed out for query: {Query}", query.Query);
-            return new Result<SearchSymbolResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<SearchSymbolResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.Log(LogLevel.Error, ex, "Failed to deserialize response from FinnHub Api for query: {Query}", query.Query);
-            return new Result<SearchSymbolResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<SearchSymbolResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
         }
         catch (ApiClientCancelledException)
         {
@@ -102,7 +102,7 @@ public sealed class SearchService(
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected symbol search failure for query: {Query}", query.Query);
-            return new Result<SearchSymbolResponse>().Failure("Symbol search failed unexpectedly");
+            return Result<SearchSymbolResponse>.Failure("Symbol search failed unexpectedly");
         }
         catch (Exception ex)
         {

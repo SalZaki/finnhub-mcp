@@ -129,7 +129,7 @@ public sealed class GetPeersTool(
             Grouping = result.Data.Grouping
         };
 
-        return new Result<GetPeersResponse>().Success(projected);
+        return Result<GetPeersResponse>.Success(projected);
     }
 
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetPeersResponse> result, string symbol)

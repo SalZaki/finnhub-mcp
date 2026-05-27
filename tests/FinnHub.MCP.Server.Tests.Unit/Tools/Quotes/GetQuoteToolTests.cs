@@ -36,7 +36,7 @@ public sealed class GetQuoteToolTests
     public async Task GetQuoteAsync_LowercaseSymbol_Normalises()
     {
         this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
+            .Returns(Result<GetQuoteResponse>.Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
 
         await this._sut.GetQuoteAsync("aapl");
 
@@ -49,7 +49,7 @@ public sealed class GetQuoteToolTests
     public async Task GetQuoteAsync_Success_PopulatesNextActions()
     {
         this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
+            .Returns(Result<GetQuoteResponse>.Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
 
         var envelope = await this._sut.GetQuoteAsync("AAPL");
 
@@ -81,7 +81,7 @@ public sealed class GetQuoteToolTests
     public async Task GetQuoteAsync_FailureResult_ReturnsEmptyNextActions()
     {
         this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Failure("upstream-error", ResultErrorType.ServiceUnavailable));
+            .Returns(Result<GetQuoteResponse>.Failure("upstream-error", ResultErrorType.ServiceUnavailable));
 
         var envelope = await this._sut.GetQuoteAsync("AAPL");
 
@@ -95,7 +95,7 @@ public sealed class GetQuoteToolTests
         // response is shape-valid but has null Current / PercentChange / TimestampUtc
         // (the unknown-symbol case Finnhub returns — see Fixtures/finnhub/quote-unknown.json).
         this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Success(
+            .Returns(Result<GetQuoteResponse>.Success(
                 new GetQuoteResponse { Symbol = "ZZZZ" }));
 
         var envelope = await this._sut.GetQuoteAsync("ZZZZ");

@@ -37,7 +37,7 @@ public sealed class GetPeersToolTests
     {
         this._service
             .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Success(
+            .Returns(Result<GetPeersResponse>.Success(
                 new GetPeersResponse { Peers = ["MSFT"], Grouping = "industry" }));
 
         await this._sut.GetPeersAsync("aapl");
@@ -53,7 +53,7 @@ public sealed class GetPeersToolTests
         var manyPeers = Enumerable.Range(1, 30).Select(i => $"P{i}").ToArray();
         this._service
             .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Success(
+            .Returns(Result<GetPeersResponse>.Success(
                 new GetPeersResponse { Peers = manyPeers, Grouping = "industry" }));
 
         var envelope = await this._sut.GetPeersAsync("AAPL", view: "summary");
@@ -69,7 +69,7 @@ public sealed class GetPeersToolTests
         var manyPeers = Enumerable.Range(1, 30).Select(i => $"P{i}").ToArray();
         this._service
             .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Success(
+            .Returns(Result<GetPeersResponse>.Success(
                 new GetPeersResponse { Peers = manyPeers, Grouping = "industry" }));
 
         var envelope = await this._sut.GetPeersAsync("AAPL", view: "full");
@@ -106,7 +106,7 @@ public sealed class GetPeersToolTests
     public async Task GetPeersAsync_FailureResult_ReturnsEmptyNextActions()
     {
         this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Failure("upstream-error"));
+            .Returns(Result<GetPeersResponse>.Failure("upstream-error"));
 
         var envelope = await this._sut.GetPeersAsync("AAPL");
 
@@ -123,7 +123,7 @@ public sealed class GetPeersToolTests
         var manyPeers = Enumerable.Range(1, 30).Select(i => $"P{i}").ToArray();
         this._service
             .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Success(
+            .Returns(Result<GetPeersResponse>.Success(
                 new GetPeersResponse { Peers = manyPeers, Grouping = "industry" }));
 
         var envelope = await this._sut.GetPeersAsync("AAPL", view: "summary");

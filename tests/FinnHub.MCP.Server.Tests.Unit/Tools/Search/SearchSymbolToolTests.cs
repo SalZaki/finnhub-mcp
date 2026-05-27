@@ -112,7 +112,7 @@ public sealed class SearchSymbolToolTests
     public async Task SearchSymbolAsync_ServiceFailure_WrapsAsFailureEnvelope()
     {
         this._service.SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<SearchSymbolResponse>().Failure("not found", ResultErrorType.NotFound));
+            .Returns(Result<SearchSymbolResponse>.Failure("not found", ResultErrorType.NotFound));
         this.SetupResolver("ZZZZ", 1.0);
         var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
@@ -145,7 +145,7 @@ public sealed class SearchSymbolToolTests
         // results, but next_actions stays empty because there's no canonical to key off.
         this.SetupSuccess([Stock("AAPL", "Apple Inc.", confidence: 0.5)]);
         this._resolver.ResolveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<ResolvedSymbol>().Failure(
+            .Returns(Result<ResolvedSymbol>.Failure(
                 "no canonical pick", ResultErrorType.NotFound));
         var tool = new SearchSymbolTool(this._service, this._resolver, this._logger);
 
@@ -158,12 +158,12 @@ public sealed class SearchSymbolToolTests
 
     private void SetupSuccess(IReadOnlyList<StockSymbol> symbols) =>
         this._service.SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<SearchSymbolResponse>().Success(
+            .Returns(Result<SearchSymbolResponse>.Success(
                 new SearchSymbolResponse { Symbols = symbols }));
 
     private void SetupResolver(string canonical, double confidence) =>
         this._resolver.ResolveAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<ResolvedSymbol>().Success(
+            .Returns(Result<ResolvedSymbol>.Success(
                 new ResolvedSymbol(canonical, canonical, Exchange: null, confidence, Candidates: [])));
 
     private static StockSymbol Stock(string symbol, string description, double confidence) => new()
