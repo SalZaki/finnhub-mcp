@@ -46,3 +46,6 @@ fetch news-sentiment-AAPL      "news-sentiment?symbol=AAPL"
 CAL_FROM=$(date -u +%Y-%m-01)
 CAL_TO=$(date -u -v+3m +%Y-%m-%d 2>/dev/null || date -u -d '+3 months' +%Y-%m-%d)
 fetch calendar-earnings-aapl   "calendar/earnings?from=$CAL_FROM&to=$CAL_TO&symbol=AAPL"
+# IPO fixture: trailing 6-month window from origin captures known SPAC + traditional IPOs
+# in mixed states (priced, withdrawn) so the parser exercises the nullable-field branches.
+fetch calendar-ipo-2026        "calendar/ipo?from=2025-01-01&to=2025-06-01"

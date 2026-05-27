@@ -191,4 +191,102 @@ public sealed class CalendarServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal("Unknown", result.ErrorType);
     }
+
+    private static GetCalendarQuery IpoQuery() => new()
+    {
+        QueryId = "q1",
+        Kind = CalendarKind.Ipo,
+        From = new DateOnly(2026, 6, 1),
+        To = new DateOnly(2026, 12, 31),
+        Symbol = null
+    };
+
+    private static IpoEvent Ipo(string name, int dayOffset, string? symbol = "NEWCO") => new()
+    {
+        Name = name,
+        Date = new DateOnly(2026, 6, 1).AddDays(dayOffset),
+        Symbol = symbol,
+        Exchange = "NASDAQ",
+        Status = "priced"
+    };
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoWithEvents_ReturnsSuccess()
+    {
+        this._apiClient
+            .GetIpoCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([Ipo("Acme Co", 0)]);
+
+        var result = await this._sut.GetCalendarAsync(IpoQuery());
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("ipo", result.Data!.Kind);
+        Assert.Single(result.Data.IpoEvents!);
+        Assert.Null(result.Data.EarningsEvents);
+        Assert.Null(result.Data.Symbol);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoEmpty_ReturnsNotFound()
+    {
+        this._apiClient
+            .GetIpoCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await this._sut.GetCalendarAsync(IpoQuery());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("NotFound", result.ErrorType);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoOrdersMostRecentFirstThenByName()
+    {
+        IpoEvent[] unordered =
+        [
+            Ipo("Earlier Co", 0),
+            Ipo("Later Co B", 10),
+            Ipo("Later Co A", 10)
+        ];
+        this._apiClient
+            .GetIpoCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(unordered);
+
+        var result = await this._sut.GetCalendarAsync(IpoQuery());
+
+        Assert.True(result.IsSuccess);
+        var events = result.Data!.IpoEvents!;
+        Assert.Equal("Later Co A", events[0].Name);
+        Assert.Equal("Later Co B", events[1].Name);
+        Assert.Equal("Earlier Co", events[2].Name);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoTwoIdenticalCalls_HitsApiClientExactlyOnce()
+    {
+        this._apiClient
+            .GetIpoCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([Ipo("Acme", 0)]);
+
+        var query = IpoQuery();
+        await this._sut.GetCalendarAsync(query);
+        await this._sut.GetCalendarAsync(query);
+
+        Assert.Equal(1, this._cache.FactoryInvocationCount);
+        await this._apiClient.Received(1).GetIpoCalendarAsync(
+            Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoHttpError_MapsToServiceUnavailable()
+    {
+        this._apiClient
+            .GetIpoCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ApiClientHttpException("boom", HttpStatusCode.BadGateway));
+
+        var result = await this._sut.GetCalendarAsync(IpoQuery());
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("ServiceUnavailable", result.ErrorType);
+    }
 }

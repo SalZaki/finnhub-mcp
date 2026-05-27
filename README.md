@@ -44,7 +44,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 - **`get-financials-snapshot`** — curated 10-KPI snapshot (market cap, P/E, P/B, EPS, dividend yield, 52-week high/low, 52-week return, beta, revenue per share). `view=full` adds the raw upstream metric dictionary.
 - **`get-price-summary`** — aggregated price stats over a candle range (`min`, `max`, `mean`, `return_pct`, `vol`, `latest`). Period: `7d`, `30d` (default), `90d`, `1y`. `view=full` adds the raw OHLCV arrays.
 - **`get-news-pulse`** — news pulse over the past 7 days: sentiment score (when available), top 5 headlines, article count, week-over-week delta. Gracefully degrades sentiment when the upstream `/news-sentiment` endpoint is premium-locked.
-- **`get-calendar`** — parameter-dispatched calendar lookup. v1 ships `kind=earnings` with date window (max 90 days) and optional symbol filter; IPO and economic kinds land in follow-up releases. Summary view caps at 10 events, standard at 25, full returns the complete window.
+- **`get-calendar`** — parameter-dispatched calendar lookup. Ships `kind=earnings` (max 90-day window, optional symbol filter; suggests `get-financials-snapshot` + `get-news-pulse`) and `kind=ipo` (max 365-day window, no symbol filter; suggests `get-company-profile` for the most recent tradable IPO). Economic kind lands in a follow-up release. Summary view caps at 10 events, standard at 25, full returns the complete window.
 
 Every tool returns the standard token-budgeted envelope with cross-linked `next_actions` and the most-recent observed Finnhub rate-limit headers.
 
@@ -54,7 +54,7 @@ Every tool returns the standard token-budgeted envelope with cross-linked `next_
 
 ### 🔄 In Development
 - Wire `ExchangesResource` to the live Finnhub `/stock/exchange` endpoint
-- **`get-calendar`** — extend with `kind=ipo` and `kind=economic`
+- **`get-calendar`** — extend with `kind=economic`
 
 ### 📋 Planned
 - **`get-insider-signal`** — net buy/sell aggregation over the past 30 days plus notable insider names

@@ -38,6 +38,7 @@ public sealed class CalendarService(
             return query.Kind switch
             {
                 CalendarKind.Earnings => await this.GetEarningsAsync(query, cancellationToken),
+                CalendarKind.Ipo => await this.GetIposAsync(query, cancellationToken),
                 _ => Result<GetCalendarResponse>.Failure(
                     $"Calendar kind '{query.Kind}' is not yet supported.",
                     ResultErrorType.InvalidQuery)
@@ -112,6 +113,49 @@ public sealed class CalendarService(
         return ordered.Count == 0
             ? Result<GetCalendarResponse>.Failure(
                 $"No earnings events found for the requested window ({query.From}..{query.To}).",
+                ResultErrorType.NotFound)
+            : Result<GetCalendarResponse>.Success(response);
+    }
+
+    private async Task<Result<GetCalendarResponse>> GetIposAsync(
+        GetCalendarQuery query,
+        CancellationToken cancellationToken)
+    {
+        var cacheKey = string.Create(
+            CultureInfo.InvariantCulture,
+            $"calendar-ipo:f={query.From:yyyy-MM-dd}:t={query.To:yyyy-MM-dd}");
+
+        var events = await cache.GetOrCreateAsync(
+            cacheKey,
+            CacheTier.News,
+            async ct => await apiClient.GetIpoCalendarAsync(query.From, query.To, ct),
+            cancellationToken);
+
+        // Most-recent-first ordering matches the upstream feed's natural shape and
+        // matches what an analyst asking "what just listed?" expects to see at the top.
+        var ordered = events
+            .OrderByDescending(e => e.Date)
+            .ThenBy(e => e.Name, StringComparer.Ordinal)
+            .ToList()
+            .AsReadOnly();
+
+        logger.LogInformation(
+            "IPO calendar ({From}..{To}): {Count} event(s)",
+            query.From, query.To, ordered.Count);
+
+        var response = new GetCalendarResponse
+        {
+            Kind = "ipo",
+            From = query.From,
+            To = query.To,
+            Symbol = null,
+            TotalCount = ordered.Count,
+            IpoEvents = ordered
+        };
+
+        return ordered.Count == 0
+            ? Result<GetCalendarResponse>.Failure(
+                $"No IPO events found for the requested window ({query.From}..{query.To}).",
                 ResultErrorType.NotFound)
             : Result<GetCalendarResponse>.Success(response);
     }

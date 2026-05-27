@@ -23,4 +23,13 @@ public interface ICalendarApiClient
         DateOnly to,
         string? symbol,
         CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fetches IPO listings within the supplied window. The upstream endpoint does
+    /// not accept a symbol filter — callers receive the full window.
+    /// </summary>
+    Task<IReadOnlyList<IpoEvent>> GetIpoCalendarAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken);
 }

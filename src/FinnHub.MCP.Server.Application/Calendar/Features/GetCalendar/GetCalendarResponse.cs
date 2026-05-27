@@ -15,8 +15,8 @@ namespace FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
 /// </summary>
 /// <remarks>
 /// The wire envelope is flat across kinds — only the populated event list depends
-/// on <see cref="Kind"/>. v1 carries <see cref="EarningsEvents"/> only; follow-up
-/// stories add IPO and economic event lists alongside it.
+/// on <see cref="Kind"/>. Economic events are added by a follow-up story alongside
+/// the existing earnings + IPO lists.
 /// </remarks>
 [ExcludeFromCodeCoverage]
 public sealed class GetCalendarResponse
@@ -47,4 +47,11 @@ public sealed class GetCalendarResponse
     /// </summary>
     [JsonPropertyName("earnings_events")]
     public IReadOnlyList<EarningsEvent>? EarningsEvents { get; init; }
+
+    /// <summary>
+    /// IPO listings in the requested window, ordered by <see cref="IpoEvent.Date"/> descending
+    /// (most recent first). Populated only when <see cref="Kind"/> is <c>ipo</c>.
+    /// </summary>
+    [JsonPropertyName("ipo_events")]
+    public IReadOnlyList<IpoEvent>? IpoEvents { get; init; }
 }

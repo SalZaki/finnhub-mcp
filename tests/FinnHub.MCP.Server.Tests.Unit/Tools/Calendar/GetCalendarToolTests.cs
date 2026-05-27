@@ -44,6 +44,24 @@ public sealed class GetCalendarToolTests
             .AsReadOnly()
     };
 
+    private static GetCalendarResponse IpoResponse(int events, string? firstSymbol = "NEWCO") => new()
+    {
+        Kind = "ipo",
+        From = new DateOnly(2026, 6, 1),
+        To = new DateOnly(2026, 12, 31),
+        Symbol = null,
+        TotalCount = events,
+        IpoEvents = Enumerable.Range(0, events)
+            .Select(i => new IpoEvent
+            {
+                Name = $"Issuer {i}",
+                Date = new DateOnly(2026, 6, 1).AddDays(i),
+                Symbol = i == 0 ? firstSymbol : $"S{i}"
+            })
+            .ToList()
+            .AsReadOnly()
+    };
+
     [Fact]
     public async Task GetCalendarAsync_InvalidKind_Throws()
     {
@@ -51,9 +69,16 @@ public sealed class GetCalendarToolTests
     }
 
     [Fact]
-    public async Task GetCalendarAsync_UnsupportedKind_Throws()
+    public async Task GetCalendarAsync_EconomicKind_Throws()
     {
-        await Assert.ThrowsAsync<ArgumentException>(() => this._sut.GetCalendarAsync("ipo"));
+        await Assert.ThrowsAsync<ArgumentException>(() => this._sut.GetCalendarAsync("economic"));
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoWithSymbol_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            this._sut.GetCalendarAsync("ipo", symbol: "AAPL"));
     }
 
     [Fact]
@@ -193,5 +218,69 @@ public sealed class GetCalendarToolTests
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             this._sut.GetCalendarAsync("earnings", symbol: "AAPL"));
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoSuccess_RoutesToIpoService()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(IpoResponse(1)));
+
+        await this._sut.GetCalendarAsync("ipo", from: "2026-06-01", to: "2026-12-31");
+
+        await this._service.Received(1).GetCalendarAsync(
+            Arg.Is<GetCalendarQuery>(q => q.Kind == CalendarKind.Ipo && q.Symbol == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoSummaryView_CapsAtTen()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(IpoResponse(30)));
+
+        var envelope = await this._sut.GetCalendarAsync(
+            "ipo", from: "2026-06-01", to: "2026-12-31", view: "summary");
+
+        Assert.True(envelope.IsSuccess);
+        Assert.Equal(GetCalendarTool.SummaryEventCap, envelope.Data!.TotalCount);
+        Assert.Equal(GetCalendarTool.SummaryEventCap, envelope.Data.IpoEvents!.Count);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoSuccessWithTradableTicker_PopulatesProfileNextAction()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(IpoResponse(3, firstSymbol: "NEWCO")));
+
+        var envelope = await this._sut.GetCalendarAsync("ipo", from: "2026-06-01", to: "2026-12-31");
+
+        var only = Assert.Single(envelope.NextActions);
+        Assert.Equal("get-company-profile", only.Tool);
+        Assert.Equal("NEWCO", only.Args["symbol"]);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_IpoSuccessNoTradableTicker_ReturnsEmptyNextActions()
+    {
+        // All entries withdrawn / unpriced (null symbols).
+        var withdrawn = new GetCalendarResponse
+        {
+            Kind = "ipo",
+            From = new DateOnly(2026, 6, 1),
+            To = new DateOnly(2026, 12, 31),
+            TotalCount = 2,
+            IpoEvents =
+            [
+                new IpoEvent { Name = "A", Date = new DateOnly(2026, 6, 1), Status = "withdrawn" },
+                new IpoEvent { Name = "B", Date = new DateOnly(2026, 7, 1), Status = "withdrawn" }
+            ]
+        };
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(withdrawn));
+
+        var envelope = await this._sut.GetCalendarAsync("ipo", from: "2026-06-01", to: "2026-12-31");
+
+        Assert.Empty(envelope.NextActions);
     }
 }

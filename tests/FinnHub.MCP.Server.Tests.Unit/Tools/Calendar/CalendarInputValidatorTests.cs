@@ -27,10 +27,17 @@ public sealed class CalendarInputValidatorTests
 
     [Theory]
     [InlineData("ipo")]
-    [InlineData("economic")]
-    public void ValidateKind_UnsupportedKnownKinds_ThrowsWithUpgradeHint(string kind)
+    [InlineData("IPO")]
+    [InlineData("  ipo  ")]
+    public void ValidateKind_AcceptsIpoCaseInsensitive(string kind)
     {
-        var ex = Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateKind(kind));
+        Assert.Equal(CalendarKind.Ipo, CalendarInputValidator.ValidateKind(kind));
+    }
+
+    [Fact]
+    public void ValidateKind_Economic_ThrowsWithUpgradeHint()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateKind("economic"));
         Assert.Contains("not yet supported", ex.Message, StringComparison.OrdinalIgnoreCase);
     }
 
@@ -81,7 +88,7 @@ public sealed class CalendarInputValidatorTests
     {
         var (from, to) = CalendarInputValidator.ValidateWindow(null, null, s_today);
         Assert.Equal(s_today, from);
-        Assert.Equal(s_today.AddDays(CalendarInputValidator.MaxWindowDays), to);
+        Assert.Equal(s_today.AddDays(CalendarInputValidator.MaxEarningsWindowDays), to);
     }
 
     [Fact]
@@ -89,7 +96,7 @@ public sealed class CalendarInputValidatorTests
     {
         var (from, to) = CalendarInputValidator.ValidateWindow("2026-06-01", null, s_today);
         Assert.Equal(new DateOnly(2026, 6, 1), from);
-        Assert.Equal(new DateOnly(2026, 6, 1).AddDays(CalendarInputValidator.MaxWindowDays), to);
+        Assert.Equal(new DateOnly(2026, 6, 1).AddDays(CalendarInputValidator.MaxEarningsWindowDays), to);
     }
 
     [Fact]
@@ -114,6 +121,60 @@ public sealed class CalendarInputValidatorTests
         var ex = Assert.Throws<ArgumentException>(() =>
             CalendarInputValidator.ValidateWindow("2026-05-01", "2026-09-01", s_today));
         Assert.Contains("must not exceed", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidateWindow_Ipo_AllowsUpTo365Days()
+    {
+        var (from, to) = CalendarInputValidator.ValidateWindow(
+            "2026-06-01", "2026-12-31", s_today, CalendarKind.Ipo);
+        Assert.Equal(new DateOnly(2026, 6, 1), from);
+        Assert.Equal(new DateOnly(2026, 12, 31), to);
+    }
+
+    [Fact]
+    public void ValidateWindow_IpoExceeds365Days_Throws()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CalendarInputValidator.ValidateWindow("2026-01-01", "2027-06-01", s_today, CalendarKind.Ipo));
+        Assert.Contains("must not exceed 365 days", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidateWindow_EarningsExceeds90Days_ErrorMessageNamesKind()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CalendarInputValidator.ValidateWindow("2026-05-01", "2026-09-01", s_today, CalendarKind.Earnings));
+        Assert.Contains("'Earnings'", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidateSymbolForKind_IpoWithSymbol_Throws()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CalendarInputValidator.ValidateSymbolForKind("AAPL", CalendarKind.Ipo));
+        Assert.Contains("does not accept a symbol filter", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidateSymbolForKind_IpoWithoutSymbol_ReturnsNull()
+    {
+        Assert.Null(CalendarInputValidator.ValidateSymbolForKind(null, CalendarKind.Ipo));
+        Assert.Null(CalendarInputValidator.ValidateSymbolForKind("", CalendarKind.Ipo));
+    }
+
+    [Fact]
+    public void ValidateSymbolForKind_EarningsWithSymbol_NormalisesAndReturns()
+    {
+        Assert.Equal("AAPL", CalendarInputValidator.ValidateSymbolForKind("aapl", CalendarKind.Earnings));
+    }
+
+    [Theory]
+    [InlineData(CalendarKind.Earnings, 90)]
+    [InlineData(CalendarKind.Ipo, 365)]
+    public void MaxWindowDaysFor_ReturnsKindSpecificCap(CalendarKind kind, int expected)
+    {
+        Assert.Equal(expected, CalendarInputValidator.MaxWindowDaysFor(kind));
     }
 
     [Theory]
