@@ -7,6 +7,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
@@ -75,4 +76,9 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(FinnHubProfileResponse))]
 [JsonSerializable(typeof(GetCompanyProfileResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetCompanyProfileResponse>))]
+[JsonSerializable(typeof(FinnHubEarningsCalendarResponse))]
+[JsonSerializable(typeof(FinnHubEarningsEntry))]
+[JsonSerializable(typeof(EarningsEvent))]
+[JsonSerializable(typeof(GetCalendarResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetCalendarResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;

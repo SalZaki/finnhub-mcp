@@ -36,7 +36,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 
 ### ✅ Currently Available
 
-**Tools (7):**
+**Tools (8):**
 - **`search-symbol`** — search for financial symbols by ticker, company name, ISIN, or CUSIP, optionally filtered by exchange code (limit 1–100, default 10). On a high-confidence exact match, suggests `get-quote`, `get-company-profile`, `get-news-pulse`, `get-financials-snapshot`, `get-price-summary`, and `get-peers` as next actions.
 - **`get-quote`** — real-time price snapshot (current, change, percent change, session high/low/open, prev close, timestamp). Cached at the 10-second Quote tier.
 - **`get-company-profile`** — company snapshot (name, ticker, country, currency, exchange, IPO, market cap, shares outstanding, industry). `view=summary` drops the cosmetic fields (logo, phone, weburl); `standard` and `full` include them.
@@ -44,6 +44,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 - **`get-financials-snapshot`** — curated 10-KPI snapshot (market cap, P/E, P/B, EPS, dividend yield, 52-week high/low, 52-week return, beta, revenue per share). `view=full` adds the raw upstream metric dictionary.
 - **`get-price-summary`** — aggregated price stats over a candle range (`min`, `max`, `mean`, `return_pct`, `vol`, `latest`). Period: `7d`, `30d` (default), `90d`, `1y`. `view=full` adds the raw OHLCV arrays.
 - **`get-news-pulse`** — news pulse over the past 7 days: sentiment score (when available), top 5 headlines, article count, week-over-week delta. Gracefully degrades sentiment when the upstream `/news-sentiment` endpoint is premium-locked.
+- **`get-calendar`** — parameter-dispatched calendar lookup. v1 ships `kind=earnings` with date window (max 90 days) and optional symbol filter; IPO and economic kinds land in follow-up releases. Summary view caps at 10 events, standard at 25, full returns the complete window.
 
 Every tool returns the standard token-budgeted envelope with cross-linked `next_actions` and the most-recent observed Finnhub rate-limit headers.
 
@@ -53,7 +54,7 @@ Every tool returns the standard token-budgeted envelope with cross-linked `next_
 
 ### 🔄 In Development
 - Wire `ExchangesResource` to the live Finnhub `/stock/exchange` endpoint
-- **`get-calendar`** — parameter-dispatched calendar across earnings, IPO, and economic events
+- **`get-calendar`** — extend with `kind=ipo` and `kind=economic`
 
 ### 📋 Planned
 - **`get-insider-signal`** — net buy/sell aggregation over the past 30 days plus notable insider names

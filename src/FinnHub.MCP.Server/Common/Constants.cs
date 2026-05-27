@@ -464,6 +464,85 @@ public static class Constants
                 """;
         }
 
+        /// <summary>Constants for the <c>get-calendar</c> tool — parameter-dispatched calendar lookup.</summary>
+        public static class Calendar
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-calendar";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Calendar";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Kind parameter name.</summary>
+                public const string KindName = "kind";
+
+                /// <summary>Kind parameter description.</summary>
+                public const string KindDescription =
+                    "Calendar feed to dispatch to: earnings. (IPO and economic are added by follow-up releases.)";
+
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription =
+                    "Optional uppercase ticker filter, e.g. 'AAPL'. Omit to retrieve the full calendar for the window.";
+
+                /// <summary>From-date parameter name.</summary>
+                public const string FromName = "from";
+
+                /// <summary>From-date parameter description.</summary>
+                public const string FromDescription =
+                    "Inclusive start of the date window as ISO yyyy-MM-dd, e.g. '2026-05-01'. Defaults to today (UTC).";
+
+                /// <summary>To-date parameter name.</summary>
+                public const string ToName = "to";
+
+                /// <summary>To-date parameter description.</summary>
+                public const string ToDescription =
+                    "Inclusive end of the date window as ISO yyyy-MM-dd, e.g. '2026-08-01'. Defaults to from+90d. Maximum window: 90 days.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Get the dispatched calendar for a date window — currently earnings releases (IPO and economic are upcoming).
+
+                ## Example:
+                - kind='earnings', symbol='AAPL', from='2026-05-01', to='2026-08-01'
+                - kind='earnings', from='2026-05-26', to='2026-06-02'   (full week, all symbols)
+
+                ## Request Parameters:
+                - kind (string, required): 'earnings'
+                - symbol (string, optional): uppercase ticker filter
+                - from (string, optional, ISO yyyy-MM-dd): inclusive start; defaults to today (UTC)
+                - to (string, optional, ISO yyyy-MM-dd): inclusive end; defaults to from+90d; max window 90 days
+
+                ## Response Fields:
+                - kind (string): echo of the dispatched feed
+                - from, to (ISO date): echo of the window
+                - symbol (string, nullable): echo of the symbol filter
+                - total_count (int)
+                - earnings_events (array, populated when kind='earnings'):
+                  - symbol, date (ISO), hour (bmo|amc|dmh|null), quarter, year
+                  - eps_actual, eps_estimate, revenue_actual, revenue_estimate (all nullable doubles)
+
+                ## Notes:
+                - summary view caps at the next 10 events by date; standard and full return the complete window.
+                - Cached at the News tier — calendars revise as analysts update estimates.
+
+                Approx tokens: summary ~250, standard varies with event count (~1000 at 25 events), full no ceiling.
+                """;
+        }
+
         /// <summary>Constants for the <c>get-company-profile</c> tool — company snapshot.</summary>
         public static class CompanyProfile
         {

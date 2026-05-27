@@ -10,6 +10,8 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 using FinnHub.MCP.Server.Application.Caching;
+using FinnHub.MCP.Server.Application.Calendar.Clients;
+using FinnHub.MCP.Server.Application.Calendar.Services;
 using FinnHub.MCP.Server.Application.Financials.Clients;
 using FinnHub.MCP.Server.Application.Financials.Services;
 using FinnHub.MCP.Server.Application.News.Clients;
@@ -26,6 +28,7 @@ using FinnHub.MCP.Server.Application.Quotes.Services;
 using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
+using FinnHub.MCP.Server.Infrastructure.Clients.Calendar;
 using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
 using FinnHub.MCP.Server.Infrastructure.Clients.News;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
@@ -138,6 +141,14 @@ public static class ServiceCollectionExtension
             .AddHttpMessageHandler<RateLimitHeaderHandler>()
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<ICalendarService, CalendarService>();
+        services.AddHttpClient<ICalendarApiClient, FinnHubCalendarApiClient>("FinnHub-Calendar-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubCalendarApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubCalendarApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 
