@@ -14,6 +14,8 @@ using FinnHub.MCP.Server.Application.Calendar.Clients;
 using FinnHub.MCP.Server.Application.Calendar.Services;
 using FinnHub.MCP.Server.Application.Financials.Clients;
 using FinnHub.MCP.Server.Application.Financials.Services;
+using FinnHub.MCP.Server.Application.Insiders.Clients;
+using FinnHub.MCP.Server.Application.Insiders.Services;
 using FinnHub.MCP.Server.Application.News.Clients;
 using FinnHub.MCP.Server.Application.News.Services;
 using FinnHub.MCP.Server.Application.Options;
@@ -30,6 +32,7 @@ using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
 using FinnHub.MCP.Server.Infrastructure.Clients.Calendar;
 using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
+using FinnHub.MCP.Server.Infrastructure.Clients.Insiders;
 using FinnHub.MCP.Server.Infrastructure.Clients.News;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
@@ -149,6 +152,14 @@ public static class ServiceCollectionExtension
             .AddHttpMessageHandler<RateLimitHeaderHandler>()
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubCalendarApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubCalendarApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IInsidersService, InsidersService>();
+        services.AddHttpClient<IInsidersApiClient, FinnHubInsidersApiClient>("FinnHub-Insiders-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubInsidersApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubInsidersApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 

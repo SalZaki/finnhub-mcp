@@ -52,3 +52,8 @@ fetch calendar-ipo-2026        "calendar/ipo?from=2025-01-01&to=2025-06-01"
 # Economic fixture: a 30-day window captures ~1300 events across ~115 countries with
 # mixed impact tiers (low/medium/high) and many entries lacking actual/estimate/prev.
 fetch calendar-economic-2026   "calendar/economic?from=2026-06-01&to=2026-06-30"
+# Insider transactions fixture: trailing 30 days for AAPL — exercises sells / gifts
+# / nullable transaction price and zero-price grant branches.
+INS_FROM=$(date -u -v-30d +%Y-%m-%d 2>/dev/null || date -u -d '30 days ago' +%Y-%m-%d)
+INS_TO=$(date -u +%Y-%m-%d)
+fetch insider-transactions-AAPL "stock/insider-transactions?symbol=AAPL&from=$INS_FROM&to=$INS_TO"
