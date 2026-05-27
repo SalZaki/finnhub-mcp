@@ -23,6 +23,7 @@ namespace FinnHub.MCP.Server.Infrastructure.Clients.Calendar;
 public sealed class FinnHubCalendarApiClient : ICalendarApiClient
 {
     private const string EarningsEndpointName = "calendar-earnings";
+    private const string IpoEndpointName = "calendar-ipo";
 
     private readonly HttpClient _httpClient;
     private readonly FinnHubOptions _options;
@@ -150,6 +151,117 @@ public sealed class FinnHubCalendarApiClient : ICalendarApiClient
             ? string.Create(CultureInfo.InvariantCulture, $"{trimmed}?from={fromStr}&to={toStr}")
             : string.Create(CultureInfo.InvariantCulture, $"{trimmed}?from={fromStr}&to={toStr}&symbol={Uri.EscapeDataString(symbol)}");
     }
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<IpoEvent>> GetIpoCalendarAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken)
+    {
+        var endpoint = this._options.EndPoints.FirstOrDefault(e => e is { IsActive: true, Name: IpoEndpointName })?.Url
+                       ?? throw new ArgumentException("Calendar IPO endpoint is not configured or inactive");
+
+        var requestUri = BuildWindowUri(endpoint, from, to);
+
+        this._logger.LogInformation("Requesting IPO calendar from FinnHub: {RequestUri}", requestUri);
+
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, requestUri);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await this._httpClient.SendAsync(requestMessage, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            this._logger.LogError(ex, "HTTP request to FinnHub IPO calendar failed: {Uri}", requestUri);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub IPO calendar failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            this._logger.LogError(ex, "IPO calendar request timed out: {Uri}", requestUri);
+            throw new ApiClientTimeoutException($"IPO calendar request timed out: {requestUri}", ex);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            this._logger.LogWarning("IPO calendar request cancelled: {Uri}", requestUri);
+            throw new ApiClientCancelledException($"IPO calendar request cancelled: {requestUri}");
+        }
+
+        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+        }
+
+        FinnHubIpoCalendarResponse? dto;
+        try
+        {
+            dto = await JsonSerializer
+                .DeserializeAsync(contentStream, FinnHubJsonContext.Default.FinnHubIpoCalendarResponse, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (JsonException ex)
+        {
+            this._logger.LogError(ex, "Failed to deserialize IPO calendar response: {Uri}", requestUri);
+            throw new ApiClientDeserializationException(
+                $"Failed to deserialize IPO calendar response: {requestUri}",
+                innerException: ex);
+        }
+
+        if (dto?.IpoCalendar is null || dto.IpoCalendar.Count == 0)
+        {
+            return [];
+        }
+
+        var events = new List<IpoEvent>(dto.IpoCalendar.Count);
+        foreach (var entry in dto.IpoCalendar)
+        {
+            // Date + name are the only two fields required to be useful — withdrawn
+            // offerings have null symbol/exchange/price but still carry both.
+            if (string.IsNullOrWhiteSpace(entry.Name) || string.IsNullOrWhiteSpace(entry.Date))
+            {
+                continue;
+            }
+
+            if (!DateOnly.TryParseExact(entry.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            {
+                continue;
+            }
+
+            events.Add(new IpoEvent
+            {
+                Symbol = string.IsNullOrWhiteSpace(entry.Symbol) ? null : entry.Symbol,
+                Name = entry.Name,
+                Date = date,
+                Exchange = string.IsNullOrWhiteSpace(entry.Exchange) ? null : entry.Exchange,
+                Price = ParsePrice(entry.Price),
+                NumberOfShares = entry.NumberOfShares,
+                TotalSharesValue = entry.TotalSharesValue,
+                Status = string.IsNullOrWhiteSpace(entry.Status) ? null : entry.Status
+            });
+        }
+
+        return events;
+    }
+
+    private static string BuildWindowUri(string endpoint, DateOnly from, DateOnly to)
+    {
+        var trimmed = endpoint.TrimStart('/');
+        var fromStr = from.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        var toStr = to.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+        return string.Create(CultureInfo.InvariantCulture, $"{trimmed}?from={fromStr}&to={toStr}");
+    }
+
+    private static double? ParsePrice(string? raw) =>
+        !string.IsNullOrWhiteSpace(raw)
+            && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
+            ? parsed
+            : null;
 
     private async Task HandleErrorAsync(HttpResponseMessage response, Stream contentStream, CancellationToken ct)
     {

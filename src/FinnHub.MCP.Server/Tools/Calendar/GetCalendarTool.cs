@@ -58,9 +58,9 @@ public sealed class GetCalendarTool(
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
             var validatedKind = CalendarInputValidator.ValidateKind(kind);
-            var validatedSymbol = CalendarInputValidator.ValidateSymbol(symbol);
+            var validatedSymbol = CalendarInputValidator.ValidateSymbolForKind(symbol, validatedKind);
             var (validatedFrom, validatedTo) = CalendarInputValidator.ValidateWindow(
-                from, to, DateOnly.FromDateTime(DateTime.UtcNow));
+                from, to, DateOnly.FromDateTime(DateTime.UtcNow), validatedKind);
             var validatedView = CalendarInputValidator.ValidateView(view);
 
             var query = new GetCalendarQuery
@@ -84,7 +84,7 @@ public sealed class GetCalendarTool(
                 projected,
                 validatedView,
                 nextActions: BuildNextActions(projected, validatedSymbol),
-                explanation: BuildExplanation(projected, validatedFrom, validatedTo));
+                explanation: BuildExplanation(projected, validatedKind, validatedFrom, validatedTo));
         }
         catch (OperationCanceledException ex)
         {
@@ -116,7 +116,7 @@ public sealed class GetCalendarTool(
 
     private static Result<GetCalendarResponse> ProjectForView(Result<GetCalendarResponse> source, ToolView view)
     {
-        if (!source.IsSuccess || source.Data is null || source.Data.EarningsEvents is null)
+        if (!source.IsSuccess || source.Data is null)
         {
             return source;
         }
@@ -128,27 +128,69 @@ public sealed class GetCalendarTool(
             _ => int.MaxValue
         };
 
-        if (source.Data.EarningsEvents.Count <= cap)
+        if (source.Data.EarningsEvents is { } earnings && earnings.Count > cap)
         {
-            return source;
+            var capped = earnings.Take(cap).ToList().AsReadOnly();
+            return Result<GetCalendarResponse>.Success(new GetCalendarResponse
+            {
+                Kind = source.Data.Kind,
+                From = source.Data.From,
+                To = source.Data.To,
+                Symbol = source.Data.Symbol,
+                TotalCount = capped.Count,
+                EarningsEvents = capped
+            });
         }
 
-        var capped = source.Data.EarningsEvents.Take(cap).ToList().AsReadOnly();
-
-        return Result<GetCalendarResponse>.Success(new GetCalendarResponse
+        if (source.Data.IpoEvents is { } ipos && ipos.Count > cap)
         {
-            Kind = source.Data.Kind,
-            From = source.Data.From,
-            To = source.Data.To,
-            Symbol = source.Data.Symbol,
-            TotalCount = capped.Count,
-            EarningsEvents = capped
-        });
+            var capped = ipos.Take(cap).ToList().AsReadOnly();
+            return Result<GetCalendarResponse>.Success(new GetCalendarResponse
+            {
+                Kind = source.Data.Kind,
+                From = source.Data.From,
+                To = source.Data.To,
+                Symbol = source.Data.Symbol,
+                TotalCount = capped.Count,
+                IpoEvents = capped
+            });
+        }
+
+        return source;
     }
 
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetCalendarResponse> result, string? symbol)
     {
-        if (!result.IsSuccess || result.Data is null || string.IsNullOrEmpty(symbol))
+        if (!result.IsSuccess || result.Data is null)
+        {
+            return [];
+        }
+
+        if (result.Data.IpoEvents is { } ipos)
+        {
+            // Pick the first IPO that has a tradable ticker so the LLM can pivot to
+            // a follow-up tool — withdrawn / unpriced offerings have null symbols and
+            // get-company-profile would reject them at validation time.
+            var firstWithTicker = ipos.FirstOrDefault(e => !string.IsNullOrEmpty(e.Symbol));
+            if (firstWithTicker is null)
+            {
+                return [];
+            }
+
+            var ipoArgs = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["symbol"] = firstWithTicker.Symbol!
+            };
+            return
+            [
+                new NextAction(
+                    "get-company-profile",
+                    ipoArgs,
+                    $"pull the profile for the most recent IPO ({firstWithTicker.Symbol})")
+            ];
+        }
+
+        if (string.IsNullOrEmpty(symbol))
         {
             return [];
         }
@@ -162,17 +204,19 @@ public sealed class GetCalendarTool(
         ];
     }
 
-    private static string BuildExplanation(Result<GetCalendarResponse> result, DateOnly from, DateOnly to)
+    private static string BuildExplanation(Result<GetCalendarResponse> result, CalendarKind kind, DateOnly from, DateOnly to)
     {
+        var label = kind == CalendarKind.Ipo ? "IPO" : "earnings";
+
         if (!result.IsSuccess || result.Data is null)
         {
             return string.Create(
                 CultureInfo.InvariantCulture,
-                $"No earnings events in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
+                $"No {label} events in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
         }
 
         return string.Create(
             CultureInfo.InvariantCulture,
-            $"Found {result.Data.TotalCount} earnings event(s) in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
+            $"Found {result.Data.TotalCount} {label} event(s) in {from:yyyy-MM-dd}..{to:yyyy-MM-dd}.");
     }
 }

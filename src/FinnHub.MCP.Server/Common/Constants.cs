@@ -481,14 +481,14 @@ public static class Constants
 
                 /// <summary>Kind parameter description.</summary>
                 public const string KindDescription =
-                    "Calendar feed to dispatch to: earnings. (IPO and economic are added by follow-up releases.)";
+                    "Calendar feed to dispatch to: 'earnings' or 'ipo'. (Economic is added by a follow-up release.)";
 
                 /// <summary>Symbol parameter name.</summary>
                 public const string SymbolName = "symbol";
 
                 /// <summary>Symbol parameter description.</summary>
                 public const string SymbolDescription =
-                    "Optional uppercase ticker filter, e.g. 'AAPL'. Omit to retrieve the full calendar for the window.";
+                    "Optional uppercase ticker filter, e.g. 'AAPL'. Only valid with kind='earnings'; omit for kind='ipo' (the upstream does not filter IPOs by ticker).";
 
                 /// <summary>From-date parameter name.</summary>
                 public const string FromName = "from";
@@ -502,7 +502,7 @@ public static class Constants
 
                 /// <summary>To-date parameter description.</summary>
                 public const string ToDescription =
-                    "Inclusive end of the date window as ISO yyyy-MM-dd, e.g. '2026-08-01'. Defaults to from+90d. Maximum window: 90 days.";
+                    "Inclusive end of the date window as ISO yyyy-MM-dd. Defaults to from + the kind's max window. Maximum window: 90 days for earnings, 365 days for IPO.";
 
                 /// <summary>View parameter name.</summary>
                 public const string ViewName = "view";
@@ -514,30 +514,37 @@ public static class Constants
             /// <summary>Tool description registered with the MCP server.</summary>
             public const string Description =
                 """
-                Get the dispatched calendar for a date window — currently earnings releases (IPO and economic are upcoming).
+                Get the dispatched calendar for a date window — earnings or IPO listings (economic kind upcoming).
 
-                ## Example:
+                ## Examples:
                 - kind='earnings', symbol='AAPL', from='2026-05-01', to='2026-08-01'
                 - kind='earnings', from='2026-05-26', to='2026-06-02'   (full week, all symbols)
+                - kind='ipo', from='2026-06-01', to='2026-12-31'        (next 6 months of listings)
 
                 ## Request Parameters:
-                - kind (string, required): 'earnings'
-                - symbol (string, optional): uppercase ticker filter
+                - kind (string, required): 'earnings' or 'ipo'
+                - symbol (string, optional): uppercase ticker filter — only valid with kind='earnings'
                 - from (string, optional, ISO yyyy-MM-dd): inclusive start; defaults to today (UTC)
-                - to (string, optional, ISO yyyy-MM-dd): inclusive end; defaults to from+90d; max window 90 days
+                - to (string, optional, ISO yyyy-MM-dd): inclusive end; defaults to from + the kind's max window. Max: 90 days for earnings, 365 days for IPO.
 
                 ## Response Fields:
                 - kind (string): echo of the dispatched feed
                 - from, to (ISO date): echo of the window
-                - symbol (string, nullable): echo of the symbol filter
+                - symbol (string, nullable): echo of the symbol filter (always null for kind='ipo')
                 - total_count (int)
                 - earnings_events (array, populated when kind='earnings'):
                   - symbol, date (ISO), hour (bmo|amc|dmh|null), quarter, year
                   - eps_actual, eps_estimate, revenue_actual, revenue_estimate (all nullable doubles)
+                - ipo_events (array, populated when kind='ipo', sorted most-recent first):
+                  - symbol (nullable; null on withdrawn/unpriced), name, date (ISO), exchange
+                  - price (nullable double, parsed from upstream string), number_of_shares, total_shares_value
+                  - status (e.g. 'priced', 'filed', 'withdrawn', 'expected')
 
                 ## Notes:
-                - summary view caps at the next 10 events by date; standard and full return the complete window.
-                - Cached at the News tier — calendars revise as analysts update estimates.
+                - summary view caps at 10 events; standard at 25; full returns the complete window.
+                - Cached at the News tier — calendars revise as analysts update estimates and SEC filings land.
+                - kind='earnings' suggests get-financials-snapshot + get-news-pulse for the queried symbol.
+                - kind='ipo' suggests get-company-profile for the most recent IPO with a tradable ticker.
 
                 Approx tokens: summary ~250, standard varies with event count (~1000 at 25 events), full no ceiling.
                 """;

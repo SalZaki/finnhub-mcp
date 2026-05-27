@@ -15,11 +15,23 @@ namespace FinnHub.MCP.Server.Tools.Calendar;
 /// <summary>Validation helpers for the <c>get-calendar</c> tool parameters.</summary>
 internal static partial class CalendarInputValidator
 {
-    /// <summary>Maximum window the upstream serves reliably for a single call (90 days).</summary>
-    internal const int MaxWindowDays = 90;
+    /// <summary>Maximum window for earnings calendars (90 days).</summary>
+    internal const int MaxEarningsWindowDays = 90;
+
+    /// <summary>Maximum window for IPO calendars (365 days). IPOs are sparser than earnings releases,
+    /// so a wider lookahead stays within token budget while remaining useful for analyst workflows.</summary>
+    internal const int MaxIpoWindowDays = 365;
 
     [GeneratedRegex(@"^[A-Z][A-Z0-9.\-]{0,19}$", RegexOptions.Compiled)]
     private static partial Regex SymbolRegex();
+
+    /// <summary>Returns the maximum allowed window in days for the supplied <see cref="CalendarKind"/>.</summary>
+    public static int MaxWindowDaysFor(CalendarKind kind) => kind switch
+    {
+        CalendarKind.Earnings => MaxEarningsWindowDays,
+        CalendarKind.Ipo => MaxIpoWindowDays,
+        _ => MaxEarningsWindowDays
+    };
 
     public static CalendarKind ValidateKind(string? kind)
     {
@@ -31,13 +43,34 @@ internal static partial class CalendarInputValidator
         return kind.Trim().ToLowerInvariant() switch
         {
             "earnings" => CalendarKind.Earnings,
-            "ipo" or "economic" => throw new ArgumentException(
-                $"Calendar kind '{kind}' is not yet supported. Only 'earnings' is available in this release.",
+            "ipo" => CalendarKind.Ipo,
+            "economic" => throw new ArgumentException(
+                $"Calendar kind '{kind}' is not yet supported. Available kinds: earnings, ipo.",
                 nameof(kind)),
             _ => throw new ArgumentException(
-                "Kind must be one of: earnings.",
+                "Kind must be one of: earnings, ipo.",
                 nameof(kind))
         };
+    }
+
+    /// <summary>
+    /// Validates that <paramref name="symbol"/> is either omitted or, when supplied,
+    /// permitted by the dispatched <paramref name="kind"/>. IPO calendar rejects
+    /// symbol — the upstream does not filter by ticker and silently dropping it
+    /// would produce results the user did not ask for.
+    /// </summary>
+    public static string? ValidateSymbolForKind(string? symbol, CalendarKind kind)
+    {
+        var validated = ValidateSymbol(symbol);
+
+        if (validated is not null && kind == CalendarKind.Ipo)
+        {
+            throw new ArgumentException(
+                "IPO calendar does not accept a symbol filter — omit 'symbol' when 'kind' is 'ipo'.",
+                nameof(symbol));
+        }
+
+        return validated;
     }
 
     public static string? ValidateSymbol(string? symbol)
@@ -59,10 +92,15 @@ internal static partial class CalendarInputValidator
         return normalised;
     }
 
-    public static (DateOnly From, DateOnly To) ValidateWindow(string? from, string? to, DateOnly today)
+    public static (DateOnly From, DateOnly To) ValidateWindow(
+        string? from,
+        string? to,
+        DateOnly today,
+        CalendarKind kind = CalendarKind.Earnings)
     {
+        var maxWindow = MaxWindowDaysFor(kind);
         var fromDate = ParseOrDefault(from, today, nameof(from));
-        var toDate = ParseOrDefault(to, fromDate.AddDays(MaxWindowDays), nameof(to));
+        var toDate = ParseOrDefault(to, fromDate.AddDays(maxWindow), nameof(to));
 
         if (toDate < fromDate)
         {
@@ -72,10 +110,10 @@ internal static partial class CalendarInputValidator
         }
 
         var span = toDate.DayNumber - fromDate.DayNumber;
-        if (span > MaxWindowDays)
+        if (span > maxWindow)
         {
             throw new ArgumentException(
-                $"Window must not exceed {MaxWindowDays} days (requested {span}).",
+                $"Window must not exceed {maxWindow} days for kind '{kind}' (requested {span}).",
                 nameof(to));
         }
 

@@ -79,6 +79,9 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(FinnHubEarningsCalendarResponse))]
 [JsonSerializable(typeof(FinnHubEarningsEntry))]
 [JsonSerializable(typeof(EarningsEvent))]
+[JsonSerializable(typeof(FinnHubIpoCalendarResponse))]
+[JsonSerializable(typeof(FinnHubIpoEntry))]
+[JsonSerializable(typeof(IpoEvent))]
 [JsonSerializable(typeof(GetCalendarResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetCalendarResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;

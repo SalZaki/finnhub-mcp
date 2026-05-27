@@ -12,12 +12,14 @@ namespace FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
 /// </summary>
 /// <remarks>
 /// The tool exposes one entry point that fans out to distinct Finnhub
-/// calendar endpoints. v1 ships <see cref="Earnings"/> only; IPO and economic
-/// calendars are added by follow-up stories that extend the validator and
-/// service switch.
+/// calendar endpoints. Economic calendar is added by a follow-up story that
+/// extends the validator and service switch.
 /// </remarks>
 public enum CalendarKind
 {
     /// <summary>Corporate earnings releases (<c>/calendar/earnings</c>).</summary>
-    Earnings
+    Earnings,
+
+    /// <summary>Initial public offerings (<c>/calendar/ipo</c>).</summary>
+    Ipo
 }
