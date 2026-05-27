@@ -188,6 +188,26 @@ public sealed class ToolSmokeTests : IClassFixture<LiveSmokeFactory>
     }
 
     [Fact]
+    public async Task GetCalendar_EconomicUsForward30Days_ReturnsScheduleOrDegrades()
+    {
+        // The /calendar/economic feed is dense globally but the US-filtered slice can
+        // be sparse over a short window depending on FOMC / payrolls timing; tolerate
+        // NotFound alongside Success/PremiumRequired so the smoke doesn't flap.
+        var tool = new GetCalendarTool(
+            this._services.GetRequiredService<ICalendarService>(),
+            NullLogger<GetCalendarTool>.Instance);
+
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var envelope = await tool.GetCalendarAsync(
+            "economic",
+            country: "US",
+            from: today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+            to: today.AddDays(30).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+
+        AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
+    }
+
+    [Fact]
     public async Task GetQuote_UnknownSymbol_DegradesGracefully()
     {
         // Finnhub returns {"c":0,"d":null,"dp":null,...} for unknown tickers.

@@ -62,16 +62,30 @@ public sealed class GetCalendarToolTests
             .AsReadOnly()
     };
 
+    private static GetCalendarResponse EconomicResponse(int events, string? country = "US") => new()
+    {
+        Kind = "economic",
+        From = new DateOnly(2026, 6, 1),
+        To = new DateOnly(2026, 6, 30),
+        Symbol = null,
+        Country = country,
+        TotalCount = events,
+        EconomicEvents = Enumerable.Range(0, events)
+            .Select(i => new EconomicEvent
+            {
+                Country = country ?? "US",
+                EventName = $"Event {i}",
+                Time = new DateTime(2026, 6, 1, 13, 30, 0, DateTimeKind.Utc).AddDays(i),
+                Impact = "medium"
+            })
+            .ToList()
+            .AsReadOnly()
+    };
+
     [Fact]
     public async Task GetCalendarAsync_InvalidKind_Throws()
     {
         await Assert.ThrowsAsync<ArgumentException>(() => this._sut.GetCalendarAsync("dividends"));
-    }
-
-    [Fact]
-    public async Task GetCalendarAsync_EconomicKind_Throws()
-    {
-        await Assert.ThrowsAsync<ArgumentException>(() => this._sut.GetCalendarAsync("economic"));
     }
 
     [Fact]
@@ -280,6 +294,107 @@ public sealed class GetCalendarToolTests
             .Returns(Result<GetCalendarResponse>.Success(withdrawn));
 
         var envelope = await this._sut.GetCalendarAsync("ipo", from: "2026-06-01", to: "2026-12-31");
+
+        Assert.Empty(envelope.NextActions);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicWithCountry_RoutesAndPassesCountryToService()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(EconomicResponse(1)));
+
+        await this._sut.GetCalendarAsync(
+            "economic", country: "us", from: "2026-06-01", to: "2026-06-30");
+
+        await this._service.Received(1).GetCalendarAsync(
+            Arg.Is<GetCalendarQuery>(q =>
+                q.Kind == CalendarKind.Economic
+                && q.Country == "US"
+                && q.Symbol == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicWithoutCountry_PassesNullCountry()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(EconomicResponse(1, country: null)));
+
+        await this._sut.GetCalendarAsync("economic", from: "2026-06-01", to: "2026-06-30");
+
+        await this._service.Received(1).GetCalendarAsync(
+            Arg.Is<GetCalendarQuery>(q => q.Kind == CalendarKind.Economic && q.Country == null),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicWithUnknownCountry_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            this._sut.GetCalendarAsync("economic", country: "XX", from: "2026-06-01", to: "2026-06-30"));
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicWithSymbol_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            this._sut.GetCalendarAsync("economic", symbol: "AAPL", country: "US"));
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EarningsWithCountry_Throws()
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            this._sut.GetCalendarAsync("earnings", country: "US"));
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicSummaryView_CapsAtTen()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(EconomicResponse(40)));
+
+        var envelope = await this._sut.GetCalendarAsync(
+            "economic", country: "US", from: "2026-06-01", to: "2026-06-30", view: "summary");
+
+        Assert.True(envelope.IsSuccess);
+        Assert.Equal(GetCalendarTool.SummaryEventCap, envelope.Data!.TotalCount);
+        Assert.Equal(GetCalendarTool.SummaryEventCap, envelope.Data.EconomicEvents!.Count);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicStandardView_CapsAtTwentyFive()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(EconomicResponse(40)));
+
+        var envelope = await this._sut.GetCalendarAsync(
+            "economic", country: "US", from: "2026-06-01", to: "2026-06-30", view: "standard");
+
+        Assert.Equal(GetCalendarTool.StandardEventCap, envelope.Data!.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicFullView_ReturnsAll()
+    {
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(EconomicResponse(40)));
+
+        var envelope = await this._sut.GetCalendarAsync(
+            "economic", country: "US", from: "2026-06-01", to: "2026-06-30", view: "full");
+
+        Assert.Equal(40, envelope.Data!.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicSuccess_ReturnsEmptyNextActions()
+    {
+        // Economic events are not symbol-scoped, so no cross-link is useful.
+        this._service.GetCalendarAsync(Arg.Any<GetCalendarQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCalendarResponse>.Success(EconomicResponse(1)));
+
+        var envelope = await this._sut.GetCalendarAsync("economic", country: "US");
 
         Assert.Empty(envelope.NextActions);
     }

@@ -34,11 +34,13 @@ public sealed class CalendarInputValidatorTests
         Assert.Equal(CalendarKind.Ipo, CalendarInputValidator.ValidateKind(kind));
     }
 
-    [Fact]
-    public void ValidateKind_Economic_ThrowsWithUpgradeHint()
+    [Theory]
+    [InlineData("economic")]
+    [InlineData("ECONOMIC")]
+    [InlineData("  Economic  ")]
+    public void ValidateKind_AcceptsEconomicCaseInsensitive(string kind)
     {
-        var ex = Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateKind("economic"));
-        Assert.Contains("not yet supported", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(CalendarKind.Economic, CalendarInputValidator.ValidateKind(kind));
     }
 
     [Theory]
@@ -172,9 +174,96 @@ public sealed class CalendarInputValidatorTests
     [Theory]
     [InlineData(CalendarKind.Earnings, 90)]
     [InlineData(CalendarKind.Ipo, 365)]
+    [InlineData(CalendarKind.Economic, 90)]
     public void MaxWindowDaysFor_ReturnsKindSpecificCap(CalendarKind kind, int expected)
     {
         Assert.Equal(expected, CalendarInputValidator.MaxWindowDaysFor(kind));
+    }
+
+    [Fact]
+    public void ValidateWindow_Economic_DefaultsToFromPlus90Days()
+    {
+        var (from, to) = CalendarInputValidator.ValidateWindow(
+            "2026-06-01", null, s_today, CalendarKind.Economic);
+        Assert.Equal(new DateOnly(2026, 6, 1), from);
+        Assert.Equal(new DateOnly(2026, 6, 1).AddDays(CalendarInputValidator.MaxEconomicWindowDays), to);
+    }
+
+    [Fact]
+    public void ValidateWindow_EconomicExceeds90Days_Throws()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CalendarInputValidator.ValidateWindow("2026-01-01", "2026-06-01", s_today, CalendarKind.Economic));
+        Assert.Contains("'Economic'", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void ValidateCountry_NullOrWhitespace_ReturnsNull(string? country)
+    {
+        Assert.Null(CalendarInputValidator.ValidateCountry(country));
+    }
+
+    [Theory]
+    [InlineData("us", "US")]
+    [InlineData("GB", "GB")]
+    [InlineData("  de  ", "DE")]
+    [InlineData("eu", "EU")]
+    [InlineData("ww", "WW")]
+    public void ValidateCountry_KnownCode_NormalisesToUppercase(string input, string expected)
+    {
+        Assert.Equal(expected, CalendarInputValidator.ValidateCountry(input));
+    }
+
+    [Fact]
+    public void ValidateCountry_UnknownCode_Throws()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateCountry("XX"));
+        Assert.Contains("Unknown country code", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("USA")]
+    [InlineData("U")]
+    [InlineData("US1")]
+    [InlineData("U-S")]
+    public void ValidateCountry_BadFormat_Throws(string country)
+    {
+        var ex = Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateCountry(country));
+        Assert.Contains("2-letter ISO", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidateCountryForKind_EconomicWithKnownCountry_NormalisesAndReturns()
+    {
+        Assert.Equal("US", CalendarInputValidator.ValidateCountryForKind("us", CalendarKind.Economic));
+    }
+
+    [Fact]
+    public void ValidateCountryForKind_EconomicWithoutCountry_ReturnsNull()
+    {
+        Assert.Null(CalendarInputValidator.ValidateCountryForKind(null, CalendarKind.Economic));
+        Assert.Null(CalendarInputValidator.ValidateCountryForKind("", CalendarKind.Economic));
+    }
+
+    [Theory]
+    [InlineData(CalendarKind.Earnings)]
+    [InlineData(CalendarKind.Ipo)]
+    public void ValidateCountryForKind_NonEconomicWithCountry_Throws(CalendarKind kind)
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CalendarInputValidator.ValidateCountryForKind("US", kind));
+        Assert.Contains("only valid when 'kind' is 'economic'", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ValidateSymbolForKind_EconomicWithSymbol_Throws()
+    {
+        var ex = Assert.Throws<ArgumentException>(() =>
+            CalendarInputValidator.ValidateSymbolForKind("AAPL", CalendarKind.Economic));
+        Assert.Contains("does not accept a symbol filter", ex.Message, StringComparison.Ordinal);
     }
 
     [Theory]

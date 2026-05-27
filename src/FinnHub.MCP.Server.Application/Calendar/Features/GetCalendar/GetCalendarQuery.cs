@@ -30,4 +30,12 @@ public sealed class GetCalendarQuery
     /// full calendar for the window; when set, results are filtered to that symbol.
     /// </summary>
     public string? Symbol { get; init; }
+
+    /// <summary>
+    /// Optional ISO 3166-1 alpha-2 country code (or Finnhub pseudo-code <c>EU</c>/<c>WW</c>).
+    /// Only relevant when <see cref="Kind"/> is <see cref="CalendarKind.Economic"/>; the
+    /// upstream does not accept a country filter, so <c>CalendarService</c> applies it
+    /// server-side after the unfiltered window fetch.
+    /// </summary>
+    public string? Country { get; init; }
 }

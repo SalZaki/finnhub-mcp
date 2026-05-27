@@ -39,6 +39,7 @@ public sealed class CalendarService(
             {
                 CalendarKind.Earnings => await this.GetEarningsAsync(query, cancellationToken),
                 CalendarKind.Ipo => await this.GetIposAsync(query, cancellationToken),
+                CalendarKind.Economic => await this.GetEconomicsAsync(query, cancellationToken),
                 _ => Result<GetCalendarResponse>.Failure(
                     $"Calendar kind '{query.Kind}' is not yet supported.",
                     ResultErrorType.InvalidQuery)
@@ -156,6 +157,59 @@ public sealed class CalendarService(
         return ordered.Count == 0
             ? Result<GetCalendarResponse>.Failure(
                 $"No IPO events found for the requested window ({query.From}..{query.To}).",
+                ResultErrorType.NotFound)
+            : Result<GetCalendarResponse>.Success(response);
+    }
+
+    private async Task<Result<GetCalendarResponse>> GetEconomicsAsync(
+        GetCalendarQuery query,
+        CancellationToken cancellationToken)
+    {
+        // Cache the unfiltered upstream payload — a single fetch serves every
+        // country filter the caller might apply on top.
+        var cacheKey = string.Create(
+            CultureInfo.InvariantCulture,
+            $"calendar-economic:f={query.From:yyyy-MM-dd}:t={query.To:yyyy-MM-dd}");
+
+        var events = await cache.GetOrCreateAsync(
+            cacheKey,
+            CacheTier.News,
+            async ct => await apiClient.GetEconomicCalendarAsync(query.From, query.To, ct),
+            cancellationToken);
+
+        IEnumerable<EconomicEvent> filtered = events;
+        if (!string.IsNullOrWhiteSpace(query.Country))
+        {
+            filtered = events.Where(e => string.Equals(e.Country, query.Country, StringComparison.Ordinal));
+        }
+
+        var ordered = filtered
+            .OrderBy(e => e.Time)
+            .ThenBy(e => e.Country, StringComparer.Ordinal)
+            .ThenBy(e => e.EventName, StringComparer.Ordinal)
+            .ToList()
+            .AsReadOnly();
+
+        logger.LogInformation(
+            "Economic calendar for {Country} ({From}..{To}): {Count} event(s)",
+            query.Country ?? "(all)", query.From, query.To, ordered.Count);
+
+        var response = new GetCalendarResponse
+        {
+            Kind = "economic",
+            From = query.From,
+            To = query.To,
+            Symbol = null,
+            Country = query.Country,
+            TotalCount = ordered.Count,
+            EconomicEvents = ordered
+        };
+
+        return ordered.Count == 0
+            ? Result<GetCalendarResponse>.Failure(
+                query.Country is null
+                    ? $"No economic events found for the requested window ({query.From}..{query.To})."
+                    : $"No economic events found for {query.Country} in the requested window ({query.From}..{query.To}).",
                 ResultErrorType.NotFound)
             : Result<GetCalendarResponse>.Success(response);
     }

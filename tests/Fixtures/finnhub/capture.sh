@@ -49,3 +49,6 @@ fetch calendar-earnings-aapl   "calendar/earnings?from=$CAL_FROM&to=$CAL_TO&symb
 # IPO fixture: trailing 6-month window from origin captures known SPAC + traditional IPOs
 # in mixed states (priced, withdrawn) so the parser exercises the nullable-field branches.
 fetch calendar-ipo-2026        "calendar/ipo?from=2025-01-01&to=2025-06-01"
+# Economic fixture: a 30-day window captures ~1300 events across ~115 countries with
+# mixed impact tiers (low/medium/high) and many entries lacking actual/estimate/prev.
+fetch calendar-economic-2026   "calendar/economic?from=2026-06-01&to=2026-06-30"

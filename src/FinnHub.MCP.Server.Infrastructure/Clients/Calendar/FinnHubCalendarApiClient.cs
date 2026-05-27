@@ -24,6 +24,7 @@ public sealed class FinnHubCalendarApiClient : ICalendarApiClient
 {
     private const string EarningsEndpointName = "calendar-earnings";
     private const string IpoEndpointName = "calendar-ipo";
+    private const string EconomicEndpointName = "calendar-economic";
 
     private readonly HttpClient _httpClient;
     private readonly FinnHubOptions _options;
@@ -262,6 +263,110 @@ public sealed class FinnHubCalendarApiClient : ICalendarApiClient
             && double.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed)
             ? parsed
             : null;
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<EconomicEvent>> GetEconomicCalendarAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken)
+    {
+        var endpoint = this._options.EndPoints.FirstOrDefault(e => e is { IsActive: true, Name: EconomicEndpointName })?.Url
+                       ?? throw new ArgumentException("Calendar economic endpoint is not configured or inactive");
+
+        var requestUri = BuildWindowUri(endpoint, from, to);
+
+        this._logger.LogInformation("Requesting economic calendar from FinnHub: {RequestUri}", requestUri);
+
+        using var requestMessage = new HttpRequestMessage(HttpMethod.Get, requestUri);
+
+        HttpResponseMessage response;
+        try
+        {
+            response = await this._httpClient.SendAsync(requestMessage, cancellationToken).ConfigureAwait(false);
+        }
+        catch (HttpRequestException ex)
+        {
+            this._logger.LogError(ex, "HTTP request to FinnHub economic calendar failed: {Uri}", requestUri);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub economic calendar failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
+        }
+        catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+        {
+            this._logger.LogError(ex, "Economic calendar request timed out: {Uri}", requestUri);
+            throw new ApiClientTimeoutException($"Economic calendar request timed out: {requestUri}", ex);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            this._logger.LogWarning("Economic calendar request cancelled: {Uri}", requestUri);
+            throw new ApiClientCancelledException($"Economic calendar request cancelled: {requestUri}");
+        }
+
+        await using var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
+        if (!response.IsSuccessStatusCode)
+        {
+            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+        }
+
+        FinnHubEconomicCalendarResponse? dto;
+        try
+        {
+            dto = await JsonSerializer
+                .DeserializeAsync(contentStream, FinnHubJsonContext.Default.FinnHubEconomicCalendarResponse, cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (JsonException ex)
+        {
+            this._logger.LogError(ex, "Failed to deserialize economic calendar response: {Uri}", requestUri);
+            throw new ApiClientDeserializationException(
+                $"Failed to deserialize economic calendar response: {requestUri}",
+                innerException: ex);
+        }
+
+        if (dto?.EconomicCalendar is null || dto.EconomicCalendar.Count == 0)
+        {
+            return [];
+        }
+
+        var events = new List<EconomicEvent>(dto.EconomicCalendar.Count);
+        foreach (var entry in dto.EconomicCalendar)
+        {
+            // Country + event name + parseable timestamp are required to be useful.
+            // Skip malformed entries rather than failing the whole window.
+            if (string.IsNullOrWhiteSpace(entry.Country)
+                || string.IsNullOrWhiteSpace(entry.Event)
+                || string.IsNullOrWhiteSpace(entry.Time))
+            {
+                continue;
+            }
+
+            if (!DateTime.TryParseExact(
+                    entry.Time,
+                    "yyyy-MM-dd HH:mm:ss",
+                    CultureInfo.InvariantCulture,
+                    DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal,
+                    out var time))
+            {
+                continue;
+            }
+
+            events.Add(new EconomicEvent
+            {
+                Country = entry.Country,
+                EventName = entry.Event,
+                Time = time,
+                Impact = string.IsNullOrWhiteSpace(entry.Impact) ? null : entry.Impact,
+                Actual = entry.Actual,
+                Estimate = entry.Estimate,
+                Prev = entry.Prev,
+                Unit = entry.Unit
+            });
+        }
+
+        return events;
+    }
 
     private async Task HandleErrorAsync(HttpResponseMessage response, Stream contentStream, CancellationToken ct)
     {

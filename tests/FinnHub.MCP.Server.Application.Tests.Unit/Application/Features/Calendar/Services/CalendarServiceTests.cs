@@ -289,4 +289,149 @@ public sealed class CalendarServiceTests
         Assert.False(result.IsSuccess);
         Assert.Equal("ServiceUnavailable", result.ErrorType);
     }
+
+    private static GetCalendarQuery EconomicQuery(string? country = "US") => new()
+    {
+        QueryId = "q1",
+        Kind = CalendarKind.Economic,
+        From = new DateOnly(2026, 6, 1),
+        To = new DateOnly(2026, 6, 30),
+        Symbol = null,
+        Country = country
+    };
+
+    private static EconomicEvent Macro(string country, int dayOffset, string name = "CPI YoY") => new()
+    {
+        Country = country,
+        EventName = name,
+        Time = new DateTime(2026, 6, 1, 13, 30, 0, DateTimeKind.Utc).AddDays(dayOffset),
+        Impact = "medium"
+    };
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicWithCountry_FiltersToCountryAndReturnsSuccess()
+    {
+        EconomicEvent[] upstream =
+        [
+            Macro("US", 0),
+            Macro("GB", 1),
+            Macro("US", 2),
+            Macro("DE", 3)
+        ];
+        this._apiClient
+            .GetEconomicCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(upstream);
+
+        var result = await this._sut.GetCalendarAsync(EconomicQuery("US"));
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("economic", result.Data!.Kind);
+        Assert.Equal("US", result.Data.Country);
+        Assert.Equal(2, result.Data.TotalCount);
+        Assert.All(result.Data.EconomicEvents!, e => Assert.Equal("US", e.Country));
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicWithoutCountry_ReturnsAllCountries()
+    {
+        EconomicEvent[] upstream =
+        [
+            Macro("US", 0),
+            Macro("GB", 1),
+            Macro("DE", 2)
+        ];
+        this._apiClient
+            .GetEconomicCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(upstream);
+
+        var result = await this._sut.GetCalendarAsync(EconomicQuery(country: null));
+
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.Data!.Country);
+        Assert.Equal(3, result.Data.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicCountryFilterMatchesNothing_ReturnsNotFound()
+    {
+        EconomicEvent[] upstream =
+        [
+            Macro("GB", 1),
+            Macro("DE", 2)
+        ];
+        this._apiClient
+            .GetEconomicCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(upstream);
+
+        var result = await this._sut.GetCalendarAsync(EconomicQuery("US"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("NotFound", result.ErrorType);
+        Assert.Contains("US", result.ErrorMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicEmpty_ReturnsNotFound()
+    {
+        this._apiClient
+            .GetEconomicCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns([]);
+
+        var result = await this._sut.GetCalendarAsync(EconomicQuery(country: null));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("NotFound", result.ErrorType);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicOrdersByTimeAscending()
+    {
+        EconomicEvent[] unordered =
+        [
+            Macro("US", 5),
+            Macro("US", 0, name: "PMI"),
+            Macro("US", 0, name: "CPI YoY")
+        ];
+        this._apiClient
+            .GetEconomicCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(unordered);
+
+        var result = await this._sut.GetCalendarAsync(EconomicQuery("US"));
+
+        Assert.True(result.IsSuccess);
+        var events = result.Data!.EconomicEvents!;
+        Assert.Equal("CPI YoY", events[0].EventName);
+        Assert.Equal("PMI", events[1].EventName);
+        Assert.Equal(5, (events[2].Time - events[0].Time).Days);
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicTwoCallsDifferentCountries_HitsApiClientExactlyOnce()
+    {
+        // Country filter is applied after cache — one upstream fetch serves both calls.
+        EconomicEvent[] upstream = [Macro("US", 0), Macro("GB", 0)];
+        this._apiClient
+            .GetEconomicCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(upstream);
+
+        await this._sut.GetCalendarAsync(EconomicQuery("US"));
+        await this._sut.GetCalendarAsync(EconomicQuery("GB"));
+
+        Assert.Equal(1, this._cache.FactoryInvocationCount);
+        await this._apiClient.Received(1).GetEconomicCalendarAsync(
+            Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetCalendarAsync_EconomicHttpError_MapsToServiceUnavailable()
+    {
+        this._apiClient
+            .GetEconomicCalendarAsync(Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ApiClientHttpException("boom", HttpStatusCode.BadGateway));
+
+        var result = await this._sut.GetCalendarAsync(EconomicQuery("US"));
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("ServiceUnavailable", result.ErrorType);
+    }
 }
