@@ -13,6 +13,7 @@ using FinnHub.MCP.Server.Application.Peers.Services;
 using FinnHub.MCP.Server.Application.Prices.Services;
 using FinnHub.MCP.Server.Application.Profiles.Services;
 using FinnHub.MCP.Server.Application.Quotes.Services;
+using FinnHub.MCP.Server.Application.Recommendations.Services;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Tools.Calendar;
@@ -23,6 +24,7 @@ using FinnHub.MCP.Server.Tools.Peers;
 using FinnHub.MCP.Server.Tools.Prices;
 using FinnHub.MCP.Server.Tools.Profiles;
 using FinnHub.MCP.Server.Tools.Quotes;
+using FinnHub.MCP.Server.Tools.Recommendations;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -185,6 +187,20 @@ public sealed class ToolSmokeTests : IClassFixture<LiveSmokeFactory>
             "ipo",
             from: today.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
             to: today.AddDays(365).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture));
+
+        AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task GetRecommendations_AAPL_ReturnsConsensusOrDegrades()
+    {
+        // Analyst coverage on AAPL is reliable, but tolerate NotFound / PremiumRequired
+        // so the smoke doesn't flap if Finnhub gates the endpoint or returns empty.
+        var tool = new GetRecommendationsTool(
+            this._services.GetRequiredService<IRecommendationsService>(),
+            NullLogger<GetRecommendationsTool>.Instance);
+
+        var envelope = await tool.GetRecommendationsAsync(Symbol);
 
         AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
     }

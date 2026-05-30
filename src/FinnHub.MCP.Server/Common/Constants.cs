@@ -565,6 +565,62 @@ public static class Constants
                 """;
         }
 
+        /// <summary>Constants for the <c>get-recommendations</c> tool — analyst consensus snapshot + change-vs-previous-period.</summary>
+        public static class Recommendations
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-recommendations";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Recommendations";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol parameter name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol parameter description.</summary>
+                public const string SymbolDescription = "Uppercase ticker symbol, e.g. 'AAPL'.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                Get the analyst-consensus snapshot for a symbol plus the change vs the prior period —
+                shows whether sentiment is shifting without comparing two periods by hand.
+
+                ## Example:
+                - symbol='AAPL'
+
+                ## Response Fields:
+                - symbol (string)
+                - period (ISO date): first day of the latest covered month
+                - consensus (string): 'Strong Buy' | 'Buy' | 'Hold' | 'Sell' | 'Strong Sell' — derived from
+                  the weighted mean rating (Strong Buy = +2, Buy = +1, Hold = 0, Sell = −1, Strong Sell = −2).
+                - strong_buy, buy, hold, sell, strong_sell (int): analyst counts in the latest period
+                - total (int): sum of all rating buckets
+                - change_vs_prev (object, nullable): per-bucket delta vs the prior period and a
+                  single-label `consensus_shift` ('more bullish' | 'more bearish' | 'no change').
+                  Null when Finnhub returns only one period.
+                - snapshots (array, optional): full history of period snapshots (most-recent first);
+                  populated only when view='full'.
+
+                ## Notes:
+                - Cached at the Profile tier — analyst consensus revises monthly.
+                - One upstream call returns multiple periods; change_vs_prev needs no extra fetch.
+                - Suggests get-financials-snapshot and get-peers as next actions on success.
+
+                Approx tokens: summary ~200, standard ~200, full varies with history depth (~80 tokens per snapshot).
+                """;
+        }
+
         /// <summary>Constants for the <c>get-insider-signal</c> tool — aggregated insider net buy/sell signal.</summary>
         public static class InsiderSignal
         {

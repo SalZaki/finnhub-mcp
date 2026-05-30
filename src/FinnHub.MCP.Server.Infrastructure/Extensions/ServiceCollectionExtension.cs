@@ -28,6 +28,8 @@ using FinnHub.MCP.Server.Application.Profiles.Services;
 using FinnHub.MCP.Server.Application.Quotes.Clients;
 using FinnHub.MCP.Server.Application.Quotes.Services;
 using FinnHub.MCP.Server.Application.RateLimiting;
+using FinnHub.MCP.Server.Application.Recommendations.Clients;
+using FinnHub.MCP.Server.Application.Recommendations.Services;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
 using FinnHub.MCP.Server.Infrastructure.Clients.Calendar;
@@ -38,6 +40,7 @@ using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
 using FinnHub.MCP.Server.Infrastructure.Clients.Profiles;
 using FinnHub.MCP.Server.Infrastructure.Clients.Quotes;
+using FinnHub.MCP.Server.Infrastructure.Clients.Recommendations;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
 using FinnHub.MCP.Server.Infrastructure.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -160,6 +163,14 @@ public static class ServiceCollectionExtension
             .AddHttpMessageHandler<RateLimitHeaderHandler>()
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubInsidersApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubInsidersApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IRecommendationsService, RecommendationsService>();
+        services.AddHttpClient<IRecommendationsApiClient, FinnHubRecommendationsApiClient>("FinnHub-Recommendations-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubRecommendationsApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubRecommendationsApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 

@@ -57,3 +57,6 @@ fetch calendar-economic-2026   "calendar/economic?from=2026-06-01&to=2026-06-30"
 INS_FROM=$(date -u -v-30d +%Y-%m-%d 2>/dev/null || date -u -d '30 days ago' +%Y-%m-%d)
 INS_TO=$(date -u +%Y-%m-%d)
 fetch insider-transactions-AAPL "stock/insider-transactions?symbol=AAPL&from=$INS_FROM&to=$INS_TO"
+# Recommendations fixture: AAPL ships multiple monthly snapshots so change_vs_prev
+# is exercised end-to-end.
+fetch recommendation-AAPL      "stock/recommendation?symbol=AAPL"
