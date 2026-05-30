@@ -16,6 +16,7 @@ using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
 using FinnHub.MCP.Server.Application.Profiles.Features.GetCompanyProfile;
 using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
+using FinnHub.MCP.Server.Application.Recommendations.Features.GetRecommendations;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
@@ -93,4 +94,10 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(InsiderTransaction))]
 [JsonSerializable(typeof(GetInsiderSignalResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetInsiderSignalResponse>))]
+[JsonSerializable(typeof(FinnHubRecommendationEntry[]))]
+[JsonSerializable(typeof(FinnHubRecommendationEntry))]
+[JsonSerializable(typeof(RecommendationSnapshot))]
+[JsonSerializable(typeof(RecommendationChange))]
+[JsonSerializable(typeof(GetRecommendationsResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetRecommendationsResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;

@@ -24,6 +24,7 @@ using FinnHub.MCP.Server.Tools.Peers;
 using FinnHub.MCP.Server.Tools.Prices;
 using FinnHub.MCP.Server.Tools.Profiles;
 using FinnHub.MCP.Server.Tools.Quotes;
+using FinnHub.MCP.Server.Tools.Recommendations;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.AspNetCore.Mvc;
 
@@ -122,6 +123,7 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<GetCompanyProfileTool>()
 .WithWrappedTools<GetCalendarTool>()
 .WithWrappedTools<GetInsiderSignalTool>()
+.WithWrappedTools<GetRecommendationsTool>()
 .WithResources<ExchangesResource>()
 .WithResources<ApiStatusResource>();
 
