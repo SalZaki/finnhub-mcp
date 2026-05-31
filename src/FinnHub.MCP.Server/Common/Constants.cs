@@ -193,6 +193,71 @@ public static class Constants
         }
 
         /// <summary>
+        /// Constants for the <c>search-tools</c> meta-tool — intent-based tool discovery
+        /// that keeps full tool schemas off the wire until a tool is actually needed.
+        /// </summary>
+        public static class SearchTools
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "search-tools";
+
+            /// <summary>The human-readable title.</summary>
+            public const string Title = "Search Tools";
+
+            /// <summary>Parameter definitions for the search-tools meta-tool.</summary>
+            public static class Parameters
+            {
+                /// <summary>The parameter name for the natural-language intent.</summary>
+                public const string IntentName = "intent";
+
+                /// <summary>Human-readable description of the intent parameter.</summary>
+                public const string IntentDescription =
+                    "Natural-language description of what you want to do (max 200 characters), e.g. " +
+                    "'is apple stock up this week' or 'upcoming earnings'. Returns the most relevant tools, ranked.";
+
+                /// <summary>The parameter name for the response detail level.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>Human-readable description of the view parameter.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>
+            /// Documentation for the <c>search-tools</c> meta-tool used at registration time.
+            /// </summary>
+            public const string Description =
+                """
+                Discover the right Finnhub tool by intent, without loading every tool schema up front.
+                Describe what you want in plain language and get back the best-matching tools, ranked by relevance.
+
+                ## Example Queries:
+                - intent='find the right tool for a question'
+                - intent='which tool should I use'
+                - intent='list tools for a topic'
+
+                ## Request Parameters:
+                - intent (string, required): natural-language intent, max 200 characters
+
+                ## Response Fields:
+                - intent (string): the echoed intent
+                - matches (array, ranked most-relevant first):
+                  - name (string): the tool name to invoke next
+                  - title (string): human-readable title
+                  - score (float): relevance score
+                  - category (string, nullable): coarse grouping
+                  - premium (bool): whether the tool's upstream endpoint may require a premium key
+                  - description (string, nullable): full tool description (standard and full views only)
+                - total_matches (int)
+
+                ## Notes:
+                - Ranking is a BM25 keyword index over each tool's name, title, description, and example intents.
+                - summary view omits per-tool descriptions to stay token-light; standard and full include them.
+
+                Approx tokens: summary ~150, standard ~700, full ~700.
+                """;
+        }
+
+        /// <summary>
         /// Constants for the <c>get-peers</c> tool — peer ticker lookup for a symbol.
         /// </summary>
         public static class Peers

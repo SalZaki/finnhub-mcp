@@ -7,6 +7,7 @@
 
 using System.Reflection;
 using DotNetEnv;
+using FinnHub.MCP.Server.Application.Discovery;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
@@ -18,6 +19,7 @@ using FinnHub.MCP.Server.Middleware;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Resources.Status;
 using FinnHub.MCP.Server.Tools.Calendar;
+using FinnHub.MCP.Server.Tools.Discovery;
 using FinnHub.MCP.Server.Tools.Financials;
 using FinnHub.MCP.Server.Tools.Insiders;
 using FinnHub.MCP.Server.Tools.News;
@@ -106,6 +108,7 @@ builder.Services.AddTransient<ISearchService, SearchService>();
 builder.Services.AddTransient<ISymbolResolver, SymbolResolver>();
 builder.Services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
 builder.Services.AddSingleton<IExchangeCatalog, ExchangeCatalog>();
+builder.Services.AddSingleton<IToolRegistry>(_ => new ToolRegistry(ToolCatalog.Descriptors));
 
 var mcpBuilder = builder.Services.AddMcpServer(options =>
 {
@@ -116,6 +119,7 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
         Version = version
     };
 })
+.WithWrappedTools<SearchToolsTool>()
 .WithWrappedTools<SearchSymbolTool>()
 .WithWrappedTools<GetPeersTool>()
 .WithWrappedTools<GetFinancialsSnapshotTool>()

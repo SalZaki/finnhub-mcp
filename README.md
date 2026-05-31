@@ -36,7 +36,8 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 
 ### ✅ Currently Available
 
-**Tools (10):**
+**Tools (11):**
+- **`search-tools`** — intent-based tool discovery: pass a natural-language `intent` (max 200 chars) and get back the most relevant tools, ranked by a pure-C# BM25 keyword index over each tool's name, title, description, and curated example intents. Keeps full tool schemas off the wire until a tool is actually needed. `summary` view omits per-tool descriptions to stay token-light; `standard`/`full` include them.
 - **`search-symbol`** — search for financial symbols by ticker, company name, ISIN, or CUSIP, optionally filtered by exchange code (limit 1–100, default 10). On a high-confidence exact match, suggests `get-quote`, `get-company-profile`, `get-news-pulse`, `get-financials-snapshot`, `get-price-summary`, and `get-peers` as next actions.
 - **`get-quote`** — real-time price snapshot (current, change, percent change, session high/low/open, prev close, timestamp). Cached at the 10-second Quote tier.
 - **`get-company-profile`** — company snapshot (name, ticker, country, currency, exchange, IPO, market cap, shares outstanding, industry). `view=summary` drops the cosmetic fields (logo, phone, weburl); `standard` and `full` include them.
@@ -55,7 +56,6 @@ Every tool returns the standard token-budgeted envelope with cross-linked `next_
 - **`finnhub://resources/api-status`** — latest observed Finnhub upstream quota: `remaining`, `reset_at`, and a rolling 429 count
 
 ### 📋 Planned
-- `search-tools` meta-tool for intent-based discovery (P7)
 - Technical indicators (RSI, MACD, moving averages)
 - WebSocket transport for streaming Finnhub feeds
 
@@ -170,6 +170,15 @@ Example STDIO entry for Claude Desktop's `claude_desktop_config.json`:
   }
 }
 ```
+
+### Tool: `search-tools`
+
+Parameters:
+
+- `intent` *(string, required)* — natural-language description of the task, 1–200 chars (letters/digits/space and `- _ . , ' ? & / ( )`). Over 200 chars or other characters are rejected as a validation error.
+- `view` *(string, optional)* — `summary` (default) omits per-tool descriptions; `standard`/`full` include them.
+
+Returns the ranked matches (`name`, `title`, `score`, `category`, `premium`, and — outside `summary` — `description`) plus `total_matches`. Ranking is a pure-C# BM25 keyword index over name + title + description + curated example intents (no embeddings, no external dependency); examples are weighted above the description so curated intents drive the match. The `search-tools` entry itself is excluded from its own results. A drift test fails the build if a tool is registered on the server without a catalog descriptor.
 
 ### Tool: `search-symbol`
 
