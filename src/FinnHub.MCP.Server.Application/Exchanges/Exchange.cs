@@ -77,8 +77,9 @@ public sealed class Exchange
     public required string CountryName { get; init; }
 
     /// <summary>
-    /// Gets the URL for more information about the exchange.
+    /// Gets the URL for more information about the exchange, or <c>null</c> when
+    /// Finnhub publishes no reference link for the venue.
     /// </summary>
     [JsonPropertyName("url")]
-    public required string Url { get; init; }
+    public string? Url { get; init; }
 }

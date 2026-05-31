@@ -25,7 +25,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 
 - ✅ **MCP Tools and Resources** wired to the official `ModelContextProtocol` and `ModelContextProtocol.AspNetCore` packages
 - ✅ **Symbol Search Tool** with input validation and sanitization (regex-based length and character constraints)
-- ✅ **Exchanges Resource** exposed at `finnhub://resources/exchanges` for venue metadata (currently a stub pending the live Finnhub `/stock/exchange` wiring)
+- ✅ **Exchanges Resource** exposed at `finnhub://resources/exchanges` — the full catalog of stock venues Finnhub supports (79 exchanges), served from Finnhub's published reference list
 - ✅ **Resilient HTTP Communication** — typed `HttpClient` with retry, timeout, and circuit-breaker policies via `Microsoft.Extensions.Http.Resilience` and Polly
 - ✅ **Source-generated JSON** through `System.Text.Json` `JsonSerializerContext` for low-allocation, AOT-friendly (de)serialization
 - ✅ **Strongly-typed configuration** — `FinnHubOptions` bound from `appsettings.json` with data-annotation validation on startup
@@ -51,11 +51,8 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 Every tool returns the standard token-budgeted envelope with cross-linked `next_actions` and the most-recent observed Finnhub rate-limit headers.
 
 **Resources (2):**
-- **`finnhub://resources/exchanges`** — catalog of stock exchanges (code, name, country, MIC, timezone, trading hours)
+- **`finnhub://resources/exchanges`** — the full catalog of stock venues Finnhub supports (79 exchanges: code, name, country, MIC, timezone, market hours). `url` is `null` for the few venues Finnhub lists without a reference link.
 - **`finnhub://resources/api-status`** — latest observed Finnhub upstream quota: `remaining`, `reset_at`, and a rolling 429 count
-
-### 🔄 In Development
-- Wire `ExchangesResource` to the live Finnhub `/stock/exchange` endpoint
 
 ### 📋 Planned
 - `search-tools` meta-tool for intent-based discovery (P7)
@@ -254,7 +251,31 @@ A response that exceeds its declared view's token ceiling is rebuilt by the tool
 
 ### Resource: `finnhub://resources/exchanges`
 
-Returns the list of stock exchanges available through the provider as `application/json`.
+Returns the full catalog of stock venues Finnhub supports (79 exchanges) as `application/json`. Finnhub exposes no `/stock/exchange` API endpoint — the supported-exchange list is published only as a reference document — so the catalog ships as in-process reference data captured from Finnhub's published "Supported Exchanges" sheet rather than a live upstream call.
+
+```json
+{
+  "exchanges": [
+    {
+      "code": "US",
+      "name": "US exchanges (NYSE, Nasdaq)",
+      "mic": "XNYS,XASE,BATS,ARCX,XNMS,XNCM,XNGS,IEXG,XNAS, OTCM, OOTC",
+      "time_zone": "America/New_York",
+      "pre_market_hours": "04:00-09:30",
+      "trading_hours": "09:30-16:00",
+      "post_market_hours": "16:00-20:00",
+      "close_date": "7,0",
+      "country_code": "US",
+      "country_name": "US",
+      "url": "https://www.tradinghours.com/exchanges/nyse"
+    }
+  ],
+  "total_count": 79,
+  "has_results": true
+}
+```
+
+`url` is `null` for the few venues Finnhub lists without a reference link.
 
 ### Resource: `finnhub://resources/api-status`
 

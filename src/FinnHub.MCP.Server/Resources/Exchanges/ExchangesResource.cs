@@ -7,16 +7,15 @@
 
 using System.ComponentModel;
 using System.Net.Mime;
-using FinnHub.MCP.Server.Application.Exchanges;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
 
 namespace FinnHub.MCP.Server.Resources.Exchanges;
 
 /// <summary>
-/// MCP resource that provides stock exchange listings from Finnhub.
+/// MCP resource that provides the catalog of stock exchanges Finnhub supports.
 /// </summary>
 [McpServerResourceType]
-public sealed class ExchangesResource
+public sealed class ExchangesResource(IExchangeCatalog catalog)
 {
     /// <summary>
     /// Returns the catalog of stock exchanges serialized as JSON for the
@@ -29,8 +28,9 @@ public sealed class ExchangesResource
     /// populate dropdowns or filter symbol searches by venue.
     /// </para>
     /// <para>
-    /// The current implementation returns a static stub (London Stock Exchange only)
-    /// pending wiring to the Finnhub <c>/stock/exchange</c> endpoint.
+    /// The catalog is sourced from <see cref="IExchangeCatalog"/>. Finnhub has no
+    /// <c>/stock/exchange</c> endpoint, so the list ships as in-process reference
+    /// data rather than a live upstream call.
     /// </para>
     /// <para>
     /// Returns a JSON <see cref="string"/> rather than the typed response because
@@ -45,27 +45,12 @@ public sealed class ExchangesResource
         Name = "get-exchanges",
         Title = "Exchanges",
         MimeType = MediaTypeNames.Application.Json)]
-    [Description("Gets all the exchanges listed on Finnhub.")]
+    [Description("Gets the catalog of stock exchanges Finnhub supports.")]
     public string GetExchanges()
     {
-        // TODO: Replace stub data with real Finnhub API call logic.
         var responsePayload = new ExchangesResponse
         {
-            Exchanges =
-            [
-                new Exchange
-                {
-                    ExchangeCode = "L",
-                    ExchangeName = "London Stock Exchange",
-                    CountryCode = "GB",
-                    CountryName = "United Kingdom",
-                    MicCode = "XLON",
-                    TimeZone = "Europe/London",
-                    TradingHours = "08:00-16:30",
-                    Url = "https://www.tradinghours.com/exchanges/lse",
-                    CloseDate = string.Empty
-                }
-            ]
+            Exchanges = catalog.Exchanges
         };
 
         return JsonSerializer.Serialize(responsePayload, ResourceJsonContext.Default.ExchangesResponse);
