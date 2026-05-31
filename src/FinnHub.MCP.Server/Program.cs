@@ -7,6 +7,7 @@
 
 using System.Reflection;
 using DotNetEnv;
+using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Application.Symbols;
@@ -104,6 +105,7 @@ builder.Services.RegisterInfrastructure();
 builder.Services.AddTransient<ISearchService, SearchService>();
 builder.Services.AddTransient<ISymbolResolver, SymbolResolver>();
 builder.Services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
+builder.Services.AddSingleton<IExchangeCatalog, ExchangeCatalog>();
 
 var mcpBuilder = builder.Services.AddMcpServer(options =>
 {
