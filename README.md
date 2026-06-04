@@ -51,7 +51,8 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 
 Every tool returns the standard token-budgeted envelope with cross-linked `next_actions` and the most-recent observed Finnhub rate-limit headers.
 
-**Resources (2):**
+**Resources (3):**
+- **`finnhub://resources/capabilities`** — the full machine-readable catalog of every registered tool (`name`, `title`, `description`, `category`, `examples`, `premium`) plus `total_count`. Enumerate the whole surface in one read instead of issuing repeated `search-tools` calls; backed by the same `IToolRegistry` the meta-tool ranks over.
 - **`finnhub://resources/exchanges`** — the full catalog of stock venues Finnhub supports (79 exchanges: code, name, country, MIC, timezone, market hours). `url` is `null` for the few venues Finnhub lists without a reference link.
 - **`finnhub://resources/api-status`** — latest observed Finnhub upstream quota: `remaining`, `reset_at`, and a rolling 429 count
 
@@ -257,6 +258,26 @@ Every MCP tool returns the same envelope shape so consuming models get a predict
 | `premium` | bool | Whether the underlying upstream endpoint required a premium key. |
 
 A response that exceeds its declared view's token ceiling is rebuilt by the tool invocation middleware as a `BudgetExceeded` failure envelope; retry with a broader `view` or a sparser `fields` projection.
+
+### Resource: `finnhub://resources/capabilities`
+
+Returns the full tool catalog as `application/json` — one entry per registered tool (`name`, `title`, `description`, `category`, `examples`, `premium`) plus `total_count`. It reads from the same `IToolRegistry` the `search-tools` meta-tool ranks over, so the catalog and the ranker never disagree; a `CapabilitiesResourceTests` drift test fails the build if a registered tool is missing from the payload.
+
+```json
+{
+  "tools": [
+    {
+      "name": "get-quote",
+      "title": "Get Quote",
+      "description": "…",
+      "category": "Pricing",
+      "examples": ["current stock price right now", "latest real-time quote"],
+      "premium": false
+    }
+  ],
+  "total_count": 11
+}
+```
 
 ### Resource: `finnhub://resources/exchanges`
 

@@ -8,6 +8,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
+using FinnHub.MCP.Server.Resources.Capabilities;
 using FinnHub.MCP.Server.Resources.Status;
 
 namespace FinnHub.MCP.Server.Resources;
@@ -26,4 +27,5 @@ namespace FinnHub.MCP.Server.Resources;
 [JsonSourceGenerationOptions(WriteIndented = true)]
 [JsonSerializable(typeof(ApiStatusSnapshot))]
 [JsonSerializable(typeof(ExchangesResponse))]
+[JsonSerializable(typeof(CapabilitiesPayload))]
 internal sealed partial class ResourceJsonContext : JsonSerializerContext;
