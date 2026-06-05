@@ -39,8 +39,9 @@ var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute
 
 var isStdio = args.Contains("--stdio");
 
-// STDIO transport never binds HTTP — skip the default --urls injection so two
-// concurrent stdio instances don't fight over port 8080.
+// HTTP transport listens on 8080. STDIO transport communicates over stdin/stdout; its Kestrel
+// listener is pinned to an ephemeral loopback port after Build() (see below) so concurrent
+// stdio instances never collide on a fixed port.
 if (!isStdio && !args.Contains("--urls"))
 {
     args = args
@@ -178,6 +179,17 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if (isStdio)
+{
+    // STDIO speaks over stdin/stdout, but the WebApplication host still starts Kestrel. Setting
+    // app.Urls explicitly is authoritative — it suppresses the default localhost:5000 binding —
+    // so pin an ephemeral loopback port (0, OS-assigned). Concurrent stdio instances (a reconnect,
+    // a second MCP client, or a lingering process) then each get their own free port instead of
+    // crashing on AddressInUseException for port 5000, which dropped the MCP connection.
+    app.Urls.Clear();
+    app.Urls.Add("http://127.0.0.1:0");
+}
 
 if (app.Environment.IsDevelopment())
 {
