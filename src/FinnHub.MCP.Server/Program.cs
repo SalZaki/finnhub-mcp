@@ -113,10 +113,12 @@ builder.Services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
 builder.Services.AddSingleton<IExchangeCatalog, ExchangeCatalog>();
 builder.Services.AddSingleton<IToolRegistry>(_ => new ToolRegistry(ToolCatalog.Descriptors));
 
-// MCP App (SEP-1865) spike: link get-price-summary to its interactive ui:// chart resource.
-var priceChartUiMeta = new JsonObject
+// MCP App (SEP-1865) spike: link get-quote to its interactive ui:// chart resource. get-quote
+// uses Finnhub's free-tier /quote endpoint, so the chart renders real data on a free key
+// (get-price-summary's /stock/candle source is premium-gated and 403s on free keys).
+var quoteChartUiMeta = new JsonObject
 {
-    ["ui"] = new JsonObject { ["resourceUri"] = "ui://finnhub/price-summary-chart.html" }
+    ["ui"] = new JsonObject { ["resourceUri"] = "ui://finnhub/quote-chart.html" }
 };
 
 var mcpBuilder = builder.Services.AddMcpServer(options =>
@@ -132,16 +134,16 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<SearchSymbolTool>()
 .WithWrappedTools<GetPeersTool>()
 .WithWrappedTools<GetFinancialsSnapshotTool>()
-.WithWrappedTools<GetPriceSummaryTool>(priceChartUiMeta)
+.WithWrappedTools<GetPriceSummaryTool>()
 .WithWrappedTools<GetNewsPulseTool>()
-.WithWrappedTools<GetQuoteTool>()
+.WithWrappedTools<GetQuoteTool>(quoteChartUiMeta)
 .WithWrappedTools<GetCompanyProfileTool>()
 .WithWrappedTools<GetCalendarTool>()
 .WithWrappedTools<GetInsiderSignalTool>()
 .WithWrappedTools<GetRecommendationsTool>()
 .WithResources<ExchangesResource>()
 .WithResources<ApiStatusResource>()
-.WithResources<PriceSummaryChartResource>();
+.WithResources<QuoteChartResource>();
 
 if (isStdio)
 {
