@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Reflection;
+using System.Text.Json.Nodes;
 using DotNetEnv;
 using FinnHub.MCP.Server.Application.Discovery;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
@@ -16,6 +17,7 @@ using FinnHub.MCP.Server.Application.Tokens;
 using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.Middleware;
+using FinnHub.MCP.Server.Resources.Apps;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Resources.Status;
 using FinnHub.MCP.Server.Tools.Calendar;
@@ -110,6 +112,12 @@ builder.Services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
 builder.Services.AddSingleton<IExchangeCatalog, ExchangeCatalog>();
 builder.Services.AddSingleton<IToolRegistry>(_ => new ToolRegistry(ToolCatalog.Descriptors));
 
+// MCP App (SEP-1865) spike: link get-price-summary to its interactive ui:// chart resource.
+var priceChartUiMeta = new JsonObject
+{
+    ["ui"] = new JsonObject { ["resourceUri"] = "ui://finnhub/price-summary-chart.html" }
+};
+
 var mcpBuilder = builder.Services.AddMcpServer(options =>
 {
     options.ServerInstructions = Constants.Server.Instructions;
@@ -123,7 +131,7 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<SearchSymbolTool>()
 .WithWrappedTools<GetPeersTool>()
 .WithWrappedTools<GetFinancialsSnapshotTool>()
-.WithWrappedTools<GetPriceSummaryTool>()
+.WithWrappedTools<GetPriceSummaryTool>(priceChartUiMeta)
 .WithWrappedTools<GetNewsPulseTool>()
 .WithWrappedTools<GetQuoteTool>()
 .WithWrappedTools<GetCompanyProfileTool>()
@@ -131,7 +139,8 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<GetInsiderSignalTool>()
 .WithWrappedTools<GetRecommendationsTool>()
 .WithResources<ExchangesResource>()
-.WithResources<ApiStatusResource>();
+.WithResources<ApiStatusResource>()
+.WithResources<PriceSummaryChartResource>();
 
 if (isStdio)
 {

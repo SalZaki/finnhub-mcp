@@ -7,6 +7,7 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Text.Json.Nodes;
 using FinnHub.MCP.Server.Application.RateLimiting;
 using FinnHub.MCP.Server.Application.Tokens;
 
@@ -18,7 +19,7 @@ namespace FinnHub.MCP.Server.Middleware;
 /// <remarks>
 /// Replaces the SDK's <c>WithTools&lt;T&gt;</c> for tool types that should
 /// participate in the envelope-budget contract. See
-/// <see cref="WithWrappedTools{TToolType}(IMcpServerBuilder)"/> for details.
+/// <see cref="WithWrappedTools{TToolType}(IMcpServerBuilder, JsonObject)"/> for details.
 /// </remarks>
 public static class WrappedToolsExtensions
 {
@@ -39,9 +40,15 @@ public static class WrappedToolsExtensions
     /// is delegated to <see cref="ActivatorUtilities"/> against the request-scoped
     /// service provider exposed on the <c>RequestContext</c>.
     /// </remarks>
+    /// <param name="toolMeta">
+    /// Optional <c>_meta</c> to attach to every tool on <typeparamref name="TToolType"/>
+    /// (seeds <c>Tool.Meta</c>). Used to declare MCP Apps UI metadata such as
+    /// <c>{ "ui": { "resourceUri": "ui://..." } }</c>. Cloned per tool so a single
+    /// object is not parented to multiple tools.
+    /// </param>
     public static IMcpServerBuilder WithWrappedTools<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
-    TToolType>(this IMcpServerBuilder builder)
+    TToolType>(this IMcpServerBuilder builder, JsonObject? toolMeta = null)
         where TToolType : class
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -54,6 +61,7 @@ public static class WrappedToolsExtensions
         foreach (var method in methods)
         {
             var capturedMethod = method;
+            var capturedMeta = toolMeta;
 
             builder.Services.AddSingleton<McpServerTool>(sp =>
             {
@@ -61,10 +69,14 @@ public static class WrappedToolsExtensions
                 var rateLimitTracker = sp.GetRequiredService<IRateLimitTracker>();
                 var logger = sp.GetRequiredService<ILogger<ToolInvocationMiddleware>>();
 
+                var options = capturedMeta is null
+                    ? null
+                    : new McpServerToolCreateOptions { Meta = (JsonObject)capturedMeta.DeepClone() };
+
                 var inner = McpServerTool.Create(
                     capturedMethod,
                     static ctx => ActivatorUtilities.CreateInstance(ctx.Services!, typeof(TToolType)),
-                    options: null);
+                    options);
 
                 return new ToolInvocationMiddleware(inner, estimator, rateLimitTracker, logger);
             });
