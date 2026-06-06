@@ -16,6 +16,7 @@ using FinnHub.MCP.Server.Application.Tokens;
 using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.Middleware;
+using FinnHub.MCP.Server.Resources.Capabilities;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Resources.Status;
 using FinnHub.MCP.Server.Tools.Calendar;
@@ -131,7 +132,8 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<GetInsiderSignalTool>()
 .WithWrappedTools<GetRecommendationsTool>()
 .WithResources<ExchangesResource>()
-.WithResources<ApiStatusResource>();
+.WithResources<ApiStatusResource>()
+.WithResources<CapabilitiesResource>();
 
 if (isStdio)
 {
