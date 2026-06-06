@@ -891,5 +891,31 @@ public static class Constants
                     "Ticker symbol to research, e.g. 'AAPL'. 1-32 characters: letters, digits, dots, or dashes.";
             }
         }
+
+        /// <summary>Constants for the <c>compare-peers</c> prompt — a templated peer-comparison workflow.</summary>
+        public static class ComparePeers
+        {
+            /// <summary>The unique prompt identifier (the slash-command name).</summary>
+            public const string Name = "compare-peers";
+
+            /// <summary>The human-readable prompt title.</summary>
+            public const string Title = "Compare Peers";
+
+            /// <summary>Prompt description shown in the client's prompt picker.</summary>
+            public const string Description =
+                "Templated peer-comparison workflow for a ticker: find the peer set, fan out per-peer "
+                + "financials, and build a side-by-side comparison.";
+
+            /// <summary>Argument names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol argument name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol argument description.</summary>
+                public const string SymbolDescription =
+                    "Ticker symbol to compare against its peers, e.g. 'AAPL'. 1-32 characters: letters, digits, dots, or dashes.";
+            }
+        }
     }
 }
