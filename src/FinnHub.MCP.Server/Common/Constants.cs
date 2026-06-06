@@ -862,4 +862,34 @@ public static class Constants
                 """;
         }
     }
+
+    /// <summary>Constants for the MCP prompts (Claude Desktop slash commands).</summary>
+    public static class Prompts
+    {
+        /// <summary>Constants for the <c>research-ticker</c> prompt — a templated research workflow.</summary>
+        public static class ResearchTicker
+        {
+            /// <summary>The unique prompt identifier (the slash-command name).</summary>
+            public const string Name = "research-ticker";
+
+            /// <summary>The human-readable prompt title.</summary>
+            public const string Title = "Research Ticker";
+
+            /// <summary>Prompt description shown in the client's prompt picker.</summary>
+            public const string Description =
+                "Templated research workflow for a ticker: resolve the symbol, then pull the price "
+                + "summary, financials snapshot, and news pulse, and synthesise a brief.";
+
+            /// <summary>Argument names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Symbol argument name.</summary>
+                public const string SymbolName = "symbol";
+
+                /// <summary>Symbol argument description.</summary>
+                public const string SymbolDescription =
+                    "Ticker symbol to research, e.g. 'AAPL'. 1-32 characters: letters, digits, dots, or dashes.";
+            }
+        }
+    }
 }
