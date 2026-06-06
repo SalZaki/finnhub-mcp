@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using FinnHub.MCP.Server.Application.Calendar.Services;
+using FinnHub.MCP.Server.Application.Exchanges.Services;
 using FinnHub.MCP.Server.Application.Financials.Services;
 using FinnHub.MCP.Server.Application.Insiders.Services;
 using FinnHub.MCP.Server.Application.News.Services;
@@ -17,6 +18,7 @@ using FinnHub.MCP.Server.Application.Recommendations.Services;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Tools.Calendar;
+using FinnHub.MCP.Server.Tools.Exchanges;
 using FinnHub.MCP.Server.Tools.Financials;
 using FinnHub.MCP.Server.Tools.Insiders;
 using FinnHub.MCP.Server.Tools.News;
@@ -217,6 +219,22 @@ public sealed class ToolSmokeTests : IClassFixture<LiveSmokeFactory>
         var envelope = await tool.GetInsiderSignalAsync(Symbol);
 
         AssertGracefulDegradation(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
+    }
+
+    [Fact]
+    public async Task GetExchangeSymbols_Us_ReturnsAggregate()
+    {
+        // 'US' is the only exchange free-tier keys can read on /stock/symbol; other exchanges
+        // return 401 (mapped to PremiumRequired). This exercises the real 302 → signed-CDN
+        // redirect-follow, the hybrid-cache round-trip of the aggregate, and the server-side
+        // reduction of the ~30k-row payload to count + type_breakdown + sample.
+        var tool = new GetExchangeSymbolsTool(
+            this._services.GetRequiredService<IExchangeSymbolsService>(),
+            NullLogger<GetExchangeSymbolsTool>.Instance);
+
+        var envelope = await tool.GetExchangeSymbolsAsync("US");
+
+        AssertSuccessOrPremium(envelope.IsSuccess, envelope.ErrorType, envelope.ErrorMessage);
     }
 
     [Fact]

@@ -21,6 +21,7 @@ using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Resources.Status;
 using FinnHub.MCP.Server.Tools.Calendar;
 using FinnHub.MCP.Server.Tools.Discovery;
+using FinnHub.MCP.Server.Tools.Exchanges;
 using FinnHub.MCP.Server.Tools.Financials;
 using FinnHub.MCP.Server.Tools.Insiders;
 using FinnHub.MCP.Server.Tools.News;
@@ -132,6 +133,7 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<GetCalendarTool>()
 .WithWrappedTools<GetInsiderSignalTool>()
 .WithWrappedTools<GetRecommendationsTool>()
+.WithWrappedTools<GetExchangeSymbolsTool>()
 .WithResources<ExchangesResource>()
 .WithResources<ApiStatusResource>()
 .WithResources<CapabilitiesResource>();

@@ -8,6 +8,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
+using FinnHub.MCP.Server.Application.Exchanges.Features.GetExchangeSymbols;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Insiders.Features.GetInsiderSignal;
 using FinnHub.MCP.Server.Application.Models;
@@ -100,4 +101,9 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(RecommendationChange))]
 [JsonSerializable(typeof(GetRecommendationsResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetRecommendationsResponse>))]
+[JsonSerializable(typeof(FinnHubSymbolRow[]))]
+[JsonSerializable(typeof(FinnHubSymbolRow))]
+[JsonSerializable(typeof(ExchangeSymbol))]
+[JsonSerializable(typeof(GetExchangeSymbolsResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetExchangeSymbolsResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;

@@ -30,3 +30,4 @@ Examples:
 - `metric-AAPL.json` — full `/stock/metric?metric=all` (~234 kB) with mixed numeric + date string values
 - `candle-AAPL.json` — 403 premium response (candles are premium on the free key)
 - `news-sentiment-AAPL.json` — 403 premium response
+- `stock-symbol-US.json` — `/stock/symbol?exchange=US`, **truncated to the first 25 of ~30,538 real rows** (the live payload is ~7.2 MB and 302-redirects to a signed CDN file); keeps the real wire shape while staying committable. Re-capture with `capture.sh`, which follows the redirect (`-L`) and re-truncates.

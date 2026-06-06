@@ -177,5 +177,18 @@ internal static class ToolCatalog
                 "is analyst sentiment turning bullish or bearish"
             ]
         },
+        new ToolDescriptor
+        {
+            Name = Constants.Tools.ExchangeSymbols.Name,
+            Title = Constants.Tools.ExchangeSymbols.Title,
+            Description = Constants.Tools.ExchangeSymbols.Description,
+            Category = "Discovery",
+            Examples =
+            [
+                "list symbols on an exchange",
+                "what tickers trade on an exchange",
+                "how many symbols are listed on the us exchange"
+            ]
+        },
     ];
 }
