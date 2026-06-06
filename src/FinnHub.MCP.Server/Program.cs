@@ -139,7 +139,8 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithResources<ApiStatusResource>()
 .WithResources<CapabilitiesResource>()
 .WithPrompts<ResearchTickerPrompt>()
-.WithPrompts<ComparePeersPrompt>();
+.WithPrompts<ComparePeersPrompt>()
+.WithPrompts<NewsPulsePrompt>();
 
 if (isStdio)
 {
