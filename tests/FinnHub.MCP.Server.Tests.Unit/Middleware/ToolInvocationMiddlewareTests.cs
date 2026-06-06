@@ -119,20 +119,22 @@ public sealed class ToolInvocationMiddlewareTests
     }
 
     [Fact]
-    public async Task InvokeAsync_TextOnlyResult_PatchesApproxTokens()
+    public async Task InvokeAsync_TextOnlyResult_PatchesApproxTokensAndSurfacesStructuredContent()
     {
-        // The SDK's AIFunctionMcpServerTool emits the envelope into Content[0].Text
-        // without populating StructuredContent. Regression coverage: the middleware
-        // must still patch approx_tokens via the text path.
+        // The SDK's AIFunctionMcpServerTool emits the envelope into Content[0].Text without
+        // populating StructuredContent. The middleware patches approx_tokens via the text path
+        // AND surfaces the patched envelope as StructuredContent so MCP Apps hosts (which read
+        // result.structuredContent) can render and data-bind a tool's ui:// app.
         var inner = MakeTextOnlyTool(SmallEnvelopeJson(approxTokens: 0));
         var middleware = new ToolInvocationMiddleware(inner, new StubTokenEstimator(456), this._rateLimitTracker, this._logger);
 
         var result = await middleware.InvokeAsync(MakeRequest(), CancellationToken.None);
 
-        Assert.Null(result.StructuredContent);
         var text = ((TextContentBlock)result.Content[0]).Text;
-        var node = JsonNode.Parse(text)!.AsObject();
-        Assert.Equal(456, (int?)node["approx_tokens"]);
+        Assert.Equal(456, (int?)JsonNode.Parse(text)!.AsObject()["approx_tokens"]);
+
+        Assert.NotNull(result.StructuredContent);
+        Assert.Equal(456, result.StructuredContent!.Value.GetProperty("approx_tokens").GetInt32());
     }
 
     [Fact]

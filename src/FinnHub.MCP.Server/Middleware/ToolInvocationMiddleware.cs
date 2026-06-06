@@ -148,10 +148,12 @@ public sealed class ToolInvocationMiddleware(
 
         var patched = obj.ToJsonString();
 
-        if (result.StructuredContent is not null)
-        {
-            result.StructuredContent = JsonSerializer.Deserialize<JsonElement>(patched);
-        }
+        // Always expose the (patched) envelope as structuredContent — not only when the inner
+        // tool already produced it. The SDK serializes a tool's typed return into a text content
+        // block, so structuredContent would otherwise be absent. MCP Apps hosts read
+        // result.structuredContent to render and data-bind a tool's ui:// app (e.g. get-quote ->
+        // quote-chart); without it the host has no data to pass to the app.
+        result.StructuredContent = JsonSerializer.Deserialize<JsonElement>(patched);
 
         if (result.Content.Count > 0 && result.Content[0] is TextContentBlock dst)
         {
