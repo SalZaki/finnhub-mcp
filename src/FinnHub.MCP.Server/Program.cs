@@ -129,6 +129,22 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
         Name = applicationName,
         Version = version
     };
+
+    // MCP Apps (SEP-1865) capability negotiation: declare the io.modelcontextprotocol/ui
+    // extension so a host that supports MCP Apps renders tools' ui:// resources. Set only
+    // Extensions — the SDK still derives the tools/resources capabilities from the registrations.
+    // ServerCapabilities.Extensions is [Experimental] (MCPEXP001) in SDK 1.4.0; suppressed here
+    // pending the first-class ModelContextProtocol.Extensions.Apps layer (csharp-sdk PR #1484).
+    options.Capabilities ??= new ServerCapabilities();
+#pragma warning disable MCPEXP001
+    options.Capabilities.Extensions = new Dictionary<string, object>(StringComparer.Ordinal)
+    {
+        ["io.modelcontextprotocol/ui"] = new JsonObject
+        {
+            ["mimeTypes"] = new JsonArray("text/html;profile=mcp-app")
+        }
+    };
+#pragma warning restore MCPEXP001
 })
 .WithWrappedTools<SearchToolsTool>()
 .WithWrappedTools<SearchSymbolTool>()
