@@ -686,6 +686,64 @@ public static class Constants
                 """;
         }
 
+        /// <summary>Constants for the <c>get-exchange-symbols</c> tool — symbols listed on an exchange.</summary>
+        public static class ExchangeSymbols
+        {
+            /// <summary>The unique tool identifier.</summary>
+            public const string Name = "get-exchange-symbols";
+
+            /// <summary>The human-readable tool title.</summary>
+            public const string Title = "Get Exchange Symbols";
+
+            /// <summary>Parameter names and descriptions.</summary>
+            public static class Parameters
+            {
+                /// <summary>Exchange parameter name.</summary>
+                public const string ExchangeName = "exchange";
+
+                /// <summary>Exchange parameter description.</summary>
+                public const string ExchangeDescription =
+                    "Exchange code, e.g. 'US' (US exchanges), 'L' (London), 'T' (Tokyo). 1-8 letters.";
+
+                /// <summary>View parameter name.</summary>
+                public const string ViewName = "view";
+
+                /// <summary>View parameter description.</summary>
+                public const string ViewDescription = Envelope.ViewParameterDescription;
+            }
+
+            /// <summary>Tool description registered with the MCP server.</summary>
+            public const string Description =
+                """
+                List the symbols traded on a specific exchange as an aggregated, token-conscious summary —
+                a total count, a breakdown by security type, and a capped sample. This is NOT the full symbol
+                list (a major exchange lists tens of thousands of symbols); use search-symbol to resolve a
+                specific ticker.
+
+                ## Example:
+                - exchange='US'
+
+                ## Request Parameters:
+                - exchange (string, required): exchange code, e.g. 'US', 'L', 'T'. 1-8 letters.
+
+                ## Response Fields:
+                - exchange (string): echo of the requested code
+                - total_count (int): total number of symbols listed on the exchange
+                - type_breakdown (object): count per security type, e.g. { "Common Stock": 4500, "ETP": 3100 }
+                - symbols (array, optional): a capped sample of { symbol, display_symbol, description, type } —
+                  omitted in summary, 25 rows in standard, up to 100 in full
+                - has_results (bool)
+
+                ## Notes:
+                - summary returns count + type_breakdown only; standard adds a 25-row sample; full adds up to 100.
+                - Cached at the Exchanges tier (~7 days) — exchange membership is near-static.
+                - Free Finnhub plans only support exchange='US'; other exchanges require a paid plan (returned as premium).
+                - To find a specific symbol on an exchange, use search-symbol.
+
+                Approx tokens: summary ~250, standard ~700, full ~2200.
+                """;
+        }
+
         /// <summary>Constants for the <c>get-insider-signal</c> tool — aggregated insider net buy/sell signal.</summary>
         public static class InsiderSignal
         {

@@ -36,7 +36,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 
 ### ✅ Currently Available
 
-**Tools (11):**
+**Tools (12):**
 - **`search-tools`** — intent-based tool discovery: pass a natural-language `intent` (max 200 chars) and get back the most relevant tools, ranked by a pure-C# BM25 keyword index over each tool's name, title, description, and curated example intents. Keeps full tool schemas off the wire until a tool is actually needed. `summary` view omits per-tool descriptions to stay token-light; `standard`/`full` include them.
 - **`search-symbol`** — search for financial symbols by ticker, company name, ISIN, or CUSIP, optionally filtered by exchange code (limit 1–100, default 10). On a high-confidence exact match, suggests `get-quote`, `get-company-profile`, `get-news-pulse`, `get-financials-snapshot`, `get-price-summary`, and `get-peers` as next actions.
 - **`get-quote`** — real-time price snapshot (current, change, percent change, session high/low/open, prev close, timestamp). Cached at the 10-second Quote tier.
@@ -48,6 +48,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 - **`get-calendar`** — parameter-dispatched calendar lookup across three feeds: `kind=earnings` (max 90-day window, optional symbol filter; suggests `get-financials-snapshot` + `get-news-pulse`), `kind=ipo` (max 365-day window, no symbol filter; suggests `get-company-profile` for the most recent tradable IPO), and `kind=economic` (max 90-day window, optional ISO 3166-1 alpha-2 country filter applied server-side since the upstream doesn't accept it). Summary view caps at 10 events, standard at 25, full returns the complete window.
 - **`get-insider-signal`** — aggregated insider-transaction signal for a symbol over the trailing 30 days (`from`/`to` optional, max 90-day window). Returns `net_buy_sell_30d` (signed share delta), `notable_names` (top 5 by absolute trade volume), `total_count`, and `latest`; `view=full` includes the full transaction array. Suggests `get-company-profile` and `get-quote` as next actions.
 - **`get-recommendations`** — analyst-consensus snapshot for a symbol with `change_vs_prev` (per-bucket delta + single-label sentiment shift). Returns `consensus` ('Strong Buy' / 'Buy' / 'Hold' / 'Sell' / 'Strong Sell'), the 5 rating-bucket counts, and `total`; `view=full` includes the per-period history. Cached at the Profile tier — one upstream call serves both the current and previous-period values. Suggests `get-financials-snapshot` and `get-peers` as next actions.
+- **`get-exchange-symbols`** — aggregated, token-conscious view of the symbols listed on an exchange (`exchange` code, e.g. `US`): `total_count`, a `type_breakdown` (count per security type), and a capped sample — **not** the raw list (a major exchange lists tens of thousands of symbols). `summary` returns count + breakdown only, `standard` adds 25 sample rows, `full` adds up to 100. Cached at the 7-day Exchanges tier. Free Finnhub plans only support `US`; other exchanges are premium-gated. Suggests `search-symbol` as the next action for resolving a specific ticker.
 
 Every tool returns the standard token-budgeted envelope with cross-linked `next_actions` and the most-recent observed Finnhub rate-limit headers.
 

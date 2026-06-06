@@ -60,3 +60,18 @@ fetch insider-transactions-AAPL "stock/insider-transactions?symbol=AAPL&from=$IN
 # Recommendations fixture: AAPL ships multiple monthly snapshots so change_vs_prev
 # is exercised end-to-end.
 fetch recommendation-AAPL      "stock/recommendation?symbol=AAPL"
+# Exchange symbols fixture: /stock/symbol?exchange=US 302-redirects to a signed CDN file and the
+# live payload is ~30,538 rows / 7.2MB — far too large to commit. Capture with -L (the shared
+# fetch helper omits it and would save the 302 body) and truncate to the first 25 faithful rows
+# (real wire shape, repo-friendly size). Only the US exchange is available on free Finnhub plans;
+# other exchanges return 401 (premium).
+sym_tmp=$(mktemp)
+curl -sL -H "X-Finnhub-Token: $FINNHUB_API_KEY" "https://finnhub.io/api/v1/stock/symbol?exchange=US" -o "$sym_tmp"
+python3 - "$sym_tmp" "$OUT_DIR/stock-symbol-US.json" <<'PY'
+import json, sys
+src, dst = sys.argv[1], sys.argv[2]
+rows = json.load(open(src))
+json.dump(rows[:25], open(dst, "w"), separators=(",", ":"))
+print(f"  {'stock-symbol-US':<25} [truncated to 25 of {len(rows)} rows]")
+PY
+rm -f "$sym_tmp"
