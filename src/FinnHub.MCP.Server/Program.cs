@@ -16,6 +16,7 @@ using FinnHub.MCP.Server.Application.Tokens;
 using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.Middleware;
+using FinnHub.MCP.Server.Prompts;
 using FinnHub.MCP.Server.Resources.Capabilities;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Resources.Status;
@@ -136,7 +137,8 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<GetExchangeSymbolsTool>()
 .WithResources<ExchangesResource>()
 .WithResources<ApiStatusResource>()
-.WithResources<CapabilitiesResource>();
+.WithResources<CapabilitiesResource>()
+.WithPrompts<ResearchTickerPrompt>();
 
 if (isStdio)
 {

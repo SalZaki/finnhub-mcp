@@ -57,6 +57,9 @@ Every tool returns the standard token-budgeted envelope with cross-linked `next_
 - **`finnhub://resources/exchanges`** — the full catalog of stock venues Finnhub supports (79 exchanges: code, name, country, MIC, timezone, market hours). `url` is `null` for the few venues Finnhub lists without a reference link.
 - **`finnhub://resources/api-status`** — latest observed Finnhub upstream quota: `remaining`, `reset_at`, and a rolling 429 count
 
+**Prompts (1):**
+- **`/research-ticker {symbol}`** — Claude Desktop slash command that renders a deterministic research workflow: resolve the symbol (via `search-symbol`), then pull `get-price-summary`, `get-financials-snapshot`, and `get-news-pulse`, and synthesise a brief. A pure template — no server-side LLM calls, so the same symbol always renders byte-identical text.
+
 ### 📋 Planned
 - Technical indicators (RSI, MACD, moving averages)
 - WebSocket transport for streaming Finnhub feeds
