@@ -23,10 +23,13 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 
 ## 🚀 Key Features
 
-- ✅ **MCP Tools and Resources** wired to the official `ModelContextProtocol` and `ModelContextProtocol.AspNetCore` packages
-- ✅ **Symbol Search Tool** with input validation and sanitization (regex-based length and character constraints)
-- ✅ **Exchanges Resource** exposed at `finnhub://resources/exchanges` — the full catalog of stock venues Finnhub supports (79 exchanges), served from Finnhub's published reference list
-- ✅ **Resilient HTTP Communication** — typed `HttpClient` with retry, timeout, and circuit-breaker policies via `Microsoft.Extensions.Http.Resilience` and Polly
+- ✅ **12 tools, 3 resources, 3 prompts** — a full MCP surface on the official `ModelContextProtocol` and `ModelContextProtocol.AspNetCore` packages: aggregation-first financial-data tools, read-only reference resources, and Claude Desktop slash commands
+- ✅ **Token-conscious by design** — every tool returns a budgeted envelope with `summary`/`standard`/`full` views; curated aggregates are the default and raw payloads are opt-in, with hard per-view token ceilings enforced by tool-invocation middleware
+- ✅ **Intent-based tool discovery** — the `search-tools` meta-tool ranks tools with a pure-C# BM25 index (no embeddings), and a `capabilities` resource exposes the whole catalog, keeping full tool schemas off the wire until a tool is actually needed
+- ✅ **Cross-linked `next_actions`** — tools suggest the next call in a workflow, so a model can chain research without guessing tool names
+- ✅ **Response caching** — `HybridCache` with per-endpoint TTL tiers (10-second quotes through 7-day exchange catalogues); identical requests short-circuit the upstream call
+- ✅ **Input validation at every tool boundary** — regex-based length and character constraints on each argument
+- ✅ **Resilient HTTP communication** — typed `HttpClient` with retry, timeout, and circuit-breaker policies via `Microsoft.Extensions.Http.Resilience` and Polly; premium-locked endpoints surface as typed errors and are never retried
 - ✅ **Source-generated JSON** through `System.Text.Json` `JsonSerializerContext` for low-allocation, AOT-friendly (de)serialization
 - ✅ **Strongly-typed configuration** — `FinnHubOptions` bound from `appsettings.json` with data-annotation validation on startup
 - ✅ **API key kept out of source** — read from the `FINNHUB_API_KEY` environment variable (or a local `.env` in development via `DotNetEnv`)
@@ -245,6 +248,40 @@ Parameters:
 
 Sentiment fields (`sentiment_score`, `bullish_percent`, `bearish_percent`, `sentiment_source`) are populated only when the upstream `/news-sentiment` endpoint is reachable; they fall back to `null` on premium-locked keys without failing the call.
 
+### Tool: `get-calendar`
+
+Parameters:
+
+- `kind` *(string, required)* — `earnings`, `ipo`, or `economic`.
+- `symbol` *(string, optional)* — uppercase ticker; applies to `kind=earnings` only.
+- `country` *(string, optional)* — ISO 3166-1 alpha-2 code; applies to `kind=economic` only (filtered server-side, since the upstream does not accept it).
+- `from` / `to` *(string, optional, ISO `yyyy-MM-dd`)* — window bounds. Max 90 days for `earnings`/`economic`, 365 for `ipo`; sensible defaults cover the current window.
+- `view` *(string, optional)* — `summary` (top 10 events), `standard` (top 25), `full` (the complete window).
+
+### Tool: `get-insider-signal`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker.
+- `from` / `to` *(string, optional, ISO `yyyy-MM-dd`)* — lookup window; defaults to the trailing 30 days, max 90.
+- `view` *(string, optional)* — `summary`/`standard` (aggregated `net_buy_sell_30d`, `notable_names`, `total_count`, and `latest`), `full` (+ the full transaction array).
+
+### Tool: `get-recommendations`
+
+Parameters:
+
+- `symbol` *(string, required)* — uppercase ticker.
+- `view` *(string, optional)* — `summary`/`standard` (latest consensus + `change_vs_prev`), `full` (+ the per-period snapshot history).
+
+### Tool: `get-exchange-symbols`
+
+Parameters:
+
+- `exchange` *(string, required)* — exchange code, 1–8 letters, e.g. `US`, `L`, `T`.
+- `view` *(string, optional)* — `summary` (`total_count` + `type_breakdown`), `standard` (+ a 25-row sample), `full` (+ up to 100 rows).
+
+Returns an aggregated view of a venue's symbol list — never the full list (a major exchange lists tens of thousands of symbols). Free Finnhub plans only support `exchange=US`; other exchanges return a typed `PremiumRequired` error. Suggests `search-symbol` for resolving a specific ticker. Cached at the 7-day Exchanges tier.
+
 ### Tool response envelope
 
 Every MCP tool returns the same envelope shape so consuming models get a predictable contract and the server can enforce per-view token budgets without forcing every tool to reimplement the same accounting.
@@ -281,7 +318,7 @@ Returns the full tool catalog as `application/json` — one entry per registered
       "premium": false
     }
   ],
-  "total_count": 11
+  "total_count": 12
 }
 ```
 
@@ -327,6 +364,18 @@ Returns the most-recent observed Finnhub upstream quota state as `application/js
 
 The `remaining` and `reset_at` fields are `null` before the server has made any upstream call; the `recent_throttled_count` resets to zero whenever the quota window rolls over. Clients can poll this resource to monitor headroom without invoking a tool.
 
+### Prompts (Claude Desktop slash commands)
+
+The server exposes three MCP prompts — deterministic, templated research workflows surfaced as slash commands in Claude Desktop. Each takes a single `symbol` argument (1–32 characters: letters, digits, dots, or dashes; validated and uppercased before render) and produces **byte-identical** text for a given symbol: the render is a pure template with no server-side model calls.
+
+| Slash command | Workflow it scripts |
+|---|---|
+| `/research-ticker {symbol}` | Resolve the symbol (`search-symbol`), then `get-price-summary` → `get-financials-snapshot` → `get-news-pulse`, and synthesise a brief. |
+| `/compare-peers {symbol}` | Find the peer set (`get-peers`), fan out per peer to `get-financials-snapshot`, and build a side-by-side comparison. |
+| `/news-pulse {symbol}` | Pull `get-news-pulse`, compare against last week, and write a sentiment narrative. |
+
+The prompts only template the instructions — the client's model executes the tool calls, so the workflow honours the same token budgets, caching, and premium handling as a hand-typed sequence.
+
 ### Response caching
 
 Every Application service is fronted by `Microsoft.Extensions.Caching.Hybrid.HybridCache` with per-endpoint TTL tiers. Identical requests within the tier's TTL short-circuit the upstream Finnhub call.
@@ -366,6 +415,8 @@ dotnet test tests/FinnHub.MCP.Server.Tests.Unit
 dotnet test --settings coverlet.runsettings
 ```
 
+A fourth project, `FinnHub.MCP.Server.Tests.LiveSmoke`, boots the server in-process and walks every tool against **real Finnhub** to catch upstream shape drift and URL-resolution regressions that mocked tests can't. It is tagged `[Trait("Category", "LiveSmoke")]` and excluded from `dotnet test` by default (`--filter "Category!=LiveSmoke"`), running on a daily schedule and on demand so PR builds never burn the Finnhub quota.
+
 ## 🔧 Development
 
 ### Build
@@ -398,7 +449,8 @@ src/
 tests/
 ├── FinnHub.MCP.Server.Application.Tests.Unit/
 ├── FinnHub.MCP.Server.Infrastructure.Tests.Unit/
-└── FinnHub.MCP.Server.Tests.Unit/
+├── FinnHub.MCP.Server.Tests.Unit/
+└── FinnHub.MCP.Server.Tests.LiveSmoke/        # gated, real-Finnhub end-to-end smoke (daily / on-demand)
 ```
 
 ## 🛠️ Tech Stack
