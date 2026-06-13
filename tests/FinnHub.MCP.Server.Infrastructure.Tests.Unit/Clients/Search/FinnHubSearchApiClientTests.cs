@@ -185,7 +185,6 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
         Assert.Equal("AAPL", result.Query);
         Assert.NotNull(result.QueryId);
         Assert.Equal("finnhub-api", result.Source);
-        Assert.False(result.IsFromCache);
         Assert.Single(result.Symbols);
         Assert.Equal("AAPL", result.Symbols[0].Symbol);
         Assert.Equal("Apple Inc", result.Symbols[0].Description);

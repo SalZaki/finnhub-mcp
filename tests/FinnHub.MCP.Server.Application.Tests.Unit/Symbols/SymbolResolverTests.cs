@@ -218,6 +218,33 @@ public sealed class SymbolResolverTests
     }
 
     [Fact]
+    public async Task ResolveAsync_TrimmedInputExceedsMaxLength_Throws()
+    {
+        // 501 non-whitespace chars: the trimmed value is over the 500-char bound.
+        var input = new string('a', 501);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => this._resolver.ResolveAsync(input));
+    }
+
+    [Fact]
+    public async Task ResolveAsync_RawOverLimitButTrimmedWithinLimit_PassesLengthGuard()
+    {
+        // Raw length 504 (> 500) but trimmed length 500 (within bound). The length guard must
+        // measure the trimmed value, so this proceeds to the ambiguous path instead of throwing.
+        // Pre-fix it threw, because the bound was checked against the raw input.
+        this._searchApiClient
+            .SearchSymbolAsync(Arg.Any<SearchSymbolQuery>(), Arg.Any<CancellationToken>())
+            .Returns(new SearchSymbolResponse { Symbols = [Stock("AAPL", 0.95)] });
+
+        var input = "  " + new string('a', 500) + "  ";
+
+        var result = await this._resolver.ResolveAsync(input);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("AAPL", result.Data!.Canonical);
+    }
+
+    [Fact]
     public async Task ResolveAsync_BareTickerWithDigits_FallsThroughToAmbiguousPath()
     {
         // Canonical regex excludes digits — "2330" routes through the ambiguous path.
