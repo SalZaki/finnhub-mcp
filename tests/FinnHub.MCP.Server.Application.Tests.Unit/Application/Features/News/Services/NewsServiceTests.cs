@@ -152,4 +152,29 @@ public sealed class NewsServiceTests
 
         Assert.Equal(8, result.Data!.TopHeadlines.Count);
     }
+
+    [Fact]
+    public async Task GetPulseAsync_CompanyNewsCacheKeys_EncodeResolvedDateWindow()
+    {
+        // Regression for the midnight-UTC staleness bug (M17): the two company-news cache keys
+        // must bake in the resolved from/to window, not a static ":w=current"/":w=prev" token.
+        // Without it, an entry cached seconds before a UTC date rollover is served under the same
+        // key with the previous day's window until the TTL lapses. Asserting the key *shape*
+        // (date window present, ":w=" token gone) fails on the old keys and passes on the new ones.
+        var query = new GetNewsPulseQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetSentimentAsync(query.Symbol, Arg.Any<CancellationToken>())
+            .Returns(new NewsSentiment(null, null, null));
+        this._apiClient.GetCompanyNewsAsync(query.Symbol, Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(_ => (IReadOnlyList<CompanyNewsArticle>)[new CompanyNewsArticle("h", "u", "src", DateTimeOffset.UtcNow)]);
+
+        await this._sut.GetPulseAsync(query);
+
+        var pulseKeys = this._cache.ObservedKeys
+            .Where(k => k.StartsWith("news-pulse:", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.Equal(2, pulseKeys.Count);
+        Assert.All(pulseKeys, k => Assert.Matches(@"^news-pulse:s=AAPL:from=\d{4}-\d{2}-\d{2}:to=\d{4}-\d{2}-\d{2}$", k));
+        Assert.DoesNotContain(pulseKeys, k => k.Contains(":w=", StringComparison.Ordinal));
+    }
 }

@@ -26,12 +26,16 @@ internal sealed class FakeFinnHubCache : IFinnHubCache
 
     public int FactoryInvocationCount { get; private set; }
 
+    /// <summary>Every logical key passed to <see cref="GetOrCreateAsync{T}"/>, in call order.</summary>
+    public List<string> ObservedKeys { get; } = [];
+
     public async ValueTask<T> GetOrCreateAsync<T>(
         string key,
         CacheTier tier,
         Func<CancellationToken, ValueTask<T>> factory,
         CancellationToken cancellationToken = default)
     {
+        this.ObservedKeys.Add(key);
         var compositeKey = $"{tier}:{key}";
 
         if (this._entries.TryGetValue(compositeKey, out var cached))
