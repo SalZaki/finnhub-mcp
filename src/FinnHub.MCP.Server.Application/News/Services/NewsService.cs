@@ -5,11 +5,13 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Globalization;
 using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.News.Clients;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.News.Services;
@@ -43,8 +45,20 @@ public sealed class NewsService(
             // Sentiment is optional (premium-gated). Catch and degrade gracefully.
             var sentiment = await this.TryFetchSentimentAsync(query.Symbol, cancellationToken);
 
-            var currentWeekKey = $"news-pulse:s={query.Symbol.ToUpperInvariant()}:w=current";
-            var prevWeekKey = $"news-pulse:s={query.Symbol.ToUpperInvariant()}:w=prev";
+            // Bake the resolved date window into the key so a midnight-UTC rollover yields a new
+            // key and forces a fresh fetch. Without it, an entry written just before midnight is
+            // served under the same ":w=current" key with the previous day's window until the TTL lapses.
+            var normalizedSymbol = SymbolNormalizer.Normalize(query.Symbol);
+            var currentWeekKey = SymbolCacheKey.For(
+                "news-pulse",
+                ("s", normalizedSymbol),
+                ("from", weekAgo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                ("to", today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+            var prevWeekKey = SymbolCacheKey.For(
+                "news-pulse",
+                ("s", normalizedSymbol),
+                ("from", twoWeeksAgo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                ("to", weekAgo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 
             var currentWeekTask = cache.GetOrCreateAsync(
                 currentWeekKey,
@@ -134,7 +148,7 @@ public sealed class NewsService(
         try
         {
             return await cache.GetOrCreateAsync(
-                $"news-sentiment:s={symbol.ToUpperInvariant()}",
+                SymbolCacheKey.For("news-sentiment", ("s", SymbolNormalizer.Normalize(symbol))),
                 CacheTier.News,
                 async ct => await apiClient.GetSentimentAsync(symbol, ct),
                 cancellationToken);

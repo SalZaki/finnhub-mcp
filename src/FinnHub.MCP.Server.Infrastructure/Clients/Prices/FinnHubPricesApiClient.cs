@@ -12,6 +12,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Prices.Clients;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
+using FinnHub.MCP.Server.Infrastructure.Clients.Http;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -94,7 +95,7 @@ public sealed class FinnHubPricesApiClient : IPricesApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, "candle", cancellationToken).ConfigureAwait(false);
         }
 
         FinnHubCandleResponse? dto;
@@ -198,26 +199,5 @@ public sealed class FinnHubPricesApiClient : IPricesApiClient
             PricePeriod.OneYear => ("W", now.AddDays(-365).ToUnixTimeSeconds(), now.ToUnixTimeSeconds(), "1y"),
             _ => throw new ArgumentOutOfRangeException(nameof(period), period, "Unknown period")
         };
-    }
-
-    private async Task HandleErrorAsync(HttpResponseMessage response, Stream contentStream, CancellationToken ct)
-    {
-        var statusCode = response.StatusCode;
-
-        using var reader = new StreamReader(contentStream);
-        var errorBody = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
-
-        if (statusCode == HttpStatusCode.Forbidden)
-        {
-            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
-            this._logger.LogWarning("Premium-locked candle endpoint: {Endpoint} - {Content}", endpoint, errorBody);
-            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
-        }
-
-        this._logger.Log(
-            (int)statusCode >= 500 ? LogLevel.Error : LogLevel.Warning,
-            "Candle API error: {StatusCode} - {Content}", statusCode, errorBody);
-
-        throw new ApiClientHttpException($"FinnHub candle returned {statusCode}.", statusCode, errorBody);
     }
 }

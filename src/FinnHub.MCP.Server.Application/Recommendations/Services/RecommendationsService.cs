@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Recommendations.Clients;
 using FinnHub.MCP.Server.Application.Recommendations.Features.GetRecommendations;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Recommendations.Services;
@@ -37,8 +38,8 @@ public sealed class RecommendationsService(
 
         try
         {
-            var symbol = query.Symbol.ToUpperInvariant();
-            var cacheKey = $"recommendations:s={symbol}";
+            var symbol = SymbolNormalizer.Normalize(query.Symbol);
+            var cacheKey = SymbolCacheKey.For("recommendations", ("s", symbol));
 
             var snapshots = await cache.GetOrCreateAsync(
                 cacheKey,

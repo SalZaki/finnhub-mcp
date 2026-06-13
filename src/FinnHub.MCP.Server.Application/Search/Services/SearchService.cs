@@ -5,11 +5,13 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Globalization;
 using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Search.Services;
@@ -116,7 +118,11 @@ public sealed class SearchService(
         var normQuery = query.Query.Trim().ToLowerInvariant();
         var normExchange = string.IsNullOrWhiteSpace(query.Exchange)
             ? "*"
-            : query.Exchange.Trim().ToUpperInvariant();
-        return $"search-symbol:q={normQuery}:ex={normExchange}:lim={query.Limit}";
+            : SymbolNormalizer.Normalize(query.Exchange);
+        return SymbolCacheKey.For(
+            "search-symbol",
+            ("q", normQuery),
+            ("ex", normExchange),
+            ("lim", query.Limit.ToString(CultureInfo.InvariantCulture)));
     }
 }

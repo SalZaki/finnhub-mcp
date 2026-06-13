@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Financials.Clients;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Financials.Services;
@@ -98,5 +99,5 @@ public sealed class FinancialsService(
     }
 
     private static string BuildCacheKey(GetFinancialsSnapshotQuery query) =>
-        $"financials:s={query.Symbol.ToUpperInvariant()}:raw={query.IncludeRaw}";
+        SymbolCacheKey.For("financials", ("s", SymbolNormalizer.Normalize(query.Symbol)), ("raw", query.IncludeRaw.ToString()));
 }

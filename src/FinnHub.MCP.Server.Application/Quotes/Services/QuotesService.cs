@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Quotes.Clients;
 using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Quotes.Services;
@@ -33,7 +34,7 @@ public sealed class QuotesService(
 
         try
         {
-            var cacheKey = $"quote:s={query.Symbol.ToUpperInvariant()}";
+            var cacheKey = SymbolCacheKey.For("quote", ("s", SymbolNormalizer.Normalize(query.Symbol)));
 
             var response = await cache.GetOrCreateAsync(
                 cacheKey,
