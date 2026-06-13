@@ -43,7 +43,25 @@ public sealed class FinancialsService(
 
             logger.LogInformation("Retrieved financials snapshot for {Symbol}", query.Symbol);
 
-            return Result<GetFinancialsSnapshotResponse>.Success(response);
+            // Finnhub returns 200 with an empty metric object ({}) for unknown symbols, which
+            // deserialises to a response whose every KPI is null. Mirror the other services and
+            // surface that as NotFound rather than a hollow "success" envelope of all-null KPIs.
+            var hasAnyKpi = response.MarketCap is not null
+                || response.PeTtm is not null
+                || response.PbAnnual is not null
+                || response.EpsTtm is not null
+                || response.DividendYield is not null
+                || response.Week52High is not null
+                || response.Week52Low is not null
+                || response.Week52PriceReturnPct is not null
+                || response.Beta is not null
+                || response.RevenuePerShareTtm is not null;
+
+            return hasAnyKpi
+                ? Result<GetFinancialsSnapshotResponse>.Success(response)
+                : Result<GetFinancialsSnapshotResponse>.Failure(
+                    $"No financials found for {query.Symbol}.",
+                    ResultErrorType.NotFound);
         }
         catch (ApiClientPremiumRequiredException ex)
         {

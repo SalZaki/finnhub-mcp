@@ -50,6 +50,35 @@ public sealed class FinancialsServiceTests
     }
 
     [Fact]
+    public async Task GetSnapshotAsync_AllKpisNull_ReturnsNotFound()
+    {
+        // Finnhub returns 200 with an empty metric object for unknown symbols, deserialising
+        // to a response whose every KPI is null. That must surface as NotFound, not a success.
+        var query = new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "ZZZZ" };
+        this._apiClient.GetSnapshotAsync(query, Arg.Any<CancellationToken>())
+            .Returns(new GetFinancialsSnapshotResponse { Symbol = "ZZZZ" });
+
+        var result = await this._sut.GetSnapshotAsync(query);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("NotFound", result.ErrorType);
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_SingleKpiPresent_ReturnsSuccess()
+    {
+        // One non-null KPI is enough to be a real result.
+        var query = new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetSnapshotAsync(query, Arg.Any<CancellationToken>())
+            .Returns(new GetFinancialsSnapshotResponse { Symbol = "AAPL", Beta = 1.2 });
+
+        var result = await this._sut.GetSnapshotAsync(query);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("AAPL", result.Data!.Symbol);
+    }
+
+    [Fact]
     public async Task GetSnapshotAsync_PremiumRequired_MapsCorrectly()
     {
         var query = new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "AAPL" };

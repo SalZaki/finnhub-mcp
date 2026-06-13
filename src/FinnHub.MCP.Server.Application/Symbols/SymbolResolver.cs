@@ -52,14 +52,17 @@ public sealed partial class SymbolResolver(
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
-        if (input.Length > MaxInputLength)
+
+        // Length-check the trimmed value, not the raw input: the bound applies to the
+        // content we actually process, so surrounding whitespace must not count toward it.
+        var trimmed = input.Trim();
+        if (trimmed.Length > MaxInputLength)
         {
             throw new ArgumentException(
                 $"Input must be at most {MaxInputLength} characters.",
                 nameof(input));
         }
 
-        var trimmed = input.Trim();
         var normalised = trimmed.ToUpperInvariant();
 
         if (CanonicalRegex().IsMatch(normalised))
