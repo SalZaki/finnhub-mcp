@@ -1,0 +1,31 @@
+version: 2
+
+# Dependabot watches the GitHub Actions ecosystem so that SHA-pinned actions
+# (see .github/workflows/*.yml) get bump PRs as new versions are tagged.
+#
+# Why this matters: every `uses:` is pinned to a full commit SHA to defend
+# against a compromised third-party action silently leaking GITHUB_TOKEN,
+# CODECOV_TOKEN, or FINNHUB_API_KEY (Codecov 2021, tj-actions 2025-03).
+# Pinning freezes the version; Dependabot is what keeps it from rotting.
+# Each PR updates the SHA and the trailing `# vX.Y.Z` comment together.
+#
+# To bump a pinned action by hand instead, see CONTRIBUTING.md → "Operational".
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      # Match the repo's Conventional Commits convention so the PR title passes
+      # the pr-title.yml gate without manual editing.
+      prefix: ci
+    labels:
+      - ci
+      - dependencies
+    groups:
+      # One PR per week for all action bumps rather than a PR per action —
+      # keeps the SHA-refresh churn reviewable in a single pass.
+      github-actions:
+        patterns:
+          - "*"
