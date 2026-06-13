@@ -32,7 +32,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 - ✅ **Resilient HTTP communication** — typed `HttpClient` with retry, timeout, and circuit-breaker policies via `Microsoft.Extensions.Http.Resilience` and Polly; premium-locked endpoints surface as typed errors and are never retried
 - ✅ **Source-generated JSON** through `System.Text.Json` `JsonSerializerContext` for low-allocation, AOT-friendly (de)serialization
 - ✅ **Strongly-typed configuration** — `FinnHubOptions` bound from `appsettings.json` with data-annotation validation on startup
-- ✅ **API key kept out of source** — read from the `FINNHUB_API_KEY` environment variable (or a local `.env` in development via `DotNetEnv`)
+- ✅ **API key kept out of source** — read from the `FINNHUB_API_KEY` environment variable, or from `dotnet user-secrets` in development (a legacy git-ignored `.env` via `DotNetEnv` is still honoured)
 - ✅ **Dual transport** — HTTP (`MapMcp`) for hosted scenarios and STDIO for desktop MCP clients
 
 ## 🚧 Available & Upcoming MCP Capabilities
@@ -92,9 +92,11 @@ dotnet restore
 
 ### 🔐 API Key Configuration
 
-> **Security note:** never commit your API key. Use environment variables or a local `.env` file that is git-ignored.
+> **Security note:** never commit your API key. It belongs in an environment variable, `dotnet user-secrets`, or a git-ignored `.env` — never in source or `appsettings.json`.
 
-#### Option 1: Environment Variable (Recommended)
+#### Option 1: Environment Variable
+
+Best for CI, containers, and MCP host launchers (Claude Desktop/Code `env` blocks).
 
 **macOS/Linux**
 
@@ -114,9 +116,19 @@ $env:FINNHUB_API_KEY="your_api_key_here"
 set FINNHUB_API_KEY=your_api_key_here
 ```
 
-#### Option 2: `.env` File (Development Only)
+#### Option 2: `dotnet user-secrets` (recommended for local development)
 
-Create a `.env` file at the repository root — `DotNetEnv` loads it automatically when the host environment is `Development`:
+Stores the key under `~/.microsoft/usersecrets`, outside the repo tree, so it is never at rest in a working file:
+
+```bash
+dotnet user-secrets set "FinnHub:ApiKey" "your_api_key_here" --project src/FinnHub.MCP.Server
+```
+
+Loaded automatically in the `Development` environment. A `FINNHUB_API_KEY` environment variable still takes precedence when set.
+
+#### Option 3: `.env` File (legacy fallback)
+
+Still honoured in `Development` via `DotNetEnv`, but prefer user-secrets — a `.env` is one `git add -f` away from leaking, so a `pre-commit` hook blocks committing it:
 
 ```bash
 echo "FINNHUB_API_KEY=your_api_key_here" > .env

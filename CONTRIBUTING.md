@@ -9,17 +9,28 @@ cd finnhub-mcp
 # Restore .NET tools (currently: Husky.Net for git hooks)
 dotnet tool restore
 
-# Install local git hooks (commit-msg validator + future hooks)
+# Install local git hooks (commit-msg + pre-commit)
 dotnet husky install
+
+# Set your Finnhub dev key — stored in ~/.microsoft/usersecrets, never in the repo
+dotnet user-secrets set "FinnHub:ApiKey" "your_api_key_here" --project src/FinnHub.MCP.Server
 
 # Optional: pull dependencies
 dotnet restore
 ```
 
-The `dotnet tool restore` + `dotnet husky install` steps install a `commit-msg`
-git hook that validates every commit message against the Conventional Commits
-spec — required because `release-please` reads these prefixes to compute
-version bumps and CHANGELOG entries.
+`dotnet husky install` wires two local git hooks:
+
+- `commit-msg` — validates every commit message against the Conventional Commits
+  spec (`release-please` reads these prefixes to compute version bumps and
+  CHANGELOG entries).
+- `pre-commit` — refuses to stage a `.env` file, so a real `FINNHUB_API_KEY` can
+  never enter git history even via `git add -f`.
+
+The Finnhub dev key lives in `dotnet user-secrets` (`FinnHub:ApiKey`), not in a
+working file. A `FINNHUB_API_KEY` environment variable still overrides it when
+set, and a git-ignored `.env` is honoured as a legacy fallback. See
+[API Key Configuration](README.md#-api-key-configuration).
 
 ## Commit message format
 

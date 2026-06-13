@@ -83,7 +83,21 @@ var basePath = !string.IsNullOrEmpty(hostAssemblyPath)
 builder.Configuration
     .SetBasePath(basePath)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
+if (builder.Environment.IsDevelopment())
+{
+    // dotnet user-secrets is the canonical local home for FinnHub:ApiKey — it
+    // lives in ~/.microsoft/usersecrets, outside the repo tree, so the key is
+    // never at rest in a working file. Added here (after the appsettings re-add
+    // above, which would otherwise clobber it with the empty placeholder, and
+    // before AddEnvironmentVariables below, so a launcher-supplied FINNHUB_API_KEY
+    // still wins via the explicit override further down). Store the key with:
+    //   dotnet user-secrets set "FinnHub:ApiKey" <key> --project src/FinnHub.MCP.Server
+    builder.Configuration.AddUserSecrets<Program>();
+}
+
+builder.Configuration
     .AddEnvironmentVariables()
     .AddCommandLine(args);
 

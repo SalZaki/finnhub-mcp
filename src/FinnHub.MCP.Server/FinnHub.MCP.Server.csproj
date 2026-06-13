@@ -3,6 +3,10 @@
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>FinnHub.MCP.Server</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Per-developer secret store for local dev (dotnet user-secrets). Holds FinnHub:ApiKey
+         in ~/.microsoft/usersecrets, outside the repo tree, so the key is never at rest in a
+         working file. Wired into config (Development only) in Program.cs. See CONTRIBUTING.md. -->
+    <UserSecretsId>6aedd249-fb8e-4bf1-b461-505066af6b1f</UserSecretsId>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Nullable>enable</Nullable>
     <Title>FinnHub MCP Server</Title>
