@@ -1,6 +1,8 @@
 <Project>
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" Condition="Exists($([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../')))" />
   <PropertyGroup>
+    <CurrentYear Condition="'$(CurrentYear)' == ''">$([System.DateTime]::Now.ToString('yyyy'))</CurrentYear>
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
     <PackageProjectUrl>https://github.com/salzaki/finnhub-mcp.git</PackageProjectUrl>
     <Company>Sal Zaki</Company>
     <Copyright>Copyright © $(CurrentYear) $(Company)</Copyright>

@@ -1,0 +1,174 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "DotNetEnv": {
+        "type": "Direct",
+        "requested": "[3.1.1, )",
+        "resolved": "3.1.1",
+        "contentHash": "o4SqUVCq0pqHF/HYsZk6k22XGIVmvsDVo+Dy7l0ubq9uQ45JkXswrMRJmYvhGLXWFYF0M5OupMonytB+0zvpGQ==",
+        "dependencies": {
+          "NETStandard.Library": "1.6.1",
+          "Sprache": "2.3.1"
+        }
+      },
+      "Microsoft.AspNetCore.OpenApi": {
+        "type": "Direct",
+        "requested": "[10.0.0, )",
+        "resolved": "10.0.0",
+        "contentHash": "0aqIF1t+sA2T62LIeMtXGSiaV7keGQaJnvwwmu+htQdjCaKYARfXAeqp4nHH9y2etpilyZ/tnQzZg4Ilmo/c4Q==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.0.0"
+        }
+      },
+      "Microsoft.Extensions.Http.Polly": {
+        "type": "Direct",
+        "requested": "[10.0.0, )",
+        "resolved": "10.0.0",
+        "contentHash": "Jzb6e7kQc/iKDlMt8q8p9Q0rkUi75L/ZFHHTGM4mM6dJBn64YRUgW9k2/Zx7VnsIuu61r5Fhoa6075GTFYo5kg==",
+        "dependencies": {
+          "Polly": "7.2.4",
+          "Polly.Extensions.Http": "3.0.0"
+        }
+      },
+      "ModelContextProtocol": {
+        "type": "Direct",
+        "requested": "[1.4.0, )",
+        "resolved": "1.4.0",
+        "contentHash": "CAmnAMQIMax2t9naUgyDAkVBj329EhQCiHcbfirMFNgP6ShQ8hJdJb0OLoaBpeGjkunH3IOjRXLdwXGKKwMlLA==",
+        "dependencies": {
+          "ModelContextProtocol.Core": "1.4.0"
+        }
+      },
+      "ModelContextProtocol.AspNetCore": {
+        "type": "Direct",
+        "requested": "[1.4.0, )",
+        "resolved": "1.4.0",
+        "contentHash": "Q/xGhfhbCfZsoeEsEqBeiyzr6AJw2cBUTKN3Giz3QRmWyRzn62ISsgJCTnk2/VPMNj2/Spb2jYpPahnMZWvaPg==",
+        "dependencies": {
+          "ModelContextProtocol": "1.4.0"
+        }
+      },
+      "Polly": {
+        "type": "Direct",
+        "requested": "[8.6.1, )",
+        "resolved": "8.6.1",
+        "contentHash": "UMYpEiKPQhbiQY1NXKL0hssUMETjuv7RGZx2VlcrlaIL7bIs2vs7iBfH2gblcR5Q7ockW3Kc78uTY6kK/ZeYgg==",
+        "dependencies": {
+          "Polly.Core": "8.6.1"
+        }
+      },
+      "Swashbuckle.AspNetCore": {
+        "type": "Direct",
+        "requested": "[10.1.7, )",
+        "resolved": "10.1.7",
+        "contentHash": "vgef8DPT411JU5JjHiDbr0WOxsIVuAvegPGtqmm4Na4JRl/264dfBJcGkiPHsAr5P+Vda+qN1rZKRtBl1rF9aA==",
+        "dependencies": {
+          "Microsoft.Extensions.ApiDescription.Server": "10.0.0",
+          "Swashbuckle.AspNetCore.Swagger": "10.1.7",
+          "Swashbuckle.AspNetCore.SwaggerGen": "10.1.7",
+          "Swashbuckle.AspNetCore.SwaggerUI": "10.1.7"
+        }
+      },
+      "Microsoft.Extensions.AI.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.5.2",
+        "contentHash": "Ei+YWV9Ybnps7pR1dgjlG29gelXEwZkhLVAcWmKe6HvXS6LNBYgSdWiY3Hk9OZXYtK34rv/NtLWBQYQGOBQYPQ=="
+      },
+      "Microsoft.Extensions.ApiDescription.Server": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "NCWCGiwRwje8773yzPQhvucYnnfeR+ZoB1VRIrIMp4uaeUNw7jvEPHij3HIbwCDuNCrNcphA00KSAR9yD9qmbg=="
+      },
+      "Microsoft.NETCore.Platforms": {
+        "type": "Transitive",
+        "resolved": "1.1.0",
+        "contentHash": "kz0PEW2lhqygehI/d6XsPCQzD7ff7gUJaVGPVETX611eadGsA3A877GdSlU0LRVMCTH/+P3o2iDTak+S08V2+A=="
+      },
+      "Microsoft.OpenApi": {
+        "type": "Transitive",
+        "resolved": "2.4.1",
+        "contentHash": "u7QhXCISMQuab3flasb1hoaiERmUqyWsW7tmQODyILoQ7mJV5IRGM+2KKZYo0QUfC13evEOcHAb6TPWgqEQtrw=="
+      },
+      "ModelContextProtocol.Core": {
+        "type": "Transitive",
+        "resolved": "1.4.0",
+        "contentHash": "6ZJFQTgYwdu0IacUUTNExAY2Z+JFuTd10CPeORalQtuGPY4hdUqq0BXxTpNEP0n7ajruNsGXyCKQLP0erIZmog==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.5.2"
+        }
+      },
+      "NETStandard.Library": {
+        "type": "Transitive",
+        "resolved": "1.6.1",
+        "contentHash": "WcSp3+vP+yHNgS8EV5J7pZ9IRpeDuARBPN28by8zqff1wJQXm26PVU8L3/fYLBJVU7BtDyqNVWq2KlCVvSSR4A==",
+        "dependencies": {
+          "Microsoft.NETCore.Platforms": "1.1.0"
+        }
+      },
+      "Polly.Core": {
+        "type": "Transitive",
+        "resolved": "8.6.1",
+        "contentHash": "HvkxFqEGk0NiLHYBescE/AnVu6W+ZqE0S7JkdXhvnJ2P2zRh8OPMDrFIjXPiIWugWIoxVeBHt45a6Cr61+asXw=="
+      },
+      "Polly.Extensions.Http": {
+        "type": "Transitive",
+        "resolved": "3.0.0",
+        "contentHash": "drrG+hB3pYFY7w1c3BD+lSGYvH2oIclH8GRSehgfyP5kjnFnHKQuuBhuHLv+PWyFuaTDyk/vfRpnxOzd11+J8g==",
+        "dependencies": {
+          "Polly": "7.1.0"
+        }
+      },
+      "Sprache": {
+        "type": "Transitive",
+        "resolved": "2.3.1",
+        "contentHash": "Q+mXeiTxiUYG3lKYF6TS82/SyB4F2613Q1yXTMwg4jWGHEEVC3yrzHtNcI4B3qnDI0+eJsezGJ0V+cToUytHWw=="
+      },
+      "Swashbuckle.AspNetCore.Swagger": {
+        "type": "Transitive",
+        "resolved": "10.1.7",
+        "contentHash": "EjLibt/d/QuRv170GoihTbcPUpgzSFm2WKHhnGJFZQ03JYzfuitsM79azaAR8NBwRunU7yScSX6HRE5JUlrEMQ==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.4.1"
+        }
+      },
+      "Swashbuckle.AspNetCore.SwaggerGen": {
+        "type": "Transitive",
+        "resolved": "10.1.7",
+        "contentHash": "PuubO9BjvNn6U3D9kLpuWKY1JtziWw7SsGBq0age1E50uQjQ8Fzl8s0EwzrLfANqYJNgDnJi9l7N1QxcGVB2Zw==",
+        "dependencies": {
+          "Swashbuckle.AspNetCore.Swagger": "10.1.7"
+        }
+      },
+      "Swashbuckle.AspNetCore.SwaggerUI": {
+        "type": "Transitive",
+        "resolved": "10.1.7",
+        "contentHash": "iJo3ODyUb/M8Vm8AH1r9y9iAba0w95xsCn3zFVl96ISRHbTDWxi+l7oFVCZqUEdjd97B8VMDPnMliWAdomR8uw=="
+      },
+      "finnhub.mcp.server.application": {
+        "type": "Project"
+      },
+      "finnhub.mcp.server.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "FinnHub.MCP.Server.Application": "[1.0.0, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.0.0, )",
+          "Microsoft.Extensions.Http.Polly": "[10.0.0, )",
+          "Polly": "[8.6.1, )"
+        }
+      },
+      "Microsoft.Extensions.Caching.Hybrid": {
+        "type": "CentralTransitive",
+        "requested": "[10.0.0, )",
+        "resolved": "10.0.0",
+        "contentHash": "xvhmF2dlwC3e8KKSuWOjJkjQdKG80991CUqjDnqzV1Od0CgMqbDw49kGJ9RiGrp3nbLTYCSb3c+KYo6TcENYRw=="
+      }
+    },
+    "net10.0/linux-arm64": {},
+    "net10.0/linux-x64": {},
+    "net10.0/osx-arm64": {},
+    "net10.0/osx-x64": {},
+    "net10.0/win-arm64": {},
+    "net10.0/win-x64": {}
+  }
+}
