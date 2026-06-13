@@ -96,10 +96,6 @@ public sealed class SearchSymbolTool(
             var validatedView = CommonInputValidators.ValidateView(view);
             _ = SearchInputValidator.ValidateFields(fields);
 
-            logger.LogDebug(
-                "Executing search with query: '{Query}', exchange: '{Exchange}', limit: {Limit}, view: {View}",
-                validatedQuery, validatedExchange, validatedLimit, validatedView);
-
             var symbolSearchQuery = new SearchSymbolQueryBuilder()
                 .WithQuery(validatedQuery)
                 .WithExchange(validatedExchange)
@@ -122,7 +118,7 @@ public sealed class SearchSymbolTool(
         }
         catch (OperationCanceledException)
         {
-            logger.LogDebug("Search operation was canceled for '{Tool}'.", toolName);
+            logger.LogDebug("'{Tool}' was cancelled.", toolName);
             throw;
         }
         catch (ArgumentException ex)
