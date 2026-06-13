@@ -54,7 +54,7 @@ public sealed class GetExchangeSymbolsTool(
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
             var validatedExchange = ExchangeSymbolsInputValidator.ValidateExchange(exchange);
-            var validatedView = ExchangeSymbolsInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetExchangeSymbolsQuery
             {
@@ -78,9 +78,9 @@ public sealed class GetExchangeSymbolsTool(
                 nextActions: BuildNextActions(projected, validatedExchange),
                 explanation: BuildExplanation(projected, validatedExchange));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -95,7 +95,6 @@ public sealed class GetExchangeSymbolsTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
@@ -137,6 +136,7 @@ public sealed class GetExchangeSymbolsTool(
         return symbols.Count <= cap ? symbols : symbols.Take(cap).ToList().AsReadOnly();
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetExchangeSymbolsResponse> result, string exchange)
     {
         if (!result.IsSuccess || result.Data is null || result.Data.TotalCount == 0)

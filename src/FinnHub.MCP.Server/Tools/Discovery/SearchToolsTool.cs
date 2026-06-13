@@ -60,7 +60,7 @@ public sealed class SearchToolsTool(
             logger.LogTrace("Starting execution of '{Tool}'.", toolName);
 
             var validatedIntent = SearchToolsInputValidator.ValidateIntent(intent);
-            var validatedView = SearchToolsInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var matches = registry.Search(validatedIntent, MaxResults);
 
@@ -74,6 +74,7 @@ public sealed class SearchToolsTool(
                 "search-tools matched {Count} tool(s) in {ElapsedMs}ms",
                 matches.Count, stopwatch.ElapsedMilliseconds);
 
+            // No next_actions by design (discovery tool) -- see the emit rule on NextAction.
             return EnvelopeFactory.Success(
                 response,
                 validatedView,
@@ -91,7 +92,6 @@ public sealed class SearchToolsTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished executing '{Tool}' in {ElapsedMs}ms.", toolName, stopwatch.ElapsedMilliseconds);
         }
     }

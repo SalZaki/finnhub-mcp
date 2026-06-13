@@ -6,7 +6,6 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
-using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Tools.Calendar;
 using Xunit;
 
@@ -56,33 +55,6 @@ public sealed class CalendarInputValidatorTests
     public void ValidateKind_UnknownToken_Throws()
     {
         Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateKind("dividends"));
-    }
-
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void ValidateSymbol_NullOrWhitespace_ReturnsNull(string? symbol)
-    {
-        Assert.Null(CalendarInputValidator.ValidateSymbol(symbol));
-    }
-
-    [Theory]
-    [InlineData("aapl", "AAPL")]
-    [InlineData("BRK.A", "BRK.A")]
-    [InlineData("rds-a", "RDS-A")]
-    public void ValidateSymbol_Valid_NormalisesToUppercase(string input, string expected)
-    {
-        Assert.Equal(expected, CalendarInputValidator.ValidateSymbol(input));
-    }
-
-    [Theory]
-    [InlineData("!!!")]
-    [InlineData("1AAPL")]
-    [InlineData("WAY-TOO-LONG-A-SYMBOL")]
-    public void ValidateSymbol_Invalid_Throws(string symbol)
-    {
-        Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateSymbol(symbol));
     }
 
     [Fact]
@@ -280,22 +252,5 @@ public sealed class CalendarInputValidatorTests
     {
         var (from, to) = CalendarInputValidator.ValidateWindow("2026-05-27", "2026-05-27", s_today);
         Assert.Equal(from, to);
-    }
-
-    [Theory]
-    [InlineData(null, ToolView.Summary)]
-    [InlineData("", ToolView.Summary)]
-    [InlineData("summary", ToolView.Summary)]
-    [InlineData("Standard", ToolView.Standard)]
-    [InlineData("FULL", ToolView.Full)]
-    public void ValidateView_AcceptsKnownValuesCaseInsensitive(string? view, ToolView expected)
-    {
-        Assert.Equal(expected, CalendarInputValidator.ValidateView(view));
-    }
-
-    [Fact]
-    public void ValidateView_Unknown_Throws()
-    {
-        Assert.Throws<ArgumentException>(() => CalendarInputValidator.ValidateView("brief"));
     }
 }

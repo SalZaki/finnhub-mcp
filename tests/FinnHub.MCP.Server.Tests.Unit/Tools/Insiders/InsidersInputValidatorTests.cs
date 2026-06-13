@@ -6,6 +6,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Tools;
 using FinnHub.MCP.Server.Tools.Insiders;
 using Xunit;
 
@@ -22,7 +23,7 @@ public sealed class InsidersInputValidatorTests
     [InlineData("  msft  ", "MSFT")]
     public void ValidateSymbol_Valid_NormalisesToUppercase(string input, string expected)
     {
-        Assert.Equal(expected, InsidersInputValidator.ValidateSymbol(input));
+        Assert.Equal(expected, CommonInputValidators.ValidateSymbol(input));
     }
 
     [Theory]
@@ -31,7 +32,7 @@ public sealed class InsidersInputValidatorTests
     [InlineData("   ")]
     public void ValidateSymbol_Empty_Throws(string? symbol)
     {
-        Assert.Throws<ArgumentException>(() => InsidersInputValidator.ValidateSymbol(symbol));
+        Assert.Throws<ArgumentException>(() => CommonInputValidators.ValidateSymbol(symbol));
     }
 
     [Theory]
@@ -40,7 +41,7 @@ public sealed class InsidersInputValidatorTests
     [InlineData("WAY-TOO-LONG-A-SYMBOL")]
     public void ValidateSymbol_Invalid_Throws(string symbol)
     {
-        Assert.Throws<ArgumentException>(() => InsidersInputValidator.ValidateSymbol(symbol));
+        Assert.Throws<ArgumentException>(() => CommonInputValidators.ValidateSymbol(symbol));
     }
 
     [Fact]
@@ -108,12 +109,12 @@ public sealed class InsidersInputValidatorTests
     [InlineData("FULL", ToolView.Full)]
     public void ValidateView_AcceptsKnownValuesCaseInsensitive(string? view, ToolView expected)
     {
-        Assert.Equal(expected, InsidersInputValidator.ValidateView(view));
+        Assert.Equal(expected, CommonInputValidators.ValidateView(view));
     }
 
     [Fact]
     public void ValidateView_Unknown_Throws()
     {
-        Assert.Throws<ArgumentException>(() => InsidersInputValidator.ValidateView("brief"));
+        Assert.Throws<ArgumentException>(() => CommonInputValidators.ValidateView("brief"));
     }
 }

@@ -53,9 +53,9 @@ public sealed class GetPeersTool(
         {
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
-            var validatedSymbol = PeersInputValidator.ValidateSymbol(symbol);
+            var validatedSymbol = CommonInputValidators.ValidateSymbol(symbol);
             var validatedGrouping = PeersInputValidator.ValidateGrouping(grouping);
-            var validatedView = PeersInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetPeersQuery
             {
@@ -82,9 +82,9 @@ public sealed class GetPeersTool(
                 nextActions: BuildNextActions(projectedResult, validatedSymbol),
                 explanation: BuildExplanation(projectedResult, validatedSymbol));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -99,7 +99,6 @@ public sealed class GetPeersTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
@@ -132,6 +131,7 @@ public sealed class GetPeersTool(
         return Result<GetPeersResponse>.Success(projected);
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetPeersResponse> result, string symbol)
     {
         if (!result.IsSuccess || result.Data is null || result.Data.TotalCount == 0)

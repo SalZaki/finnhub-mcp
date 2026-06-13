@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Quotes;
 
-public sealed class GetQuoteToolTests
+public sealed class GetQuoteToolTests : ToolExceptionPropagationTests<GetQuoteResponse>
 {
     private readonly IQuotesService _service = Substitute.For<IQuotesService>();
     private readonly GetQuoteTool _sut;
@@ -24,6 +24,30 @@ public sealed class GetQuoteToolTests
     public GetQuoteToolTests()
     {
         this._sut = new GetQuoteTool(this._service, NullLogger<GetQuoteTool>.Instance);
+    }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetQuoteResponse>.Failure("upstream-error", ResultErrorType.ServiceUnavailable));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetQuoteResponse>> ActAsync()
+        => this._sut.GetQuoteAsync("AAPL");
+
+    public override async Task UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetQuoteAsync("AAPL"));
+        Assert.Equal("downstream broke", ex.Message);
     }
 
     [Fact]
@@ -56,36 +80,6 @@ public sealed class GetQuoteToolTests
         Assert.Equal(2, envelope.NextActions.Count);
         Assert.Equal("get-news-pulse", envelope.NextActions[0].Tool);
         Assert.Equal("get-price-summary", envelope.NextActions[1].Tool);
-    }
-
-    [Fact]
-    public async Task GetQuoteAsync_Cancelled_PropagatesOperationCanceled()
-    {
-        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetQuoteAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetQuoteAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetQuoteAsync("AAPL"));
-        Assert.Equal("downstream broke", ex.Message);
-    }
-
-    [Fact]
-    public async Task GetQuoteAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<GetQuoteResponse>.Failure("upstream-error", ResultErrorType.ServiceUnavailable));
-
-        var envelope = await this._sut.GetQuoteAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
     }
 
     [Fact]
