@@ -25,7 +25,7 @@ dotnet run --project src/FinnHub.MCP.Server                  # HTTP on :8080
 dotnet run --project src/FinnHub.MCP.Server -- --stdio       # STDIO transport
 ```
 
-The Finnhub API key is read from the `FINNHUB_API_KEY` environment variable, or from a local `.env` (loaded by `DotNetEnv` in `Development` only). Never hardcode the key.
+The Finnhub API key is read from the `FINNHUB_API_KEY` environment variable, or from `dotnet user-secrets` (`FinnHub:ApiKey`) in `Development`. A legacy `.env` (loaded by `DotNetEnv` in `Development`) is still honoured as a fallback, but it is git-ignored and a `pre-commit` hook blocks it from being staged. Never hardcode the key or commit `.env`.
 
 ## Project layout
 
