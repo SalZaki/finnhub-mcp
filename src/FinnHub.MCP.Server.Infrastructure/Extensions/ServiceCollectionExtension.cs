@@ -236,10 +236,17 @@ public static class ServiceCollectionExtension
         return Policy<HttpResponseMessage>
             .HandleResult(res => !res.IsSuccessStatusCode && res.StatusCode is not (HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized))
             .Or<HttpRequestException>()
-            .Or<TaskCanceledException>()
+            // Only retry a TaskCanceledException raised by the HttpClient timeout — a caller
+            // cancellation (the request token was tripped) is intentional and must propagate
+            // immediately, not burn ~14s of backoff retrying a request nobody is waiting for.
+            .Or<TaskCanceledException>(ex => ex.InnerException is TimeoutException)
             .WaitAndRetryAsync(
                 retryCount: 3,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                // Exponential backoff with jitter (up to 1s) so concurrent clients hitting a 5xx
+                // storm don't retry in lockstep — avoids the thundering-herd amplification.
+                sleepDurationProvider: retryAttempt =>
+                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
+                    + TimeSpan.FromMilliseconds(Random.Shared.Next(0, 1000)),
                 onRetry: (outcome, timespan, retryAttempt, context) =>
                 {
                     context["Policy"] = "RetryPolicy";

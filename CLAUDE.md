@@ -85,9 +85,11 @@ This server is consumed by LLMs — tokens are the constraint, not latency.
 
 ## Resilience
 
-The Finnhub HTTP client is wired with `Microsoft.Extensions.Http.Resilience` (Polly v8) — retry, timeout, circuit-breaker. Don't add ad-hoc `try/catch` around HTTP calls; configure the resilience pipeline instead.
+The Finnhub HTTP clients are wired with hand-rolled Polly v8 policies (`Microsoft.Extensions.Http.Polly` + `Polly`) in `ServiceCollectionExtension.cs` — a retry policy and a circuit breaker registered per client via `AddPolicyHandler`. Don't add ad-hoc `try/catch` around HTTP calls; configure these policies instead. We deliberately do **not** use `Microsoft.Extensions.Http.Resilience.AddStandardResilienceHandler` — keeping the policies explicit makes the 403/401 premium-gating and the rate-limit-header observation handler obvious; that package is intentionally unreferenced.
 
-For 403 responses (premium-locked endpoints): handle these as a typed exception, do **not** retry through Polly. Mark the endpoint as premium-gated and return a structured error.
+The retry policy (3 attempts) retries transient/5xx responses, `HttpRequestException`, and **only timeout-caused** `TaskCanceledException` (`ex.InnerException is TimeoutException`) — a caller cancellation propagates immediately instead of burning ~14s of backoff on a request nobody is waiting for. Backoff is `2^n` seconds plus up to 1s of jitter, so concurrent clients don't retry in lockstep during a 5xx storm.
+
+For 403/401 responses (premium-locked endpoints, premium-gated `/stock/symbol` exchanges): excluded from both the retry and the circuit breaker — they are permanent per-key failures. The clients surface them as a typed `ApiClientPremiumRequiredException`; do **not** retry through Polly.
 
 ## HTTP clients and URI resolution
 
