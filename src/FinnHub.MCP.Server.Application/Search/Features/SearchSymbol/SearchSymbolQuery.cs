@@ -11,44 +11,56 @@ namespace FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 /// Represents a query for searching financial symbols with optional exchange filtering.
 /// </summary>
 /// <remarks>
-/// This class extends <see cref="BaseSearchQuery"/> to provide symbol-specific search functionality.
-/// The query supports filtering by exchange and includes validation for query length constraints.
+/// Self-contained query following the canonical <c>{Feature}Query</c> shape used across the
+/// application. It carries the common query fields directly (no shared base class) and validates
+/// the length constraints specific to symbol search.
 /// </remarks>
-public sealed class SearchSymbolQuery : BaseSearchQuery
+public sealed class SearchSymbolQuery
 {
     /// <summary>
-    /// Gets or initializes the exchange code to filter symbols by.
+    /// Gets the unique identifier for this query, used for tracking, logging, and correlation.
     /// </summary>
-    /// <value>
-    /// The exchange code (e.g., "NASDAQ", "NYSE") to filter results, or <c>null</c> to search all exchanges.
-    /// </value>
+    public required string QueryId { get; init; }
+
+    /// <summary>
+    /// Gets the search term or phrase to match against symbol names or codes.
+    /// </summary>
+    public required string Query { get; init; }
+
+    /// <summary>
+    /// Gets the maximum number of results to return. Defaults to 10; must be between 1 and 100 inclusive.
+    /// </summary>
+    public int Limit { get; init; } = 10;
+
+    /// <summary>
+    /// Gets the exchange code (e.g., "NASDAQ", "NYSE") to filter symbols by, or <c>null</c> to search all exchanges.
+    /// </summary>
     public string? Exchange { get; init; }
 
     /// <summary>
-    /// Validates the query parameters to ensure they meet the required constraints.
+    /// Validates the query parameters.
     /// </summary>
-    /// <exception cref="ArgumentException">
-    /// Thrown when the query is null, empty, less than 1 character, or exceeds 500 characters.
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Thrown when <see cref="Limit"/> is not between 1 and 100 inclusive.
     /// </exception>
-    /// <remarks>
-    /// This method calls the base validation and then validates the query length constraints
-    /// specific to symbol search operations.
-    /// </remarks>
-    public override void Validate()
+    /// <exception cref="ArgumentException">
+    /// Thrown when <see cref="Query"/> is null, empty, whitespace, or exceeds 500 characters.
+    /// </exception>
+    public void Validate()
     {
-        base.Validate();
+        if (this.Limit is < 1 or > 100)
+        {
+            throw new ArgumentOutOfRangeException(nameof(this.Limit), this.Limit, "Limit must be between 1 and 100.");
+        }
 
         if (string.IsNullOrWhiteSpace(this.Query))
         {
             throw new ArgumentException("Query cannot be null or empty.", nameof(this.Query));
         }
 
-        switch (this.Query.Length)
+        if (this.Query.Length > 500)
         {
-            case < 1:
-                throw new ArgumentException("Query must be at least 1 character long.", nameof(this.Query));
-            case > 500:
-                throw new ArgumentException("Query must be at most 500 characters long.", nameof(this.Query));
+            throw new ArgumentException("Query must be at most 500 characters long.", nameof(this.Query));
         }
     }
 
@@ -64,47 +76,6 @@ public sealed class SearchSymbolQuery : BaseSearchQuery
     /// var query = SearchSymbolQuery.Create("query-123", "AAPL", 20);
     /// </code>
     /// </example>
-    public static SearchSymbolQuery Create(string queryId, string query, int limit = 10)
-    {
-        return new SearchSymbolQuery { QueryId = queryId, Query = query, Limit = limit };
-    }
-
-    /// <summary>
-    /// Creates a new instance of <see cref="SearchSymbolQuery"/> with exchange filtering.
-    /// </summary>
-    /// <param name="queryId">The unique identifier for the query.</param>
-    /// <param name="query">The search query string to match against symbol names or codes.</param>
-    /// <param name="exchange">The exchange code to filter results by (e.g., "NASDAQ", "NYSE").</param>
-    /// <param name="limit">The maximum number of results to return. Defaults to 10.</param>
-    /// <returns>A new <see cref="SearchSymbolQuery"/> instance with exchange filtering.</returns>
-    /// <example>
-    /// <code>
-    /// var query = SearchSymbolQuery.ForExchange("query-123", "AAPL", "NASDAQ", 15);
-    /// </code>
-    /// </example>
-    public static SearchSymbolQuery ForExchange(string queryId, string query, string exchange, int limit = 10)
-    {
-        return new SearchSymbolQuery { QueryId = queryId, Query = query, Exchange = exchange, Limit = limit };
-    }
-
-    /// <summary>
-    /// Creates a new instance of <see cref="SearchSymbolQuery"/> for type-based searching.
-    /// </summary>
-    /// <param name="queryId">The unique identifier for the query.</param>
-    /// <param name="query">The search query string to match against symbol names or codes.</param>
-    /// <param name="limit">The maximum number of results to return. Defaults to 10.</param>
-    /// <returns>A new <see cref="SearchSymbolQuery"/> instance.</returns>
-    /// <remarks>
-    /// This method is currently identical to <see cref="Create"/> but is provided for semantic clarity
-    /// when the search intent is specifically type-based filtering.
-    /// </remarks>
-    /// <example>
-    /// <code>
-    /// var query = SearchSymbolQuery.ForType("query-123", "ETF", 25);
-    /// </code>
-    /// </example>
-    public static SearchSymbolQuery ForType(string queryId, string query, int limit = 10)
-    {
-        return new SearchSymbolQuery { QueryId = queryId, Query = query, Limit = limit };
-    }
+    public static SearchSymbolQuery Create(string queryId, string query, int limit = 10) =>
+        new() { QueryId = queryId, Query = query, Limit = limit };
 }

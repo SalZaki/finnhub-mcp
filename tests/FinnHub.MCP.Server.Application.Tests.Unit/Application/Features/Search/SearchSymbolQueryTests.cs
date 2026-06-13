@@ -32,22 +32,12 @@ public sealed class SearchSymbolQueryTests
     }
 
     [Fact]
-    public void ForExchange_PopulatesExchangeField()
+    public void Exchange_CanBeInitialised()
     {
-        var q = SearchSymbolQuery.ForExchange("qid-1", "AAPL", "NASDAQ", limit: 15);
+        var q = new SearchSymbolQuery { QueryId = "qid-1", Query = "AAPL", Limit = 15, Exchange = "NASDAQ" };
 
         Assert.Equal("NASDAQ", q.Exchange);
         Assert.Equal(15, q.Limit);
-    }
-
-    [Fact]
-    public void ForType_BehavesLikeCreate()
-    {
-        var q = SearchSymbolQuery.ForType("qid-1", "ETF", limit: 25);
-
-        Assert.Equal("ETF", q.Query);
-        Assert.Equal(25, q.Limit);
-        Assert.Null(q.Exchange);
     }
 
     [Theory]
