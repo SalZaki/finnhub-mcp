@@ -50,8 +50,8 @@ public sealed class GetRecommendationsTool(
         {
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
-            var validatedSymbol = RecommendationsInputValidator.ValidateSymbol(symbol);
-            var validatedView = RecommendationsInputValidator.ValidateView(view);
+            var validatedSymbol = CommonInputValidators.ValidateSymbol(symbol);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetRecommendationsQuery
             {
@@ -73,9 +73,9 @@ public sealed class GetRecommendationsTool(
                 nextActions: BuildNextActions(projected, validatedSymbol),
                 explanation: BuildExplanation(projected, validatedSymbol));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -90,7 +90,6 @@ public sealed class GetRecommendationsTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
@@ -124,6 +123,7 @@ public sealed class GetRecommendationsTool(
         });
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetRecommendationsResponse> result, string symbol)
     {
         if (!result.IsSuccess || result.Data is null)

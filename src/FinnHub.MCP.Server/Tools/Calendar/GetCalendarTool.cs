@@ -63,7 +63,7 @@ public sealed class GetCalendarTool(
             var validatedCountry = CalendarInputValidator.ValidateCountryForKind(country, validatedKind);
             var (validatedFrom, validatedTo) = CalendarInputValidator.ValidateWindow(
                 from, to, DateOnly.FromDateTime(DateTime.UtcNow), validatedKind);
-            var validatedView = CalendarInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetCalendarQuery
             {
@@ -89,9 +89,9 @@ public sealed class GetCalendarTool(
                 nextActions: BuildNextActions(projected, validatedSymbol),
                 explanation: BuildExplanation(projected, validatedKind, validatedFrom, validatedTo, validatedCountry));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -106,7 +106,6 @@ public sealed class GetCalendarTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
@@ -179,6 +178,7 @@ public sealed class GetCalendarTool(
         return source;
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetCalendarResponse> result, string? symbol)
     {
         if (!result.IsSuccess || result.Data is null)

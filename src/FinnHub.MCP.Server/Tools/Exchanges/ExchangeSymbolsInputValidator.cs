@@ -6,7 +6,6 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Text.RegularExpressions;
-using FinnHub.MCP.Server.Application.Models;
 
 namespace FinnHub.MCP.Server.Tools.Exchanges;
 
@@ -40,28 +39,5 @@ internal static partial class ExchangeSymbolsInputValidator
         }
 
         return exchange;
-    }
-
-    /// <summary>
-    /// Maps the raw <c>view</c> argument to a <see cref="ToolView"/>.
-    /// </summary>
-    /// <param name="view">The raw view string.</param>
-    /// <returns>The parsed <see cref="ToolView"/>; defaults to <see cref="ToolView.Summary"/>.</returns>
-    /// <exception cref="ArgumentException">Thrown when the view is not a known value.</exception>
-    public static ToolView ValidateView(string? view)
-    {
-        if (string.IsNullOrWhiteSpace(view))
-        {
-            return ToolView.Summary;
-        }
-
-        return view.Trim().ToLowerInvariant() switch
-        {
-            "summary" => ToolView.Summary,
-            "standard" => ToolView.Standard,
-            "full" => ToolView.Full,
-            _ => throw new ArgumentException(
-                "View must be one of: summary, standard, full.", nameof(view))
-        };
     }
 }

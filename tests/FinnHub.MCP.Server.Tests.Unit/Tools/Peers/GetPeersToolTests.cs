@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Peers;
 
-public sealed class GetPeersToolTests
+public sealed class GetPeersToolTests : ToolExceptionPropagationTests<GetPeersResponse>
 {
     private readonly IPeersService _service = Substitute.For<IPeersService>();
     private readonly GetPeersTool _sut;
@@ -25,6 +25,21 @@ public sealed class GetPeersToolTests
     {
         this._sut = new GetPeersTool(this._service, NullLogger<GetPeersTool>.Instance);
     }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetPeersResponse>.Failure("upstream-error"));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetPeersResponse>> ActAsync()
+        => this._sut.GetPeersAsync("AAPL");
 
     [Fact]
     public async Task GetPeersAsync_InvalidSymbol_Throws()
@@ -82,35 +97,6 @@ public sealed class GetPeersToolTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             this._sut.GetPeersAsync("AAPL", grouping: "nonsense"));
-    }
-
-    [Fact]
-    public async Task GetPeersAsync_Cancelled_PropagatesOperationCanceled()
-    {
-        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetPeersAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetPeersAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetPeersAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetPeersAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(Result<GetPeersResponse>.Failure("upstream-error"));
-
-        var envelope = await this._sut.GetPeersAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
     }
 
     [Fact]

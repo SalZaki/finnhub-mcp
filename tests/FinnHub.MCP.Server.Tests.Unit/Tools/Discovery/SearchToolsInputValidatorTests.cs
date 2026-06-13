@@ -5,7 +5,6 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Tools.Discovery;
 using Xunit;
 
@@ -48,16 +47,4 @@ public sealed class SearchToolsInputValidatorTests
     [InlineData("emoji 🚀 intent")]
     public void ValidateIntent_InvalidCharacters_Throws(string input) =>
         Assert.Throws<ArgumentException>(() => SearchToolsInputValidator.ValidateIntent(input));
-
-    [Theory]
-    [InlineData(null, ToolView.Summary)]
-    [InlineData("summary", ToolView.Summary)]
-    [InlineData("standard", ToolView.Standard)]
-    [InlineData("FULL", ToolView.Full)]
-    public void ValidateView_KnownValues_MapToEnum(string? input, ToolView expected) =>
-        Assert.Equal(expected, SearchToolsInputValidator.ValidateView(input));
-
-    [Fact]
-    public void ValidateView_Unknown_Throws() =>
-        Assert.Throws<ArgumentException>(() => SearchToolsInputValidator.ValidateView("brief"));
 }

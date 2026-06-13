@@ -5,12 +5,12 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Tools.Exchanges;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Exchanges;
 
+// View validation moved to CommonInputValidatorsTests; this file keeps the exchange-code rule.
 public sealed class ExchangeSymbolsInputValidatorTests
 {
     [Theory]
@@ -33,28 +33,12 @@ public sealed class ExchangeSymbolsInputValidatorTests
     }
 
     [Theory]
-    [InlineData("US1")]      // digits not allowed
-    [InlineData("U.S")]      // punctuation not allowed
-    [InlineData("US-")]      // dashes not allowed
+    [InlineData("US1")]       // digits not allowed
+    [InlineData("U.S")]       // punctuation not allowed
+    [InlineData("US-")]       // dashes not allowed
     [InlineData("TOOLONGXX")] // 9 chars — exceeds the 8-letter bound
     public void ValidateExchange_InvalidChars_Throws(string exchange)
     {
         Assert.Throws<ArgumentException>(() => ExchangeSymbolsInputValidator.ValidateExchange(exchange));
-    }
-
-    [Theory]
-    [InlineData(null, ToolView.Summary)]
-    [InlineData("summary", ToolView.Summary)]
-    [InlineData("Standard", ToolView.Standard)]
-    [InlineData("FULL", ToolView.Full)]
-    public void ValidateView_AcceptsKnownValuesCaseInsensitive(string? view, ToolView expected)
-    {
-        Assert.Equal(expected, ExchangeSymbolsInputValidator.ValidateView(view));
-    }
-
-    [Fact]
-    public void ValidateView_Unknown_Throws()
-    {
-        Assert.Throws<ArgumentException>(() => ExchangeSymbolsInputValidator.ValidateView("brief"));
     }
 }

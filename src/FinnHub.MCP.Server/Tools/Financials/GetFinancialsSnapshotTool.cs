@@ -49,8 +49,8 @@ public sealed class GetFinancialsSnapshotTool(
         {
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
-            var validatedSymbol = FinancialsInputValidator.ValidateSymbol(symbol);
-            var validatedView = FinancialsInputValidator.ValidateView(view);
+            var validatedSymbol = CommonInputValidators.ValidateSymbol(symbol);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetFinancialsSnapshotQuery
             {
@@ -71,9 +71,9 @@ public sealed class GetFinancialsSnapshotTool(
                 nextActions: BuildNextActions(result, validatedSymbol),
                 explanation: BuildExplanation(result, validatedSymbol));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -88,11 +88,11 @@ public sealed class GetFinancialsSnapshotTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetFinancialsSnapshotResponse> result, string symbol)
     {
         if (!result.IsSuccess || result.Data is null)

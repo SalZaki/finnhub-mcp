@@ -93,7 +93,7 @@ public sealed class SearchSymbolTool(
             var validatedQuery = SearchInputValidator.ValidateQuery(query);
             var validatedExchange = SearchInputValidator.ValidateExchange(exchange);
             var validatedLimit = SearchInputValidator.ValidateLimit(limit);
-            var validatedView = SearchInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
             _ = SearchInputValidator.ValidateFields(fields);
 
             logger.LogDebug(
@@ -120,9 +120,9 @@ public sealed class SearchSymbolTool(
                 nextActions: BuildNextActions(result, resolved),
                 explanation: BuildExplanation(result, validatedQuery));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "Search operation was canceled for '{Tool}'.", toolName);
+            logger.LogDebug("Search operation was canceled for '{Tool}'.", toolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -137,7 +137,6 @@ public sealed class SearchSymbolTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished executing '{Tool}' in {ElapsedMs}ms.", toolName, stopwatch.ElapsedMilliseconds);
         }
     }
@@ -155,6 +154,7 @@ public sealed class SearchSymbolTool(
     /// value is always the resolver's <see cref="ResolvedSymbol.Canonical"/> — never
     /// the raw user input — so downstream tools receive a normalised ticker.
     /// </remarks>
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(
         Result<SearchSymbolResponse> result,
         Result<ResolvedSymbol> resolved)

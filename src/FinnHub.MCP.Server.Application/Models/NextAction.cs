@@ -20,6 +20,11 @@ namespace FinnHub.MCP.Server.Application.Models;
 /// Forward-compatible: <see cref="Tool"/> may name a tool that is not yet registered on the server.
 /// Clients are expected to ignore unknown tool names.
 /// </remarks>
+// next_actions emit rule: a tool emits follow-ups only when the operation succeeded AND there is
+// something to act on — result.IsSuccess && result.Data is not null && (the payload is a singleton
+// OR its primary collection is non-empty). On any failure or an empty result set, BuildNextActions
+// returns []. Each tool applies its own count check for the collection case (CandleCount / Count /
+// TotalCount > 0); singleton-payload tools check IsSuccess + non-null Data only.
 [ExcludeFromCodeCoverage]
 public sealed record NextAction(
     [property: JsonPropertyName("tool")] string Tool,

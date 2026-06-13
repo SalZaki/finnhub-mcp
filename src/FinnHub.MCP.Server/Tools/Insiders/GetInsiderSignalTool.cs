@@ -55,10 +55,10 @@ public sealed class GetInsiderSignalTool(
         {
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
-            var validatedSymbol = InsidersInputValidator.ValidateSymbol(symbol);
+            var validatedSymbol = CommonInputValidators.ValidateSymbol(symbol);
             var (validatedFrom, validatedTo) = InsidersInputValidator.ValidateWindow(
                 from, to, DateOnly.FromDateTime(DateTime.UtcNow));
-            var validatedView = InsidersInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetInsiderSignalQuery
             {
@@ -82,9 +82,9 @@ public sealed class GetInsiderSignalTool(
                 nextActions: BuildNextActions(projected, validatedSymbol),
                 explanation: BuildExplanation(projected, validatedSymbol));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -99,7 +99,6 @@ public sealed class GetInsiderSignalTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
@@ -131,6 +130,7 @@ public sealed class GetInsiderSignalTool(
         });
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetInsiderSignalResponse> result, string symbol)
     {
         if (!result.IsSuccess || result.Data is null)
