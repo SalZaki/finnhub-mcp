@@ -29,7 +29,7 @@ A **Model Context Protocol (MCP) Server** built on the official [ModelContextPro
 - ✅ **Cross-linked `next_actions`** — tools suggest the next call in a workflow, so a model can chain research without guessing tool names
 - ✅ **Response caching** — `HybridCache` with per-endpoint TTL tiers (10-second quotes through 7-day exchange catalogues); identical requests short-circuit the upstream call
 - ✅ **Input validation at every tool boundary** — regex-based length and character constraints on each argument
-- ✅ **Resilient HTTP communication** — typed `HttpClient` with retry, timeout, and circuit-breaker policies via `Microsoft.Extensions.Http.Resilience` and Polly; premium-locked endpoints surface as typed errors and are never retried
+- ✅ **Resilient HTTP communication** — typed `HttpClient` with hand-rolled Polly policies (`Microsoft.Extensions.Http.Polly`): retry with jittered backoff (timeout-aware — caller cancellations propagate immediately), timeout, and circuit breaker; premium-locked endpoints surface as typed errors and are never retried
 - ✅ **Source-generated JSON** through `System.Text.Json` `JsonSerializerContext` for low-allocation, AOT-friendly (de)serialization
 - ✅ **Strongly-typed configuration** — `FinnHubOptions` bound from `appsettings.json` with data-annotation validation on startup
 - ✅ **API key kept out of source** — read from the `FINNHUB_API_KEY` environment variable, or from `dotnet user-secrets` in development (a legacy git-ignored `.env` via `DotNetEnv` is still honoured)
@@ -406,7 +406,7 @@ TTLs are tunable in `appsettings.json` under the `Cache` section. Bad values (ze
 
 ## ⚙️ Configuration
 
-Configuration is loaded from `appsettings.json`, an optional environment-specific `appsettings.{Environment}.json`, environment variables, and command-line arguments — in that order. The `FINNHUB_API_KEY` environment variable, if present, overrides `FinnHub:ApiKey`.
+Configuration is loaded from `appsettings.json`, an optional environment-specific `appsettings.{Environment}.json`, `dotnet user-secrets` (in `Development`), environment variables, and command-line arguments — in that order. The `FINNHUB_API_KEY` environment variable, if present, overrides `FinnHub:ApiKey`.
 
 `FinnHubOptions` (bound from the `FinnHub` section) drives the API key, base URL, and per-endpoint settings. CORS allows any origin in `Development`; in other environments it reads from the `AllowedOrigins` array.
 
@@ -469,12 +469,12 @@ tests/
 
 - **Framework:** [.NET 10](https://dotnet.microsoft.com/) with ASP.NET Core
 - **MCP SDK:** [`ModelContextProtocol`](https://www.nuget.org/packages/ModelContextProtocol) and [`ModelContextProtocol.AspNetCore`](https://www.nuget.org/packages/ModelContextProtocol.AspNetCore)
-- **Resilience:** [Polly](https://github.com/App-vNext/Polly) via `Microsoft.Extensions.Http.Resilience` and `Microsoft.Extensions.Http.Polly`
+- **Resilience:** [Polly](https://github.com/App-vNext/Polly) via `Microsoft.Extensions.Http.Polly` — hand-rolled retry + circuit-breaker policies
 - **Serialization:** `System.Text.Json` with source-generated `JsonSerializerContext`
 - **Testing:** [xUnit](https://xunit.net/), [NSubstitute](https://nsubstitute.github.io/), [coverlet](https://github.com/coverlet-coverage/coverlet)
 - **Configuration:** [DotNetEnv](https://github.com/tonerdo/dotnet-env)
 - **OpenAPI:** `Microsoft.AspNetCore.OpenApi` + `Swashbuckle.AspNetCore`
-- **CI/CD:** GitHub Actions with [release-please](https://github.com/googleapis/release-please) for automated versioning
+- **CI/CD:** GitHub Actions (third-party actions SHA-pinned, dependabot-managed, NuGet-cached) with [release-please](https://github.com/googleapis/release-please) for automated versioning
 
 ## 🤝 Contributing
 
