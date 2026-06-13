@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Exchanges.Clients;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetExchangeSymbols;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Exchanges.Services;
@@ -41,7 +42,7 @@ public sealed class ExchangeSymbolsService(
 
         try
         {
-            var cacheKey = $"exchange-symbols:ex={query.Exchange.ToUpperInvariant()}";
+            var cacheKey = SymbolCacheKey.For("exchange-symbols", ("ex", SymbolNormalizer.Normalize(query.Exchange)));
 
             var response = await cache.GetOrCreateAsync(
                 cacheKey,

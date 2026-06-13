@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Profiles.Clients;
 using FinnHub.MCP.Server.Application.Profiles.Features.GetCompanyProfile;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Profiles.Services;
@@ -33,7 +34,7 @@ public sealed class ProfilesService(
 
         try
         {
-            var cacheKey = $"profile:s={query.Symbol.ToUpperInvariant()}:cosmetic={query.IncludeCosmeticFields}";
+            var cacheKey = SymbolCacheKey.For("profile", ("s", SymbolNormalizer.Normalize(query.Symbol)), ("cosmetic", query.IncludeCosmeticFields.ToString()));
 
             var response = await cache.GetOrCreateAsync(
                 cacheKey,

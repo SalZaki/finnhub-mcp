@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Calendar.Clients;
 using FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Calendar.Services;
@@ -80,10 +81,12 @@ public sealed class CalendarService(
         GetCalendarQuery query,
         CancellationToken cancellationToken)
     {
-        var symbolKey = query.Symbol is null ? "all" : query.Symbol.ToUpperInvariant();
-        var cacheKey = string.Create(
-            CultureInfo.InvariantCulture,
-            $"calendar-earnings:s={symbolKey}:f={query.From:yyyy-MM-dd}:t={query.To:yyyy-MM-dd}");
+        var symbolKey = SymbolNormalizer.NormalizeOrAll(query.Symbol);
+        var cacheKey = SymbolCacheKey.For(
+            "calendar-earnings",
+            ("s", symbolKey),
+            ("f", query.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+            ("t", query.To.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 
         var events = await cache.GetOrCreateAsync(
             cacheKey,
@@ -122,9 +125,10 @@ public sealed class CalendarService(
         GetCalendarQuery query,
         CancellationToken cancellationToken)
     {
-        var cacheKey = string.Create(
-            CultureInfo.InvariantCulture,
-            $"calendar-ipo:f={query.From:yyyy-MM-dd}:t={query.To:yyyy-MM-dd}");
+        var cacheKey = SymbolCacheKey.For(
+            "calendar-ipo",
+            ("f", query.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+            ("t", query.To.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 
         var events = await cache.GetOrCreateAsync(
             cacheKey,
@@ -167,9 +171,10 @@ public sealed class CalendarService(
     {
         // Cache the unfiltered upstream payload — a single fetch serves every
         // country filter the caller might apply on top.
-        var cacheKey = string.Create(
-            CultureInfo.InvariantCulture,
-            $"calendar-economic:f={query.From:yyyy-MM-dd}:t={query.To:yyyy-MM-dd}");
+        var cacheKey = SymbolCacheKey.For(
+            "calendar-economic",
+            ("f", query.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+            ("t", query.To.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 
         var events = await cache.GetOrCreateAsync(
             cacheKey,

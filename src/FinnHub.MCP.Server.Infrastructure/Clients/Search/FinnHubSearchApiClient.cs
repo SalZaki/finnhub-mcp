@@ -13,6 +13,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
+using FinnHub.MCP.Server.Infrastructure.Clients.Http;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -250,53 +251,10 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorResponseAsync(response, contentStream, cancellationToken);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, "search-symbol", cancellationToken).ConfigureAwait(false);
         }
 
         return await this.DeserializeResponseAsync(contentStream, requestUri, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Handles HTTP responses with non-success status codes by reading the body and logging an appropriate message.
-    /// </summary>
-    /// <param name="response">The response with error status.</param>
-    /// <param name="contentStream">The stream containing response body.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <exception cref="ApiClientPremiumRequiredException">Thrown when Finnhub returns 403 (premium-locked endpoint).</exception>
-    /// <exception cref="ApiClientHttpException">Thrown with enriched details about any other error.</exception>
-    private async Task HandleErrorResponseAsync(
-        HttpResponseMessage response,
-        Stream contentStream,
-        CancellationToken cancellationToken)
-    {
-        var statusCode = response.StatusCode;
-
-        using var reader = new StreamReader(contentStream);
-        var errorBody = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-
-        if (statusCode == HttpStatusCode.Forbidden)
-        {
-            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
-            this._logger.LogWarning(
-                "Premium-locked endpoint from FinnHub API: {Endpoint} - {Content}",
-                endpoint,
-                errorBody);
-            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
-        }
-
-        if ((int)statusCode >= 400 && (int)statusCode < 500)
-        {
-            this._logger.LogWarning("Client error from FinnHub API: {StatusCode} - {Content}", statusCode, errorBody);
-        }
-        else
-        {
-            this._logger.LogError("Server error from FinnHub API: {StatusCode} - {Content}", statusCode, errorBody);
-        }
-
-        throw new ApiClientHttpException(
-            $"FinnHub API returned error status {statusCode}. See logs for more detail.",
-            statusCode,
-            errorBody);
     }
 
     /// <summary>

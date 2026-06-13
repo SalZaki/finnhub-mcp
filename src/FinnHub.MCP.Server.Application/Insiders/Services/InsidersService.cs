@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Insiders.Clients;
 using FinnHub.MCP.Server.Application.Insiders.Features.GetInsiderSignal;
 using FinnHub.MCP.Server.Application.Models;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Insiders.Services;
@@ -38,10 +39,12 @@ public sealed class InsidersService(
 
         try
         {
-            var symbol = query.Symbol.ToUpperInvariant();
-            var cacheKey = string.Create(
-                CultureInfo.InvariantCulture,
-                $"insider-transactions:s={symbol}:f={query.From:yyyy-MM-dd}:t={query.To:yyyy-MM-dd}");
+            var symbol = SymbolNormalizer.Normalize(query.Symbol);
+            var cacheKey = SymbolCacheKey.For(
+                "insider-transactions",
+                ("s", symbol),
+                ("f", query.From.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                ("t", query.To.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 
             var transactions = await cache.GetOrCreateAsync(
                 cacheKey,

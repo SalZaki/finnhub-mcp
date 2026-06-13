@@ -12,6 +12,7 @@ using FinnHub.MCP.Server.Application.Calendar.Clients;
 using FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
+using FinnHub.MCP.Server.Infrastructure.Clients.Http;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -89,7 +90,7 @@ public sealed class FinnHubCalendarApiClient : ICalendarApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, "calendar", cancellationToken).ConfigureAwait(false);
         }
 
         FinnHubEarningsCalendarResponse? dto;
@@ -196,7 +197,7 @@ public sealed class FinnHubCalendarApiClient : ICalendarApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, "calendar", cancellationToken).ConfigureAwait(false);
         }
 
         FinnHubIpoCalendarResponse? dto;
@@ -307,7 +308,7 @@ public sealed class FinnHubCalendarApiClient : ICalendarApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, "calendar", cancellationToken).ConfigureAwait(false);
         }
 
         FinnHubEconomicCalendarResponse? dto;
@@ -366,26 +367,5 @@ public sealed class FinnHubCalendarApiClient : ICalendarApiClient
         }
 
         return events;
-    }
-
-    private async Task HandleErrorAsync(HttpResponseMessage response, Stream contentStream, CancellationToken ct)
-    {
-        var statusCode = response.StatusCode;
-
-        using var reader = new StreamReader(contentStream);
-        var errorBody = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
-
-        if (statusCode == HttpStatusCode.Forbidden)
-        {
-            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
-            this._logger.LogWarning("Premium-locked calendar endpoint: {Endpoint} - {Content}", endpoint, errorBody);
-            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
-        }
-
-        this._logger.Log(
-            (int)statusCode >= 500 ? LogLevel.Error : LogLevel.Warning,
-            "Calendar API error: {StatusCode} - {Content}", statusCode, errorBody);
-
-        throw new ApiClientHttpException($"FinnHub calendar returned {statusCode}.", statusCode, errorBody);
     }
 }

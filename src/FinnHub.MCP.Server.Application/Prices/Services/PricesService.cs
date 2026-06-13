@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Prices.Clients;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Prices.Services;
@@ -86,5 +87,5 @@ public sealed class PricesService(
     }
 
     private static string BuildCacheKey(GetPriceSummaryQuery query) =>
-        $"price-summary:s={query.Symbol.ToUpperInvariant()}:p={query.Period}:c={query.IncludeCandles}";
+        SymbolCacheKey.For("price-summary", ("s", SymbolNormalizer.Normalize(query.Symbol)), ("p", query.Period.ToString()), ("c", query.IncludeCandles.ToString()));
 }

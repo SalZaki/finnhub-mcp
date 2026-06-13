@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Peers.Clients;
 using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Peers.Services;
@@ -86,5 +87,5 @@ public sealed class PeersService(
     }
 
     private static string BuildCacheKey(GetPeersQuery query) =>
-        $"peers:s={query.Symbol.ToUpperInvariant()}:g={query.Grouping}";
+        SymbolCacheKey.For("peers", ("s", SymbolNormalizer.Normalize(query.Symbol)), ("g", query.Grouping.ToString()));
 }

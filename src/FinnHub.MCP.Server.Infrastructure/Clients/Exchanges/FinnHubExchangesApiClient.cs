@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Exchanges.Clients;
 using FinnHub.MCP.Server.Application.Exchanges.Features.GetExchangeSymbols;
 using FinnHub.MCP.Server.Application.Options;
+using FinnHub.MCP.Server.Infrastructure.Clients.Http;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -99,7 +100,7 @@ public sealed class FinnHubExchangesApiClient : IExchangesApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, "exchange-symbols", cancellationToken, treatUnauthorizedAsPremium: true).ConfigureAwait(false);
         }
 
         FinnHubSymbolRow[] rows;
@@ -128,30 +129,5 @@ public sealed class FinnHubExchangesApiClient : IExchangesApiClient
             })
             .ToList()
             .AsReadOnly();
-    }
-
-    private async Task HandleErrorAsync(HttpResponseMessage response, Stream contentStream, CancellationToken ct)
-    {
-        var statusCode = response.StatusCode;
-
-        using var reader = new StreamReader(contentStream);
-        var errorBody = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
-
-        // Finnhub gates premium-locked exchanges on /stock/symbol behind 401 "You don't have access
-        // to this resource." (not the 403 every other endpoint uses). Treat both as premium-required
-        // so the envelope surfaces premium=true instead of a misleading ServiceUnavailable.
-        if (statusCode is HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized)
-        {
-            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
-            this._logger.LogWarning("Premium-locked exchange-symbols endpoint: {Endpoint} - {Content}", endpoint, errorBody);
-            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
-        }
-
-        this._logger.Log(
-            (int)statusCode >= 500 ? LogLevel.Error : LogLevel.Warning,
-            "Exchange-symbols API error: {StatusCode} - {Content}", statusCode, errorBody);
-
-        throw new ApiClientHttpException(
-            $"FinnHub exchange-symbols returned {statusCode}.", statusCode, errorBody);
     }
 }
