@@ -11,7 +11,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Search;
 
-public class SearchInputValidatorTests
+public sealed class SearchInputValidatorTests
 {
     [Theory]
     [InlineData("AAPL", false)]

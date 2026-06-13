@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Reflection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -39,21 +40,18 @@ public sealed class LiveSmokeFactory : WebApplicationFactory<Program>
 
     private static string ServerBinPath()
     {
-        // The test assembly resolves to tests/.../bin/Debug|Release/net10.0/.
-        // The server's bin output is at src/FinnHub.MCP.Server/bin/<config>/net10.0/.
-        // Walk back to the repo root then forward to the server project's bin.
-        var here = AppContext.BaseDirectory;
-        var configDir = new DirectoryInfo(here).Parent
-                        ?? throw new InvalidOperationException("Could not find net10.0 parent.");
-        var configName = configDir.Name; // "Debug" or "Release"
+        // The server's bin path is injected at build time via
+        // [AssemblyMetadata("ServerBinDir", ...)] (see the .csproj). Build-time injection survives
+        // the test-project directory restructures that the old runtime parent-directory walk did not.
+        var serverBin = typeof(LiveSmokeFactory).Assembly
+            .GetCustomAttributes<AssemblyMetadataAttribute>()
+            .FirstOrDefault(a => a.Key == "ServerBinDir")?.Value;
 
-        // configDir is "Debug" or "Release" → ../bin → ../<test-project>
-        // → ../tests → ../<repo-root>. That's four .Parent hops.
-        var repoRoot = configDir.Parent?.Parent?.Parent?.Parent
-                       ?? throw new InvalidOperationException("Could not walk back to repo root.");
-
-        var serverBin = Path.Combine(
-            repoRoot.FullName, "src", "FinnHub.MCP.Server", "bin", configName, "net10.0");
+        if (string.IsNullOrEmpty(serverBin))
+        {
+            throw new InvalidOperationException(
+                "ServerBinDir assembly metadata was not injected — check the test project's AssemblyAttribute.");
+        }
 
         if (!Directory.Exists(serverBin))
         {

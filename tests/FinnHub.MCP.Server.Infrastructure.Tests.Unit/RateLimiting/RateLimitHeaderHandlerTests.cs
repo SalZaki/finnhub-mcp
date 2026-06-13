@@ -143,7 +143,8 @@ public sealed class RateLimitHeaderHandlerTests
         // Build the handler chain locally and dispose each link in declared order.
         // Using HttpMessageInvoker rather than HttpClient avoids CA2000's
         // false-positive on inline handler construction.
-        using var inner = new StubHandler(status, configureResponse);
+        using var inner = new MockHttpMessageHandler();
+        inner.SetResponse(status, configureResponse);
         using var handler = new RateLimitHeaderHandler(tracker, NullLogger<RateLimitHeaderHandler>.Instance)
         {
             InnerHandler = inner
@@ -151,15 +152,5 @@ public sealed class RateLimitHeaderHandlerTests
         using var invoker = new HttpMessageInvoker(handler, disposeHandler: false);
         using var request = new HttpRequestMessage(HttpMethod.Get, "https://example/");
         using var response = await invoker.SendAsync(request, CancellationToken.None);
-    }
-
-    private sealed class StubHandler(HttpStatusCode status, Action<HttpResponseMessage> configure) : HttpMessageHandler
-    {
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
-        {
-            var response = new HttpResponseMessage(status);
-            configure(response);
-            return Task.FromResult(response);
-        }
     }
 }

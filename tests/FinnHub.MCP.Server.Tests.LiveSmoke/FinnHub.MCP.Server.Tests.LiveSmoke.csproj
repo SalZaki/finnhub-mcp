@@ -17,4 +17,12 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\FinnHub.MCP.Server\FinnHub.MCP.Server.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Inject the server's bin path at build time so the live-smoke host can find its
+         co-located appsettings.json without a fragile runtime parent-directory walk. -->
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>ServerBinDir</_Parameter1>
+      <_Parameter2>$([System.IO.Path]::GetFullPath('$(MSBuildProjectDirectory)/../../src/FinnHub.MCP.Server/bin/$(Configuration)/$(TargetFramework)'))</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>
