@@ -7,7 +7,10 @@
         <NoWarn>$(NoWarn);CS1591</NoWarn>
     </PropertyGroup>
 
-    <Target Name="CheckForOutDatedProjects" AfterTargets="Build" Condition="$(ProjectDir) != '' AND $(Configuration) == 'Release'">
+    <!-- Opt-in only: pass -p:DependencyAudit=true (or run the dependency-audit workflow) to list
+         outdated/deprecated packages. Kept off the normal build path so it doesn't run — and spam
+         the logs — after every Release build. Dependabot already tracks freshness day to day. -->
+    <Target Name="CheckForOutDatedProjects" AfterTargets="Build" Condition="$(ProjectDir) != '' AND $(Configuration) == 'Release' AND '$(DependencyAudit)' == 'true'">
         <Exec Command="dotnet list package --outdated" WorkingDirectory="$(ProjectDir)" />
         <Exec Command="dotnet list package --deprecated" WorkingDirectory="$(ProjectDir)" />
     </Target>
