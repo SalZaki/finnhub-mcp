@@ -36,6 +36,18 @@ public class MockHttpMessageHandler : HttpMessageHandler
         this._response = null;
     }
 
+    /// <summary>
+    /// Sets a response with the given status and lets the caller configure it (e.g. add response
+    /// headers). Lets header-sensitive tests share this handler instead of hand-rolling a stub.
+    /// </summary>
+    public void SetResponse(HttpStatusCode statusCode, Action<HttpResponseMessage> configureResponse)
+    {
+        var response = new HttpResponseMessage(statusCode);
+        configureResponse(response);
+        this._response = response;
+        this._exception = null;
+    }
+
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         this.LastRequest = request;

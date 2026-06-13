@@ -7,12 +7,10 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using System.Text.Json;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
-using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -60,7 +58,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     }
 
     [Fact]
-    public void Constructor_WithNullHttpClientFactory_ThrowsArgumentNullException()
+    public void Constructor_WithNullHttpClient_ThrowsArgumentNullException()
     {
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
@@ -155,41 +153,21 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     {
         // Arrange
         var query = new SearchSymbolQuery { Query = "AAPL", QueryId = Guid.NewGuid().ToString() };
-        var expectedResponse = new FinnHubSearchResponse
-        {
-            Count = 1,
-            Result =
-            [
-                new FinnHubSymbolResult
-                {
-                    Symbol = "AAPL",
-                    Description = "Apple Inc",
-                    DisplaySymbol = "AAPL",
-                    Type = "Common Stock"
-                }
-            ]
-        };
 
-        var jsonResponse = JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        });
-
-        this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
+        this._messageHandler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("search-apple"));
 
         // Act
         var result = await this._sut.SearchSymbolAsync(query, CancellationToken.None);
 
-        // Assert
+        // Assert — real captured /search?q=apple payload (11 results; AAPL is one of them).
         Assert.NotNull(result);
         Assert.Equal("AAPL", result.Query);
         Assert.NotNull(result.QueryId);
         Assert.Equal("finnhub-api", result.Source);
-        Assert.Single(result.Symbols);
-        Assert.Equal("AAPL", result.Symbols[0].Symbol);
-        Assert.Equal("Apple Inc", result.Symbols[0].Description);
-        Assert.Equal("AAPL", result.Symbols[0].DisplaySymbol);
-        Assert.Equal("Common Stock", result.Symbols[0].Type);
+        var aapl = Assert.Single(result.Symbols, s => s.Symbol == "AAPL");
+        Assert.Equal("Apple Inc", aapl.Description);
+        Assert.Equal("AAPL", aapl.DisplaySymbol);
+        Assert.Equal("Common Stock", aapl.Type);
     }
 
     [Fact]
@@ -203,18 +181,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
             QueryId = Guid.NewGuid().ToString()
         };
 
-        var expectedResponse = new FinnHubSearchResponse
-        {
-            Count = 0,
-            Result = []
-        };
-
-        var jsonResponse = JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        });
-
-        this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
+        this._messageHandler.SetResponse(HttpStatusCode.OK, """{"count":0,"result":[]}""");
 
         // Act
         await this._sut.SearchSymbolAsync(query, CancellationToken.None);
@@ -268,18 +235,7 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     {
         // Arrange
         var query = new SearchSymbolQuery { Query = "INVALID", QueryId = Guid.NewGuid().ToString() };
-        var expectedResponse = new FinnHubSearchResponse
-        {
-            Count = 0,
-            Result = []
-        };
-
-        var jsonResponse = JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        });
-
-        this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
+        this._messageHandler.SetResponse(HttpStatusCode.OK, """{"count":0,"result":[]}""");
 
         // Act
         var result = await this._sut.SearchSymbolAsync(query, CancellationToken.None);
@@ -371,27 +327,10 @@ public sealed class FinnHubSearchApiClientTests : IDisposable
     {
         // Arrange
         var query = new SearchSymbolQuery { Query = "TEST", QueryId = Guid.NewGuid().ToString() };
-        var expectedResponse = new FinnHubSearchResponse
-        {
-            Count = 1,
-            Result =
-            [
-                new FinnHubSymbolResult
-                {
-                    Symbol = null,
-                    Description = null,
-                    DisplaySymbol = null,
-                    Type = null
-                }
-            ]
-        };
-
-        var jsonResponse = JsonSerializer.Serialize(expectedResponse, new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
-        });
-
-        this._messageHandler.SetResponse(HttpStatusCode.OK, jsonResponse);
+        // Null upstream fields must project to empty strings, not nulls.
+        this._messageHandler.SetResponse(
+            HttpStatusCode.OK,
+            """{"count":1,"result":[{"symbol":null,"description":null,"displaySymbol":null,"type":null}]}""");
 
         // Act
         var result = await this._sut.SearchSymbolAsync(query, CancellationToken.None);

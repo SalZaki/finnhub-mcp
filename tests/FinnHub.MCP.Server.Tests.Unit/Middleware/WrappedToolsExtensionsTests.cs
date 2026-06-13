@@ -17,7 +17,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Middleware;
 
-public class WrappedToolsExtensionsTests
+public sealed class WrappedToolsExtensionsTests
 {
     [Fact]
     public void WithWrappedTools_RegistersOneMiddlewareWrapperPerToolMethod()
