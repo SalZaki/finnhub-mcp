@@ -84,11 +84,31 @@ Every tool returns the standard token-budgeted envelope with cross-linked `next_
 
 ### 📦 Installation
 
+From source:
+
 ```bash
 git clone https://github.com/SalZaki/finnhub-mcp.git
 cd finnhub-mcp
 dotnet restore
 ```
+
+#### Install via npx (no .NET SDK required)
+
+The server is also published to npm as [`finnhub-mcp`](https://www.npmjs.com/package/finnhub-mcp). The matching native, self-contained binary for your platform (macOS/Linux/Windows · x64/arm64) is installed automatically — no .NET runtime needed. Add it to your MCP client:
+
+```json
+{
+  "mcpServers": {
+    "finnhub": {
+      "command": "npx",
+      "args": ["-y", "finnhub-mcp", "--stdio"],
+      "env": { "FINNHUB_API_KEY": "your_finnhub_api_key" }
+    }
+  }
+}
+```
+
+Or run it directly: `FINNHUB_API_KEY=... npx -y finnhub-mcp --stdio`.
 
 ### 🔐 API Key Configuration
 

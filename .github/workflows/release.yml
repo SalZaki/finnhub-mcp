@@ -264,3 +264,73 @@ jobs:
           else
             echo "- **Status**: ❌ Failed" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  publish-npm:
+    name: 📦 Publish npm Packages
+    needs: [release, build]
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance + OIDC trusted publishing (no NPM_TOKEN needed)
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      # TODO(SHA-pin): pin actions/setup-node to a commit SHA to match the repo's
+      # SHA-pinning policy (#409). Left as a tag because the GitHub API was
+      # unreachable at authoring time; dependabot also maintains action pins.
+      - name: 🟢 Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: ⬆️ Upgrade npm (trusted publishing + provenance)
+        run: npm install --global npm@latest
+
+      - name: ⬇️ Download release binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release.outputs.tag_name }}
+        run: |
+          mkdir -p dist/assets
+          # The self-contained single-file binaries + appsettings.json are already
+          # attached to the GitHub Release by the build matrix above.
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist/assets \
+            --pattern 'finnhub-mcp-*' --pattern 'appsettings.json'
+          ls -la dist/assets
+          # Arrange flat release assets into the <rid>/ layout the generator expects.
+          for rid in osx-arm64 osx-x64 linux-x64 linux-arm64 win-x64 win-arm64; do
+            mkdir -p "dist/artifacts/$rid"
+            if [ -f "dist/assets/finnhub-mcp-$rid.exe" ]; then
+              cp "dist/assets/finnhub-mcp-$rid.exe" "dist/artifacts/$rid/finnhub-mcp.exe"
+            else
+              cp "dist/assets/finnhub-mcp-$rid" "dist/artifacts/$rid/finnhub-mcp"
+            fi
+            cp dist/assets/appsettings.json "dist/artifacts/$rid/appsettings.json"
+          done
+
+      - name: 🧱 Generate platform packages + stamp wrapper
+        env:
+          TAG: ${{ needs.release.outputs.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+          node npm/build/make-platform-packages.mjs \
+            --version "$VERSION" \
+            --artifacts dist/artifacts \
+            --out dist/packages > dist/publish-order.txt
+          echo "Publish order:"; cat dist/publish-order.txt
+
+      - name: 🚀 Publish to npm (platform packages first, then wrapper)
+        run: |
+          # One-time operator setup: configure npm trusted publishing on npmjs.com
+          # for finnhub-mcp and each @salzaki/finnhub-mcp-<os>-<arch> package, or
+          # swap to NODE_AUTH_TOKEN + an NPM_TOKEN secret.
+          while IFS= read -r pkg; do
+            [ -z "$pkg" ] && continue
+            echo "::group::npm publish $pkg"
+            npm publish "$pkg" --provenance --access public
+            echo "::endgroup::"
+          done < dist/publish-order.txt

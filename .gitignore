@@ -57,3 +57,8 @@ x86/
 
 # AI agent local state
 .claude/
+
+# npm distribution package: its launcher lives under npm/finnhub-mcp/bin/, which
+# the bin/ rules above (for .NET build output) would otherwise ignore. Keep it.
+!npm/finnhub-mcp/bin/
+!npm/finnhub-mcp/bin/launcher.js
