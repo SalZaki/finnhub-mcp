@@ -41,3 +41,37 @@ fetch profile-AAPL             "stock/profile2?symbol=AAPL"
 fetch candle-AAPL              "stock/candle?symbol=AAPL&resolution=D&from=$WEEK_AGO&to=$NOW"
 fetch company-news-AAPL        "company-news?symbol=AAPL&from=$FROM&to=$TO"
 fetch news-sentiment-AAPL      "news-sentiment?symbol=AAPL"
+# Calendar (parameter-dispatched tool: kind=earnings|ipo|economic).
+# Earnings fixture: AAPL-scoped, current quarter window.
+CAL_FROM=$(date -u +%Y-%m-01)
+CAL_TO=$(date -u -v+3m +%Y-%m-%d 2>/dev/null || date -u -d '+3 months' +%Y-%m-%d)
+fetch calendar-earnings-aapl   "calendar/earnings?from=$CAL_FROM&to=$CAL_TO&symbol=AAPL"
+# IPO fixture: trailing 6-month window from origin captures known SPAC + traditional IPOs
+# in mixed states (priced, withdrawn) so the parser exercises the nullable-field branches.
+fetch calendar-ipo-2026        "calendar/ipo?from=2025-01-01&to=2025-06-01"
+# Economic fixture: a 30-day window captures ~1300 events across ~115 countries with
+# mixed impact tiers (low/medium/high) and many entries lacking actual/estimate/prev.
+fetch calendar-economic-2026   "calendar/economic?from=2026-06-01&to=2026-06-30"
+# Insider transactions fixture: trailing 30 days for AAPL — exercises sells / gifts
+# / nullable transaction price and zero-price grant branches.
+INS_FROM=$(date -u -v-30d +%Y-%m-%d 2>/dev/null || date -u -d '30 days ago' +%Y-%m-%d)
+INS_TO=$(date -u +%Y-%m-%d)
+fetch insider-transactions-AAPL "stock/insider-transactions?symbol=AAPL&from=$INS_FROM&to=$INS_TO"
+# Recommendations fixture: AAPL ships multiple monthly snapshots so change_vs_prev
+# is exercised end-to-end.
+fetch recommendation-AAPL      "stock/recommendation?symbol=AAPL"
+# Exchange symbols fixture: /stock/symbol?exchange=US 302-redirects to a signed CDN file and the
+# live payload is ~30,538 rows / 7.2MB — far too large to commit. Capture with -L (the shared
+# fetch helper omits it and would save the 302 body) and truncate to the first 25 faithful rows
+# (real wire shape, repo-friendly size). Only the US exchange is available on free Finnhub plans;
+# other exchanges return 401 (premium).
+sym_tmp=$(mktemp)
+curl -sL -H "X-Finnhub-Token: $FINNHUB_API_KEY" "https://finnhub.io/api/v1/stock/symbol?exchange=US" -o "$sym_tmp"
+python3 - "$sym_tmp" "$OUT_DIR/stock-symbol-US.json" <<'PY'
+import json, sys
+src, dst = sys.argv[1], sys.argv[2]
+rows = json.load(open(src))
+json.dump(rows[:25], open(dst, "w"), separators=(",", ":"))
+print(f"  {'stock-symbol-US':<25} [truncated to 25 of {len(rows)} rows]")
+PY
+rm -f "$sym_tmp"

@@ -5,11 +5,11 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.News.Clients;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
 using FinnHub.MCP.Server.Application.News.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -20,27 +20,11 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.News.Se
 public sealed class NewsServiceTests
 {
     private readonly INewsApiClient _apiClient = Substitute.For<INewsApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly NewsService _sut;
 
     public NewsServiceTests()
     {
-        // Cache delegates passthrough for both list and sentiment payloads.
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<IReadOnlyList<CompanyNewsArticle>>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<IReadOnlyList<CompanyNewsArticle>>>>()(CancellationToken.None));
-
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<NewsSentiment>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<NewsSentiment>>>()(CancellationToken.None));
 
         this._sut = new NewsService(this._apiClient, this._cache, NullLogger<NewsService>.Instance);
     }
@@ -98,6 +82,25 @@ public sealed class NewsServiceTests
     }
 
     [Fact]
+    public async Task GetPulseAsync_PremiumOnCompanyNews_ReturnsPremiumRequired()
+    {
+        // Regression: NewsService previously only caught ApiClientPremiumRequiredException
+        // on the sentiment call. If Finnhub ever gates /company-news behind premium
+        // (they've done this to /news-sentiment), the failure became `Unknown` instead
+        // of `PremiumRequired`, breaking the envelope's premium=true flag.
+        var query = new GetNewsPulseQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetSentimentAsync(query.Symbol, Arg.Any<CancellationToken>())
+            .Returns(new NewsSentiment(null, null, null));
+        this._apiClient.GetCompanyNewsAsync(query.Symbol, Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new ApiClientPremiumRequiredException("/api/v1/company-news"));
+
+        var result = await this._sut.GetPulseAsync(query);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("PremiumRequired", result.ErrorType);
+    }
+
+    [Fact]
     public async Task GetPulseAsync_NoArticles_ReturnsNotFound()
     {
         var query = new GetNewsPulseQuery { QueryId = "q1", Symbol = "UNKN" };
@@ -148,5 +151,30 @@ public sealed class NewsServiceTests
         var result = await this._sut.GetPulseAsync(query);
 
         Assert.Equal(8, result.Data!.TopHeadlines.Count);
+    }
+
+    [Fact]
+    public async Task GetPulseAsync_CompanyNewsCacheKeys_EncodeResolvedDateWindow()
+    {
+        // Regression for the midnight-UTC staleness bug (M17): the two company-news cache keys
+        // must bake in the resolved from/to window, not a static ":w=current"/":w=prev" token.
+        // Without it, an entry cached seconds before a UTC date rollover is served under the same
+        // key with the previous day's window until the TTL lapses. Asserting the key *shape*
+        // (date window present, ":w=" token gone) fails on the old keys and passes on the new ones.
+        var query = new GetNewsPulseQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetSentimentAsync(query.Symbol, Arg.Any<CancellationToken>())
+            .Returns(new NewsSentiment(null, null, null));
+        this._apiClient.GetCompanyNewsAsync(query.Symbol, Arg.Any<DateOnly>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
+            .Returns(_ => (IReadOnlyList<CompanyNewsArticle>)[new CompanyNewsArticle("h", "u", "src", DateTimeOffset.UtcNow)]);
+
+        await this._sut.GetPulseAsync(query);
+
+        var pulseKeys = this._cache.ObservedKeys
+            .Where(k => k.StartsWith("news-pulse:", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.Equal(2, pulseKeys.Count);
+        Assert.All(pulseKeys, k => Assert.Matches(@"^news-pulse:s=AAPL:from=\d{4}-\d{2}-\d{2}:to=\d{4}-\d{2}-\d{2}$", k));
+        Assert.DoesNotContain(pulseKeys, k => k.Contains(":w=", StringComparison.Ordinal));
     }
 }

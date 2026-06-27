@@ -1,0 +1,51 @@
+{
+  "name": "finnhub-mcp",
+  "version": "0.0.0-dev",
+  "description": "Model Context Protocol (MCP) server for Finnhub financial data. Launches the native finnhub-mcp server over stdio — no .NET SDK required.",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "bin": {
+    "finnhub-mcp": "bin/launcher.js"
+  },
+  "files": [
+    "bin/launcher.js",
+    "scripts/install.js",
+    "scripts/checksums.json"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/install.js"
+  },
+  "optionalDependencies": {
+    "@salzaki/finnhub-mcp-darwin-arm64": "0.0.0-dev",
+    "@salzaki/finnhub-mcp-darwin-x64": "0.0.0-dev",
+    "@salzaki/finnhub-mcp-linux-x64": "0.0.0-dev",
+    "@salzaki/finnhub-mcp-linux-arm64": "0.0.0-dev",
+    "@salzaki/finnhub-mcp-win32-x64": "0.0.0-dev",
+    "@salzaki/finnhub-mcp-win32-arm64": "0.0.0-dev"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "finnhub",
+    "financial",
+    "stocks",
+    "market-data",
+    "claude",
+    "ai"
+  ],
+  "author": "Sal Zaki <salzaki@hotmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SalZaki/finnhub-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SalZaki/finnhub-mcp/issues"
+  },
+  "homepage": "https://github.com/SalZaki/finnhub-mcp#readme"
+}

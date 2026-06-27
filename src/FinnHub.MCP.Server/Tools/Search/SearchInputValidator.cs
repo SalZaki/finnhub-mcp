@@ -7,7 +7,6 @@
 
 using System.Collections.Frozen;
 using System.Text.RegularExpressions;
-using FinnHub.MCP.Server.Application.Models;
 
 namespace FinnHub.MCP.Server.Tools.Search;
 
@@ -111,24 +110,6 @@ internal static partial class SearchInputValidator
 
     [GeneratedRegex(@"^[a-z_][a-z0-9_]{0,63}$", RegexOptions.Compiled)]
     private static partial Regex FieldNameRegex();
-
-    public static ToolView ValidateView(string? view)
-    {
-        if (string.IsNullOrWhiteSpace(view))
-        {
-            return ToolView.Summary;
-        }
-
-        return view.Trim().ToLowerInvariant() switch
-        {
-            "summary" => ToolView.Summary,
-            "standard" => ToolView.Standard,
-            "full" => ToolView.Full,
-            _ => throw new ArgumentException(
-                "View must be one of: summary, standard, full.",
-                nameof(view))
-        };
-    }
 
     public static IReadOnlyList<string>? ValidateFields(IReadOnlyList<string>? fields)
     {

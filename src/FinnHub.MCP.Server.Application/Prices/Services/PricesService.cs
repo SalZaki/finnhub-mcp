@@ -10,6 +10,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.Prices.Clients;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.Prices.Services;
@@ -46,38 +47,45 @@ public sealed class PricesService(
                 query.Symbol, query.Period, response.CandleCount);
 
             return response.CandleCount > 0
-                ? new Result<GetPriceSummaryResponse>().Success(response)
-                : new Result<GetPriceSummaryResponse>().Failure(
+                ? Result<GetPriceSummaryResponse>.Success(response)
+                : Result<GetPriceSummaryResponse>.Failure(
                     $"No price data for {query.Symbol} over {query.Period}.",
                     ResultErrorType.NotFound);
         }
         catch (ApiClientPremiumRequiredException ex)
         {
             logger.LogWarning(ex, "Premium-only candle endpoint for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure(ex.Message, ResultErrorType.PremiumRequired);
+            return Result<GetPriceSummaryResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching candles for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetPriceSummaryResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetPriceSummaryResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "Candle request timed out for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetPriceSummaryResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize candle response for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetPriceSummaryResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+        }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
         }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected candle failure for {Symbol}", query.Symbol);
-            return new Result<GetPriceSummaryResponse>().Failure("Price summary failed unexpectedly");
+            return Result<GetPriceSummaryResponse>.Failure("Price summary failed unexpectedly");
         }
     }
 
     private static string BuildCacheKey(GetPriceSummaryQuery query) =>
-        $"price-summary:s={query.Symbol.ToUpperInvariant()}:p={query.Period}:c={query.IncludeCandles}";
+        SymbolCacheKey.For("price-summary", ("s", SymbolNormalizer.Normalize(query.Symbol)), ("p", query.Period.ToString()), ("c", query.IncludeCandles.ToString()));
 }

@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Prices;
 
-public sealed class GetPriceSummaryToolTests
+public sealed class GetPriceSummaryToolTests : ToolExceptionPropagationTests<GetPriceSummaryResponse>
 {
     private readonly IPricesService _service = Substitute.For<IPricesService>();
     private readonly GetPriceSummaryTool _sut;
@@ -25,6 +25,21 @@ public sealed class GetPriceSummaryToolTests
     {
         this._sut = new GetPriceSummaryTool(this._service, NullLogger<GetPriceSummaryTool>.Instance);
     }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetPriceSummaryResponse>.Failure("upstream-error"));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetPriceSummaryResponse>> ActAsync()
+        => this._sut.GetPriceSummaryAsync("AAPL");
 
     [Fact]
     public async Task GetPriceSummaryAsync_InvalidSymbol_Throws()
@@ -44,7 +59,7 @@ public sealed class GetPriceSummaryToolTests
     {
         this._service
             .GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPriceSummaryResponse>().Success(
+            .Returns(Result<GetPriceSummaryResponse>.Success(
                 new GetPriceSummaryResponse { Symbol = "AAPL", Period = "30d", Resolution = "D", CandleCount = 1 }));
 
         await this._sut.GetPriceSummaryAsync("AAPL", view: "full");
@@ -59,7 +74,7 @@ public sealed class GetPriceSummaryToolTests
     {
         this._service
             .GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPriceSummaryResponse>().Success(
+            .Returns(Result<GetPriceSummaryResponse>.Success(
                 new GetPriceSummaryResponse { Symbol = "AAPL", Period = "90d", Resolution = "D", CandleCount = 1 }));
 
         await this._sut.GetPriceSummaryAsync("AAPL", period: "90d");
@@ -67,34 +82,5 @@ public sealed class GetPriceSummaryToolTests
         await this._service.Received(1).GetSummaryAsync(
             Arg.Is<GetPriceSummaryQuery>(q => q.Period == PricePeriod.NinetyDays),
             Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task GetPriceSummaryAsync_Cancelled_PropagatesOperationCanceled()
-    {
-        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetPriceSummaryAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetPriceSummaryAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetPriceSummaryAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetPriceSummaryAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetSummaryAsync(Arg.Any<GetPriceSummaryQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPriceSummaryResponse>().Failure("upstream-error"));
-
-        var envelope = await this._sut.GetPriceSummaryAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
     }
 }

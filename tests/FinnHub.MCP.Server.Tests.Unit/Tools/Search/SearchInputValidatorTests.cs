@@ -5,13 +5,12 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
-using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Tools.Search;
 using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Search;
 
-public class SearchInputValidatorTests
+public sealed class SearchInputValidatorTests
 {
     [Theory]
     [InlineData("AAPL", false)]
@@ -81,29 +80,6 @@ public class SearchInputValidatorTests
         else
         {
             Assert.Equal(expected, SearchInputValidator.ValidateLimit(input));
-        }
-    }
-
-    [Theory]
-    [InlineData(null, ToolView.Summary, false)]
-    [InlineData("", ToolView.Summary, false)]
-    [InlineData("   ", ToolView.Summary, false)]
-    [InlineData("summary", ToolView.Summary, false)]
-    [InlineData("SUMMARY", ToolView.Summary, false)]
-    [InlineData("Standard", ToolView.Standard, false)]
-    [InlineData("full", ToolView.Full, false)]
-    [InlineData("  full  ", ToolView.Full, false)]
-    [InlineData("verbose", ToolView.Summary, true)]
-    [InlineData("compact", ToolView.Summary, true)]
-    public void ValidateView_HandlesVariousInputs(string? input, ToolView expected, bool shouldThrow)
-    {
-        if (shouldThrow)
-        {
-            Assert.Throws<ArgumentException>(() => SearchInputValidator.ValidateView(input));
-        }
-        else
-        {
-            Assert.Equal(expected, SearchInputValidator.ValidateView(input));
         }
     }
 

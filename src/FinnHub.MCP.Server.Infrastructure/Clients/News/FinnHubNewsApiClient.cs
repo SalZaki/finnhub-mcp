@@ -12,6 +12,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.News.Clients;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
 using FinnHub.MCP.Server.Application.Options;
+using FinnHub.MCP.Server.Infrastructure.Clients.Http;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -57,7 +58,8 @@ public sealed class FinnHubNewsApiClient : INewsApiClient
         var requestUri = $"{endpoint.TrimStart('/')}?symbol={Uri.EscapeDataString(symbol)}" +
                          $"&from={from:yyyy-MM-dd}&to={to:yyyy-MM-dd}";
 
-        await using var stream = await this.GetStreamAsync(requestUri, cancellationToken).ConfigureAwait(false);
+        using var response = await this.SendAndValidateAsync(requestUri, cancellationToken).ConfigureAwait(false);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 
         FinnHubCompanyNewsArticle[]? articles;
         try
@@ -95,7 +97,8 @@ public sealed class FinnHubNewsApiClient : INewsApiClient
         var endpoint = this.ResolveEndpoint(SentimentEndpoint);
         var requestUri = $"{endpoint.TrimStart('/')}?symbol={Uri.EscapeDataString(symbol)}";
 
-        await using var stream = await this.GetStreamAsync(requestUri, cancellationToken).ConfigureAwait(false);
+        using var response = await this.SendAndValidateAsync(requestUri, cancellationToken).ConfigureAwait(false);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 
         FinnHubNewsSentimentResponse? dto;
         try
@@ -122,7 +125,13 @@ public sealed class FinnHubNewsApiClient : INewsApiClient
         this._options.EndPoints.FirstOrDefault(e => e.IsActive && string.Equals(e.Name, name, StringComparison.Ordinal))?.Url
         ?? throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"Endpoint '{name}' is not configured or inactive"));
 
-    private async Task<Stream> GetStreamAsync(string requestUri, CancellationToken cancellationToken)
+    /// <summary>
+    /// Sends the request, translates a non-success status into a typed exception, and hands the
+    /// live <see cref="HttpResponseMessage"/> back to the caller, who owns its disposal
+    /// (<c>using var response = …</c>). Replaces the old <c>GetStreamAsync</c> that returned a
+    /// stream while leaking the undisposed response.
+    /// </summary>
+    private async Task<HttpResponseMessage> SendAndValidateAsync(string requestUri, CancellationToken cancellationToken)
     {
         this._logger.LogInformation("Requesting news from FinnHub: {RequestUri}", requestUri);
 
@@ -136,7 +145,10 @@ public sealed class FinnHubNewsApiClient : INewsApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub news failed: {Uri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub news failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub news failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
@@ -149,38 +161,19 @@ public sealed class FinnHubNewsApiClient : INewsApiClient
             throw new ApiClientCancelledException($"News request cancelled: {requestUri}");
         }
 
-        var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-
         if (!response.IsSuccessStatusCode)
         {
-            await HandleErrorAsync(response, contentStream, cancellationToken, this._logger).ConfigureAwait(false);
+            // ThrowForStatusAsync always throws, so the caller never receives this response —
+            // dispose it here to avoid leaking it on the error path.
+            using (response)
+            {
+                var contentStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                await FinnHubResponseErrors
+                    .ThrowForStatusAsync(response, contentStream, this._logger, "news", cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
-        return contentStream;
-    }
-
-    private static async Task HandleErrorAsync(
-        HttpResponseMessage response,
-        Stream contentStream,
-        CancellationToken ct,
-        ILogger logger)
-    {
-        var statusCode = response.StatusCode;
-
-        using var reader = new StreamReader(contentStream);
-        var errorBody = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
-
-        if (statusCode == HttpStatusCode.Forbidden)
-        {
-            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
-            logger.LogWarning("Premium-locked news endpoint: {Endpoint} - {Content}", endpoint, errorBody);
-            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
-        }
-
-        logger.Log(
-            (int)statusCode >= 500 ? LogLevel.Error : LogLevel.Warning,
-            "News API error: {StatusCode} - {Content}", statusCode, errorBody);
-
-        throw new ApiClientHttpException($"FinnHub news returned {statusCode}.", statusCode, errorBody);
+        return response;
     }
 }

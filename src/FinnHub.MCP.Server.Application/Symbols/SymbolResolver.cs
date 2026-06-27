@@ -52,21 +52,24 @@ public sealed partial class SymbolResolver(
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(input);
-        if (input.Length > MaxInputLength)
+
+        // Length-check the trimmed value, not the raw input: the bound applies to the
+        // content we actually process, so surrounding whitespace must not count toward it.
+        var trimmed = input.Trim();
+        if (trimmed.Length > MaxInputLength)
         {
             throw new ArgumentException(
                 $"Input must be at most {MaxInputLength} characters.",
                 nameof(input));
         }
 
-        var trimmed = input.Trim();
         var normalised = trimmed.ToUpperInvariant();
 
         if (CanonicalRegex().IsMatch(normalised))
         {
             var resolved = new ResolvedSymbol(normalised, normalised, Exchange: null, Confidence: 1.0d, Candidates: []);
             this.LogResolution(input, "canonical", resolved);
-            return new Result<ResolvedSymbol>().Success(resolved);
+            return Result<ResolvedSymbol>.Success(resolved);
         }
 
         if (SuffixRegex().IsMatch(normalised))
@@ -74,7 +77,7 @@ public sealed partial class SymbolResolver(
             var parts = normalised.Split('.');
             var resolved = new ResolvedSymbol(parts[0], normalised, Exchange: parts[1], Confidence: 1.0d, Candidates: []);
             this.LogResolution(input, "suffix", resolved);
-            return new Result<ResolvedSymbol>().Success(resolved);
+            return Result<ResolvedSymbol>.Success(resolved);
         }
 
         if (ColonPrefixRegex().IsMatch(normalised))
@@ -82,7 +85,7 @@ public sealed partial class SymbolResolver(
             var parts = normalised.Split(':');
             var resolved = new ResolvedSymbol(parts[1], normalised, Exchange: parts[0], Confidence: 1.0d, Candidates: []);
             this.LogResolution(input, "colon", resolved);
-            return new Result<ResolvedSymbol>().Success(resolved);
+            return Result<ResolvedSymbol>.Success(resolved);
         }
 
         return await this.ResolveAmbiguousAsync(input, trimmed, cancellationToken);
@@ -113,7 +116,7 @@ public sealed partial class SymbolResolver(
                 logger.LogInformation(
                     "resolved input='{Input}' path=ambiguous canonical=- confidence=0.00 candidates=0",
                     originalInput);
-                return new Result<ResolvedSymbol>().Failure(
+                return Result<ResolvedSymbol>.Failure(
                     $"No symbol match for input '{originalInput}'.",
                     ResultErrorType.NotFound);
             }
@@ -127,27 +130,34 @@ public sealed partial class SymbolResolver(
             var top = candidates[0] with { Candidates = candidates };
 
             this.LogResolution(originalInput, "ambiguous", top);
-            return new Result<ResolvedSymbol>().Success(top);
+            return Result<ResolvedSymbol>.Success(top);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error resolving symbol for input '{Input}'.", originalInput);
-            return new Result<ResolvedSymbol>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<ResolvedSymbol>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "Timeout resolving symbol for input '{Input}'.", originalInput);
-            return new Result<ResolvedSymbol>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<ResolvedSymbol>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Deserialisation error resolving symbol for input '{Input}'.", originalInput);
-            return new Result<ResolvedSymbol>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<ResolvedSymbol>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+        }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
         }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected resolver failure for input '{Input}'.", originalInput);
-            return new Result<ResolvedSymbol>().Failure("Symbol resolution failed unexpectedly");
+            return Result<ResolvedSymbol>.Failure("Symbol resolution failed unexpectedly");
         }
     }
 

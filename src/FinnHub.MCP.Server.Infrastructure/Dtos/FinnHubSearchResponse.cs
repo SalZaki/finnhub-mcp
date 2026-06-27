@@ -15,10 +15,11 @@ namespace FinnHub.MCP.Server.Infrastructure.Dtos;
 public sealed class FinnHubSearchResponse
 {
     /// <summary>
-    /// Gets or sets the search results from the FinnHub API.
+    /// Gets the search results from the FinnHub API. Nullable defensively — Finnhub has been
+    /// observed to omit the array entirely for some responses (see the defensive-DTO pattern from PR #167).
     /// </summary>
     [JsonPropertyName("result")]
-    public required List<FinnHubSymbolResult> Result { get; init; }
+    public List<FinnHubSymbolResult>? Result { get; init; }
 
     /// <summary>
     /// Gets or sets the result count from the FinnHub API.

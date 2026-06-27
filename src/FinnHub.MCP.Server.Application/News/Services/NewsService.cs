@@ -5,11 +5,13 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Globalization;
 using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.News.Clients;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
+using FinnHub.MCP.Server.Application.Symbols;
 using Microsoft.Extensions.Logging;
 
 namespace FinnHub.MCP.Server.Application.News.Services;
@@ -43,8 +45,20 @@ public sealed class NewsService(
             // Sentiment is optional (premium-gated). Catch and degrade gracefully.
             var sentiment = await this.TryFetchSentimentAsync(query.Symbol, cancellationToken);
 
-            var currentWeekKey = $"news-pulse:s={query.Symbol.ToUpperInvariant()}:w=current";
-            var prevWeekKey = $"news-pulse:s={query.Symbol.ToUpperInvariant()}:w=prev";
+            // Bake the resolved date window into the key so a midnight-UTC rollover yields a new
+            // key and forces a fresh fetch. Without it, an entry written just before midnight is
+            // served under the same ":w=current" key with the previous day's window until the TTL lapses.
+            var normalizedSymbol = SymbolNormalizer.Normalize(query.Symbol);
+            var currentWeekKey = SymbolCacheKey.For(
+                "news-pulse",
+                ("s", normalizedSymbol),
+                ("from", weekAgo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                ("to", today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
+            var prevWeekKey = SymbolCacheKey.For(
+                "news-pulse",
+                ("s", normalizedSymbol),
+                ("from", twoWeeksAgo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)),
+                ("to", weekAgo.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)));
 
             var currentWeekTask = cache.GetOrCreateAsync(
                 currentWeekKey,
@@ -85,30 +99,47 @@ public sealed class NewsService(
                 query.Symbol, response.Count, prevWeek.Count, response.SentimentSource ?? "none");
 
             return response.Count == 0
-                ? new Result<GetNewsPulseResponse>().Failure(
+                ? Result<GetNewsPulseResponse>.Failure(
                     $"No news found for {query.Symbol} in the past week.",
                     ResultErrorType.NotFound)
-                : new Result<GetNewsPulseResponse>().Success(response);
+                : Result<GetNewsPulseResponse>.Success(response);
+        }
+        catch (ApiClientPremiumRequiredException ex)
+        {
+            // Finnhub has gated /news-sentiment behind premium before; if they ever do
+            // the same for /company-news, surface a typed PremiumRequired envelope so
+            // the LLM sees premium=true and can hint at an upgrade. Matches the 6
+            // sibling services that all carry this catch (FinancialsService.cs:48-52
+            // and similar).
+            logger.LogWarning(ex, "News endpoint is premium-locked for {Symbol}", query.Symbol);
+            return Result<GetNewsPulseResponse>.Failure(ex.Message, ResultErrorType.PremiumRequired);
         }
         catch (ApiClientHttpException ex)
         {
             logger.LogError(ex, "HTTP error fetching news for {Symbol} (status: {Status})", query.Symbol, ex.StatusCode);
-            return new Result<GetNewsPulseResponse>().Failure(ex.Message, ResultErrorType.ServiceUnavailable);
+            return Result<GetNewsPulseResponse>.Failure(ex.Message, ResultErrorType.ServiceUnavailable);
         }
         catch (ApiClientTimeoutException ex)
         {
             logger.LogWarning(ex, "News request timed out for {Symbol}", query.Symbol);
-            return new Result<GetNewsPulseResponse>().Failure("Request timed out", ResultErrorType.Timeout);
+            return Result<GetNewsPulseResponse>.Failure("Request timed out", ResultErrorType.Timeout);
         }
         catch (ApiClientDeserializationException ex)
         {
             logger.LogError(ex, "Failed to deserialize news response for {Symbol}", query.Symbol);
-            return new Result<GetNewsPulseResponse>().Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+            return Result<GetNewsPulseResponse>.Failure("Invalid response from service", ResultErrorType.InvalidResponse);
+        }
+        catch (ApiClientCancelledException)
+        {
+            // Caller-initiated cancellation — surface as a typed cancel rather than
+            // demoting to the catch-all "Unknown" failure that the base ApiClientException
+            // arm below produces.
+            throw;
         }
         catch (ApiClientException ex)
         {
             logger.LogError(ex, "Unexpected news failure for {Symbol}", query.Symbol);
-            return new Result<GetNewsPulseResponse>().Failure("News pulse failed unexpectedly");
+            return Result<GetNewsPulseResponse>.Failure("News pulse failed unexpectedly");
         }
     }
 
@@ -117,7 +148,7 @@ public sealed class NewsService(
         try
         {
             return await cache.GetOrCreateAsync(
-                $"news-sentiment:s={symbol.ToUpperInvariant()}",
+                SymbolCacheKey.For("news-sentiment", ("s", SymbolNormalizer.Normalize(symbol))),
                 CacheTier.News,
                 async ct => await apiClient.GetSentimentAsync(symbol, ct),
                 cancellationToken);

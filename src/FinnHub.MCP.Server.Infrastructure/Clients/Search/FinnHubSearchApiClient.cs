@@ -13,6 +13,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
+using FinnHub.MCP.Server.Infrastructure.Clients.Http;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -29,6 +30,8 @@ namespace FinnHub.MCP.Server.Infrastructure.Clients.Search;
 /// </remarks>
 public sealed class FinnHubSearchApiClient : ISearchApiClient
 {
+    private const string EndpointName = "search-symbol";
+
     private readonly HttpClient _httpClient;
     private readonly FinnHubOptions _finnHubOptions;
     private readonly ILogger<FinnHubSearchApiClient> _logger;
@@ -116,7 +119,7 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
     {
         return this._finnHubOptions
             .EndPoints
-            .FirstOrDefault(x => x is { IsActive: true, Name: "search-symbol" })
+            .FirstOrDefault(x => x is { IsActive: true } && x.Name == EndpointName)
             ?.Url;
     }
 
@@ -169,7 +172,10 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub API failed. URI: {RequestUri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub API failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub API failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
@@ -247,53 +253,10 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorResponseAsync(response, contentStream, cancellationToken);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, EndpointName, cancellationToken).ConfigureAwait(false);
         }
 
         return await this.DeserializeResponseAsync(contentStream, requestUri, cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Handles HTTP responses with non-success status codes by reading the body and logging an appropriate message.
-    /// </summary>
-    /// <param name="response">The response with error status.</param>
-    /// <param name="contentStream">The stream containing response body.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <exception cref="ApiClientPremiumRequiredException">Thrown when Finnhub returns 403 (premium-locked endpoint).</exception>
-    /// <exception cref="ApiClientHttpException">Thrown with enriched details about any other error.</exception>
-    private async Task HandleErrorResponseAsync(
-        HttpResponseMessage response,
-        Stream contentStream,
-        CancellationToken cancellationToken)
-    {
-        var statusCode = response.StatusCode;
-
-        using var reader = new StreamReader(contentStream);
-        var errorBody = await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false);
-
-        if (statusCode == HttpStatusCode.Forbidden)
-        {
-            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
-            this._logger.LogWarning(
-                "Premium-locked endpoint from FinnHub API: {Endpoint} - {Content}",
-                endpoint,
-                errorBody);
-            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
-        }
-
-        if ((int)statusCode >= 400 && (int)statusCode < 500)
-        {
-            this._logger.LogWarning("Client error from FinnHub API: {StatusCode} - {Content}", statusCode, errorBody);
-        }
-        else
-        {
-            this._logger.LogError("Server error from FinnHub API: {StatusCode} - {Content}", statusCode, errorBody);
-        }
-
-        throw new ApiClientHttpException(
-            $"FinnHub API returned error status {statusCode}. See logs for more detail.",
-            statusCode,
-            errorBody);
     }
 
     /// <summary>
@@ -309,30 +272,19 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
         string requestUri,
         CancellationToken cancellationToken)
     {
-        var rawJson = string.Empty;
         try
         {
-            using var reader = new StreamReader(contentStream);
-            rawJson = await reader.ReadToEndAsync(cancellationToken);
+            var response = await JsonSerializer
+                .DeserializeAsync(contentStream, FinnHubJsonContext.Default.FinnHubSearchResponse, cancellationToken)
+                .ConfigureAwait(false);
 
-            var response = JsonSerializer.Deserialize(rawJson, FinnHubJsonContext.Default.FinnHubSearchResponse);
-
-            if (response?.Result == null || response.Result.Count == 0)
+            if (response?.Result is null || response.Result.Count == 0)
             {
                 this._logger.LogInformation("FinnHub returned no results for request: {RequestUri}", requestUri);
                 return Array.Empty<FinnHubSymbolResult>().AsReadOnly();
             }
 
-            return response.Result
-                .Select(result => new FinnHubSymbolResult
-                {
-                    Symbol = result.Symbol,
-                    Description = result.Description,
-                    DisplaySymbol = result.DisplaySymbol,
-                    Type = result.Type
-                })
-                .ToList()
-                .AsReadOnly();
+            return response.Result.AsReadOnly();
         }
         catch (JsonException ex)
         {
@@ -345,7 +297,7 @@ public sealed class FinnHubSearchApiClient : ISearchApiClient
 
             throw new ApiClientDeserializationException(
                 "Invalid JSON returned from FinnHub API.",
-                rawJson, ex)
+                innerException: ex)
             {
                 CorrelationId = correlationId,
                 SourceService = "finnhub-api"

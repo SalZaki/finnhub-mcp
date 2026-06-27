@@ -53,9 +53,9 @@ public sealed class GetPeersTool(
         {
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
-            var validatedSymbol = PeersInputValidator.ValidateSymbol(symbol);
+            var validatedSymbol = CommonInputValidators.ValidateSymbol(symbol);
             var validatedGrouping = PeersInputValidator.ValidateGrouping(grouping);
-            var validatedView = PeersInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetPeersQuery
             {
@@ -66,19 +66,25 @@ public sealed class GetPeersTool(
 
             var result = await peersService.GetPeersAsync(query, cancellationToken);
 
+            // Project once, derive everything else from the projected result so
+            // total_count, explanation, and next_actions can't disagree on the
+            // peer count. Was a real bug: a 30-peer upstream result on a summary
+            // call produced data.total_count=10 but explanation="Found 30 peer(s)".
+            var projectedResult = ProjectByView(result, validatedView);
+
             logger.LogInformation(
                 "Peers completed for {Symbol} in {ElapsedMs}ms: {Count} peers",
-                validatedSymbol, stopwatch.ElapsedMilliseconds, result.Data?.TotalCount ?? 0);
+                validatedSymbol, stopwatch.ElapsedMilliseconds, projectedResult.Data?.TotalCount ?? 0);
 
             return EnvelopeFactory.FromResult(
-                ProjectByView(result, validatedView),
+                projectedResult,
                 validatedView,
-                nextActions: BuildNextActions(result, validatedSymbol),
-                explanation: BuildExplanation(result, validatedSymbol));
+                nextActions: BuildNextActions(projectedResult, validatedSymbol),
+                explanation: BuildExplanation(projectedResult, validatedSymbol));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -93,7 +99,6 @@ public sealed class GetPeersTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
@@ -123,9 +128,10 @@ public sealed class GetPeersTool(
             Grouping = result.Data.Grouping
         };
 
-        return new Result<GetPeersResponse>().Success(projected);
+        return Result<GetPeersResponse>.Success(projected);
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetPeersResponse> result, string symbol)
     {
         if (!result.IsSuccess || result.Data is null || result.Data.TotalCount == 0)

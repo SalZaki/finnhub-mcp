@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📘 Contributing guide
+    url: https://github.com/SalZaki/finnhub-mcp/blob/main/CONTRIBUTING.md
+    about: Setup, commit conventions, release flow, live-smoke runbook, debugging discipline.
+  - name: 🧭 Issue workflow
+    url: https://github.com/SalZaki/finnhub-mcp/blob/main/docs/ISSUE_WORKFLOW.md
+    about: How Epics, Features, User Stories, and Sub-tasks fit together — required reading before filing.
+  - name: 🛡️ Security disclosures
+    url: https://github.com/SalZaki/finnhub-mcp/security/advisories/new
+    about: Report a vulnerability privately. Do not open a public issue for security problems.

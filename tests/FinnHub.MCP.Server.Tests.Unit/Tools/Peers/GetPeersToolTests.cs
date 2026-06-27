@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Peers;
 
-public sealed class GetPeersToolTests
+public sealed class GetPeersToolTests : ToolExceptionPropagationTests<GetPeersResponse>
 {
     private readonly IPeersService _service = Substitute.For<IPeersService>();
     private readonly GetPeersTool _sut;
@@ -25,6 +25,21 @@ public sealed class GetPeersToolTests
     {
         this._sut = new GetPeersTool(this._service, NullLogger<GetPeersTool>.Instance);
     }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetPeersResponse>.Failure("upstream-error"));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetPeersResponse>> ActAsync()
+        => this._sut.GetPeersAsync("AAPL");
 
     [Fact]
     public async Task GetPeersAsync_InvalidSymbol_Throws()
@@ -37,7 +52,7 @@ public sealed class GetPeersToolTests
     {
         this._service
             .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Success(
+            .Returns(Result<GetPeersResponse>.Success(
                 new GetPeersResponse { Peers = ["MSFT"], Grouping = "industry" }));
 
         await this._sut.GetPeersAsync("aapl");
@@ -53,7 +68,7 @@ public sealed class GetPeersToolTests
         var manyPeers = Enumerable.Range(1, 30).Select(i => $"P{i}").ToArray();
         this._service
             .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Success(
+            .Returns(Result<GetPeersResponse>.Success(
                 new GetPeersResponse { Peers = manyPeers, Grouping = "industry" }));
 
         var envelope = await this._sut.GetPeersAsync("AAPL", view: "summary");
@@ -69,7 +84,7 @@ public sealed class GetPeersToolTests
         var manyPeers = Enumerable.Range(1, 30).Select(i => $"P{i}").ToArray();
         this._service
             .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Success(
+            .Returns(Result<GetPeersResponse>.Success(
                 new GetPeersResponse { Peers = manyPeers, Grouping = "industry" }));
 
         var envelope = await this._sut.GetPeersAsync("AAPL", view: "full");
@@ -85,31 +100,22 @@ public sealed class GetPeersToolTests
     }
 
     [Fact]
-    public async Task GetPeersAsync_Cancelled_PropagatesOperationCanceled()
+    public async Task GetPeersAsync_SummaryView_ExplanationCountMatchesProjectedTotal()
     {
-        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
+        // Regression: previously the tool projected `data.peers` to 10 but read
+        // the original 30-peer result for the explanation string, producing an
+        // envelope where data.total_count=10 but the explanation said
+        // "Found 30 peer(s)". Both must derive from the same projected result.
+        var manyPeers = Enumerable.Range(1, 30).Select(i => $"P{i}").ToArray();
+        this._service
+            .GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetPeersResponse>.Success(
+                new GetPeersResponse { Peers = manyPeers, Grouping = "industry" }));
 
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetPeersAsync("AAPL"));
-    }
+        var envelope = await this._sut.GetPeersAsync("AAPL", view: "summary");
 
-    [Fact]
-    public async Task GetPeersAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetPeersAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetPeersAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetPeersAsync(Arg.Any<GetPeersQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetPeersResponse>().Failure("upstream-error"));
-
-        var envelope = await this._sut.GetPeersAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
+        Assert.Equal(10, envelope.Data!.TotalCount);
+        Assert.Contains("10 peer(s)", envelope.Explanation);
+        Assert.DoesNotContain("30 peer(s)", envelope.Explanation);
     }
 }

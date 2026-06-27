@@ -9,6 +9,7 @@ using System.Net;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Infrastructure.Clients.News;
+using FinnHub.MCP.Server.Infrastructure.Tests.Unit.Fixtures;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -189,6 +190,27 @@ public sealed class FinnHubNewsApiClientTests : IDisposable
 
         await Assert.ThrowsAsync<ApiClientCancelledException>(() =>
             this._sut.GetSentimentAsync("AAPL", cts.Token));
+    }
+
+    /// <summary>
+    /// Real captured Finnhub /company-news response for AAPL (155KB, many articles).
+    /// Proves the parser handles the real wire shape — synthetic CompanyNewsPayload
+    /// above only covers 2 articles. Catches Finnhub shape drift on the next fixture
+    /// refresh — see CLAUDE.md "Don't ship synthetic-payload-only client tests".
+    /// </summary>
+    [Fact]
+    public async Task GetCompanyNewsAsync_RealAaplFixture_ParsesAllArticles()
+    {
+        this._handler.SetResponse(HttpStatusCode.OK, Fixture.LoadFinnHub("company-news-AAPL"));
+
+        var result = await this._sut.GetCompanyNewsAsync(
+            "AAPL",
+            new DateOnly(2024, 1, 1),
+            new DateOnly(2024, 12, 31),
+            CancellationToken.None);
+
+        Assert.NotEmpty(result);
+        Assert.All(result, a => Assert.False(string.IsNullOrEmpty(a.Headline)));
     }
 
     public void Dispose()

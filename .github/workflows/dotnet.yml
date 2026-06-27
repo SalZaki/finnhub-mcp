@@ -27,12 +27,14 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: 🧰 Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: ✅ Verify code formatting
         run: dotnet format --verify-no-changes --verbosity diagnostic
@@ -44,18 +46,20 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: 🧰 Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: 📦 Restore dependencies
         run: dotnet restore ./finnhub-mcp.sln
 
       - name: 🏗️ Build solution
-        run: dotnet build -p:CurrentYear="$(date +'%Y')" --no-restore --configuration Release
+        run: dotnet build --no-restore --configuration Release
 
   test:
     name: 🧪 Unit Tests & 📊 Coverage
@@ -64,12 +68,14 @@ jobs:
 
     steps:
       - name: 📥 Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: 🧰 Setup .NET SDK
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: 📦 Restore dependencies
         run: dotnet restore ./finnhub-mcp.sln
@@ -79,10 +85,15 @@ jobs:
           mkdir -p TestResults
           mkdir -p Coverage
 
-          # Run all tests with coverage and collect results
+          # Run all tests with coverage and collect results.
+          # --filter "Category!=LiveSmoke" excludes the scheduled live-smoke
+          # project (FinnHub.MCP.Server.Tests.LiveSmoke) which hits real
+          # Finnhub via FINNHUB_API_KEY — that runs on its own cron, not
+          # on every PR build.
           dotnet test ./finnhub-mcp.sln \
             --configuration Release \
             --verbosity normal \
+            --filter "Category!=LiveSmoke" \
             --logger "trx;LogFileName=test-results.trx" \
             --results-directory ./TestResults \
             --collect:"XPlat Code Coverage" \
@@ -124,7 +135,7 @@ jobs:
           find ./TestResults -type f
 
       - name: 📤 Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./Coverage/*.cobertura.xml
@@ -134,7 +145,7 @@ jobs:
           verbose: true
 
       - name: 📤 Upload test results to Codecov
-        uses: codecov/test-results-action@v1
+        uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3 # v1.2.1
         if: always()
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -143,7 +154,7 @@ jobs:
           name: codecov-test-results-finnhub-mcp
 
       - name: 📁 Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: always()
         with:
           name: test-results

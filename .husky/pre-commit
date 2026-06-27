@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# ---------------------------------------------------------------------------------------------------------------------
+# Secret-at-rest guard.
+# Refuses to commit a .env file. .gitignore already ignores .env, but `git add -f`
+# bypasses .gitignore — this hook is the backstop so a real FINNHUB_API_KEY in a
+# .env can never be staged into git history. (.env.example is intentionally not matched.)
+# ---------------------------------------------------------------------------------------------------------------------
+
+. "$(dirname "$0")/_/husky.sh"
+
+# Staged adds/copies/modifications only.
+STAGED="$(git diff --cached --name-only --diff-filter=ACM)"
+
+if printf '%s\n' "$STAGED" | grep -qE '(^|/)\.env$'; then
+  echo
+  echo "❌ Refusing to commit a .env file."
+  echo
+  echo "   A .env may hold a live FINNHUB_API_KEY and must never enter git history."
+  echo "   Use dotnet user-secrets for local dev instead:"
+  echo "     dotnet user-secrets set \"FinnHub:ApiKey\" <key> --project src/FinnHub.MCP.Server"
+  echo
+  echo "   (.env.example is fine. To override in a genuine emergency: git commit --no-verify.)"
+  echo
+  exit 1
+fi

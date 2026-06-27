@@ -52,9 +52,9 @@ public sealed class GetPriceSummaryTool(
         {
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
-            var validatedSymbol = PricesInputValidator.ValidateSymbol(symbol);
+            var validatedSymbol = CommonInputValidators.ValidateSymbol(symbol);
             var validatedPeriod = PricesInputValidator.ValidatePeriod(period);
-            var validatedView = PricesInputValidator.ValidateView(view);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetPriceSummaryQuery
             {
@@ -76,9 +76,9 @@ public sealed class GetPriceSummaryTool(
                 nextActions: BuildNextActions(result, validatedSymbol),
                 explanation: BuildExplanation(result, validatedSymbol));
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -93,11 +93,11 @@ public sealed class GetPriceSummaryTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetPriceSummaryResponse> result, string symbol)
     {
         if (!result.IsSuccess || result.Data is null || result.Data.CandleCount == 0)

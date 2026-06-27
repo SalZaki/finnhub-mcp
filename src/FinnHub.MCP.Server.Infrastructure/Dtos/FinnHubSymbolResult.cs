@@ -5,6 +5,7 @@
 //  </copyright>
 // ---------------------------------------------------------------------------------------------------------------------
 
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace FinnHub.MCP.Server.Infrastructure.Dtos;
@@ -12,29 +13,22 @@ namespace FinnHub.MCP.Server.Infrastructure.Dtos;
 /// <summary>
 /// Represents a single symbol result from the FinnHub API.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class FinnHubSymbolResult
 {
-    /// <summary>
-    /// Gets or sets the symbol ticker.
-    /// </summary>
+    /// <summary>Gets the symbol ticker.</summary>
     [JsonPropertyName("symbol")]
-    public string? Symbol { get; set; }
+    public string? Symbol { get; init; }
 
-    /// <summary>
-    /// Gets or sets the symbol description.
-    /// </summary>
+    /// <summary>Gets the symbol description.</summary>
     [JsonPropertyName("description")]
-    public string? Description { get; set; }
+    public string? Description { get; init; }
 
-    /// <summary>
-    /// Gets or sets the display symbol.
-    /// </summary>
+    /// <summary>Gets the display symbol.</summary>
     [JsonPropertyName("displaySymbol")]
-    public string? DisplaySymbol { get; set; }
+    public string? DisplaySymbol { get; init; }
 
-    /// <summary>
-    /// Gets or sets the symbol type.
-    /// </summary>
+    /// <summary>Gets the symbol type.</summary>
     [JsonPropertyName("type")]
-    public string? Type { get; set; }
+    public string? Type { get; init; }
 }

@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Quotes;
 
-public sealed class GetQuoteToolTests
+public sealed class GetQuoteToolTests : ToolExceptionPropagationTests<GetQuoteResponse>
 {
     private readonly IQuotesService _service = Substitute.For<IQuotesService>();
     private readonly GetQuoteTool _sut;
@@ -24,6 +24,30 @@ public sealed class GetQuoteToolTests
     public GetQuoteToolTests()
     {
         this._sut = new GetQuoteTool(this._service, NullLogger<GetQuoteTool>.Instance);
+    }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetQuoteResponse>.Failure("upstream-error", ResultErrorType.ServiceUnavailable));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetQuoteResponse>> ActAsync()
+        => this._sut.GetQuoteAsync("AAPL");
+
+    public override async Task UnexpectedFailure_PropagatesException()
+    {
+        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("downstream broke"));
+
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetQuoteAsync("AAPL"));
+        Assert.Equal("downstream broke", ex.Message);
     }
 
     [Fact]
@@ -36,7 +60,7 @@ public sealed class GetQuoteToolTests
     public async Task GetQuoteAsync_LowercaseSymbol_Normalises()
     {
         this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
+            .Returns(Result<GetQuoteResponse>.Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
 
         await this._sut.GetQuoteAsync("aapl");
 
@@ -49,7 +73,7 @@ public sealed class GetQuoteToolTests
     public async Task GetQuoteAsync_Success_PopulatesNextActions()
     {
         this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
+            .Returns(Result<GetQuoteResponse>.Success(new GetQuoteResponse { Symbol = "AAPL", Current = 100 }));
 
         var envelope = await this._sut.GetQuoteAsync("AAPL");
 
@@ -59,43 +83,13 @@ public sealed class GetQuoteToolTests
     }
 
     [Fact]
-    public async Task GetQuoteAsync_Cancelled_PropagatesOperationCanceled()
-    {
-        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetQuoteAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetQuoteAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetQuoteAsync("AAPL"));
-        Assert.Equal("downstream broke", ex.Message);
-    }
-
-    [Fact]
-    public async Task GetQuoteAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Failure("upstream-error", ResultErrorType.ServiceUnavailable));
-
-        var envelope = await this._sut.GetQuoteAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
-    }
-
-    [Fact]
     public async Task GetQuoteAsync_SuccessWithAllNullFields_BuildsFallbackExplanation()
     {
         // Covers the "n/a" / "unknown" branches in BuildExplanation when the upstream
         // response is shape-valid but has null Current / PercentChange / TimestampUtc
         // (the unknown-symbol case Finnhub returns — see Fixtures/finnhub/quote-unknown.json).
         this._service.GetQuoteAsync(Arg.Any<GetQuoteQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetQuoteResponse>().Success(
+            .Returns(Result<GetQuoteResponse>.Success(
                 new GetQuoteResponse { Symbol = "ZZZZ" }));
 
         var envelope = await this._sut.GetQuoteAsync("ZZZZ");

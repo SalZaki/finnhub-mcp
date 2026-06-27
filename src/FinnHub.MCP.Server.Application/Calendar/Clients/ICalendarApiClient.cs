@@ -1,0 +1,44 @@
+﻿// ---------------------------------------------------------------------------------------------------------------------
+//  <copyright>
+//    This file is part of FinnHub MCP Server and is licensed under the MIT License.
+//    See the LICENSE file in the project root for full license information.
+//  </copyright>
+// ---------------------------------------------------------------------------------------------------------------------
+
+using FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
+
+namespace FinnHub.MCP.Server.Application.Calendar.Clients;
+
+/// <summary>
+/// Infrastructure contract for the Finnhub <c>/calendar/*</c> endpoint family.
+/// </summary>
+public interface ICalendarApiClient
+{
+    /// <summary>
+    /// Fetches earnings releases scheduled within the supplied window, optionally
+    /// filtered to a single symbol.
+    /// </summary>
+    Task<IReadOnlyList<EarningsEvent>> GetEarningsCalendarAsync(
+        DateOnly from,
+        DateOnly to,
+        string? symbol,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fetches IPO listings within the supplied window. The upstream endpoint does
+    /// not accept a symbol filter — callers receive the full window.
+    /// </summary>
+    Task<IReadOnlyList<IpoEvent>> GetIpoCalendarAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Fetches macro releases within the supplied window. The upstream endpoint does
+    /// not accept a country filter; callers apply it at the service layer.
+    /// </summary>
+    Task<IReadOnlyList<EconomicEvent>> GetEconomicCalendarAsync(
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken);
+}

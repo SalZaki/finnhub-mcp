@@ -7,6 +7,8 @@
 
 using System.Reflection;
 using DotNetEnv;
+using FinnHub.MCP.Server.Application.Discovery;
+using FinnHub.MCP.Server.Application.Exchanges.Features.GetAllExchanges;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Search.Services;
 using FinnHub.MCP.Server.Application.Symbols;
@@ -14,14 +16,21 @@ using FinnHub.MCP.Server.Application.Tokens;
 using FinnHub.MCP.Server.Common;
 using FinnHub.MCP.Server.Infrastructure.Extensions;
 using FinnHub.MCP.Server.Middleware;
+using FinnHub.MCP.Server.Prompts;
+using FinnHub.MCP.Server.Resources.Capabilities;
 using FinnHub.MCP.Server.Resources.Exchanges;
 using FinnHub.MCP.Server.Resources.Status;
+using FinnHub.MCP.Server.Tools.Calendar;
+using FinnHub.MCP.Server.Tools.Discovery;
+using FinnHub.MCP.Server.Tools.Exchanges;
 using FinnHub.MCP.Server.Tools.Financials;
+using FinnHub.MCP.Server.Tools.Insiders;
 using FinnHub.MCP.Server.Tools.News;
 using FinnHub.MCP.Server.Tools.Peers;
 using FinnHub.MCP.Server.Tools.Prices;
 using FinnHub.MCP.Server.Tools.Profiles;
 using FinnHub.MCP.Server.Tools.Quotes;
+using FinnHub.MCP.Server.Tools.Recommendations;
 using FinnHub.MCP.Server.Tools.Search;
 using Microsoft.AspNetCore.Mvc;
 
@@ -31,8 +40,9 @@ var version = assembly?.GetCustomAttribute<AssemblyInformationalVersionAttribute
 
 var isStdio = args.Contains("--stdio");
 
-// STDIO transport never binds HTTP — skip the default --urls injection so two
-// concurrent stdio instances don't fight over port 8080.
+// HTTP transport listens on 8080. STDIO transport communicates over stdin/stdout; its Kestrel
+// listener is pinned to an ephemeral loopback port after Build() (see below) so concurrent
+// stdio instances never collide on a fixed port.
 if (!isStdio && !args.Contains("--urls"))
 {
     args = args
@@ -56,13 +66,37 @@ if (builder.Environment.IsDevelopment())
     new LoadOptions(setEnvVars: true, clobberExistingVars: false, onlyExactPath: false).Load();
 }
 
-var exePath = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
-var exeDirectory = exePath is not null ? Path.GetDirectoryName(exePath) : Directory.GetCurrentDirectory();
+// Use AppContext.BaseDirectory as the config base path — the directory of the
+// running app, where appsettings.json is co-located. Load-bearing for:
+//   - Published single-file / AOT binaries that may run from any cwd. Note:
+//     Assembly.Location returns "" for single-file apps (IL3000), so it cannot
+//     be used here; AppContext.BaseDirectory resolves to the app/extraction dir.
+//   - WebApplicationFactory in tests, where Process.MainModule resolves to the
+//     dotnet test-host (/opt/.../dotnet) rather than the server dll, so a
+//     Process.MainModule-based path would point at the wrong tree and the
+//     non-optional appsettings.json load would throw FileNotFoundException.
+//     AppContext.BaseDirectory resolves to the test output dir, where the
+//     server's appsettings.json is copied via the project reference.
+var basePath = AppContext.BaseDirectory;
 
 builder.Configuration
-    .SetBasePath(exeDirectory!)
+    .SetBasePath(basePath)
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+    .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true);
+
+if (builder.Environment.IsDevelopment())
+{
+    // dotnet user-secrets is the canonical local home for FinnHub:ApiKey — it
+    // lives in ~/.microsoft/usersecrets, outside the repo tree, so the key is
+    // never at rest in a working file. Added here (after the appsettings re-add
+    // above, which would otherwise clobber it with the empty placeholder, and
+    // before AddEnvironmentVariables below, so a launcher-supplied FINNHUB_API_KEY
+    // still wins via the explicit override further down). Store the key with:
+    //   dotnet user-secrets set "FinnHub:ApiKey" <key> --project src/FinnHub.MCP.Server
+    builder.Configuration.AddUserSecrets<Program>();
+}
+
+builder.Configuration
     .AddEnvironmentVariables()
     .AddCommandLine(args);
 
@@ -90,6 +124,8 @@ builder.Services.RegisterInfrastructure();
 builder.Services.AddTransient<ISearchService, SearchService>();
 builder.Services.AddTransient<ISymbolResolver, SymbolResolver>();
 builder.Services.AddSingleton<ITokenEstimator, CharCountTokenEstimator>();
+builder.Services.AddSingleton<IExchangeCatalog, ExchangeCatalog>();
+builder.Services.AddSingleton<IToolRegistry>(_ => new ToolRegistry(ToolCatalog.Descriptors));
 
 var mcpBuilder = builder.Services.AddMcpServer(options =>
 {
@@ -100,6 +136,7 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
         Version = version
     };
 })
+.WithWrappedTools<SearchToolsTool>()
 .WithWrappedTools<SearchSymbolTool>()
 .WithWrappedTools<GetPeersTool>()
 .WithWrappedTools<GetFinancialsSnapshotTool>()
@@ -107,8 +144,16 @@ var mcpBuilder = builder.Services.AddMcpServer(options =>
 .WithWrappedTools<GetNewsPulseTool>()
 .WithWrappedTools<GetQuoteTool>()
 .WithWrappedTools<GetCompanyProfileTool>()
+.WithWrappedTools<GetCalendarTool>()
+.WithWrappedTools<GetInsiderSignalTool>()
+.WithWrappedTools<GetRecommendationsTool>()
+.WithWrappedTools<GetExchangeSymbolsTool>()
 .WithResources<ExchangesResource>()
-.WithResources<ApiStatusResource>();
+.WithResources<ApiStatusResource>()
+.WithResources<CapabilitiesResource>()
+.WithPrompts<ResearchTickerPrompt>()
+.WithPrompts<ComparePeersPrompt>()
+.WithPrompts<NewsPulsePrompt>();
 
 if (isStdio)
 {
@@ -146,6 +191,17 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+if (isStdio)
+{
+    // STDIO speaks over stdin/stdout, but the WebApplication host still starts Kestrel. Setting
+    // app.Urls explicitly is authoritative — it suppresses the default localhost:5000 binding —
+    // so pin an ephemeral loopback port (0, OS-assigned). Concurrent stdio instances (a reconnect,
+    // a second MCP client, or a lingering process) then each get their own free port instead of
+    // crashing on AddressInUseException for port 5000, which dropped the MCP connection.
+    app.Urls.Clear();
+    app.Urls.Add("http://127.0.0.1:0");
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -370,3 +426,12 @@ if (!isStdio)
 }
 
 app.Run();
+
+/// <summary>
+/// Public partial Program declaration exists solely so
+/// <c>WebApplicationFactory&lt;Program&gt;</c> in the
+/// <c>FinnHub.MCP.Server.Tests.LiveSmoke</c> project can resolve the host
+/// type from top-level statements. No runtime behaviour.
+/// </summary>
+public partial class Program;
+

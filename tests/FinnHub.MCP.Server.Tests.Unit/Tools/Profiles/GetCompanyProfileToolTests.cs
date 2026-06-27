@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Profiles;
 
-public sealed class GetCompanyProfileToolTests
+public sealed class GetCompanyProfileToolTests : ToolExceptionPropagationTests<GetCompanyProfileResponse>
 {
     private readonly IProfilesService _service = Substitute.For<IProfilesService>();
     private readonly GetCompanyProfileTool _sut;
@@ -25,6 +25,21 @@ public sealed class GetCompanyProfileToolTests
     {
         this._sut = new GetCompanyProfileTool(this._service, NullLogger<GetCompanyProfileTool>.Instance);
     }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetCompanyProfileResponse>.Failure("upstream-error"));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetCompanyProfileResponse>> ActAsync()
+        => this._sut.GetCompanyProfileAsync("AAPL");
 
     [Fact]
     public async Task GetCompanyProfileAsync_InvalidSymbol_Throws()
@@ -36,7 +51,7 @@ public sealed class GetCompanyProfileToolTests
     public async Task GetCompanyProfileAsync_SummaryView_OmitsCosmeticFields()
     {
         this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Success(
+            .Returns(Result<GetCompanyProfileResponse>.Success(
                 new GetCompanyProfileResponse { Ticker = "AAPL", Name = "Apple" }));
 
         await this._sut.GetCompanyProfileAsync("AAPL", view: "summary");
@@ -50,7 +65,7 @@ public sealed class GetCompanyProfileToolTests
     public async Task GetCompanyProfileAsync_StandardView_RequestsCosmeticFields()
     {
         this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Success(
+            .Returns(Result<GetCompanyProfileResponse>.Success(
                 new GetCompanyProfileResponse { Ticker = "AAPL", Name = "Apple" }));
 
         await this._sut.GetCompanyProfileAsync("AAPL", view: "standard");
@@ -64,7 +79,7 @@ public sealed class GetCompanyProfileToolTests
     public async Task GetCompanyProfileAsync_Success_PopulatesNextActions()
     {
         this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Success(
+            .Returns(Result<GetCompanyProfileResponse>.Success(
                 new GetCompanyProfileResponse { Ticker = "AAPL", Name = "Apple" }));
 
         var envelope = await this._sut.GetCompanyProfileAsync("AAPL");
@@ -73,34 +88,5 @@ public sealed class GetCompanyProfileToolTests
         Assert.Equal("get-financials-snapshot", envelope.NextActions[0].Tool);
         Assert.Equal("get-peers", envelope.NextActions[1].Tool);
         Assert.Equal("get-quote", envelope.NextActions[2].Tool);
-    }
-
-    [Fact]
-    public async Task GetCompanyProfileAsync_Cancelled_PropagatesOperationCanceled()
-    {
-        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetCompanyProfileAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetCompanyProfileAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetCompanyProfileAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetCompanyProfileAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetProfileAsync(Arg.Any<GetCompanyProfileQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetCompanyProfileResponse>().Failure("upstream-error"));
-
-        var envelope = await this._sut.GetCompanyProfileAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
     }
 }

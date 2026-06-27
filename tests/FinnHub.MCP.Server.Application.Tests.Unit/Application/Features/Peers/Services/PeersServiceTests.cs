@@ -6,11 +6,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Peers.Clients;
 using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Application.Peers.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -21,19 +21,12 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Peers.S
 public sealed class PeersServiceTests
 {
     private readonly IPeersApiClient _apiClient = Substitute.For<IPeersApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly PeersService _sut;
 
     public PeersServiceTests()
     {
         // Cache passes through to factory by default
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<GetPeersResponse>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<GetPeersResponse>>>()(CancellationToken.None));
 
         this._sut = new PeersService(this._apiClient, this._cache, NullLogger<PeersService>.Instance);
     }

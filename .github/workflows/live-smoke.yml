@@ -1,0 +1,142 @@
+name: Live Smoke
+
+# Scheduled live-smoke run against real Finnhub. Boots the server in-process
+# via WebApplicationFactory, calls each MCP tool with AAPL (plus the
+# unknown-symbol edge case for get-quote), and fails loudly if any tool's
+# envelope reports is_success=false. Opens an `upstream-drift`-labeled issue
+# on failure so the team finds out before a real user does.
+#
+# This workflow does NOT run on PRs or pushes — only on the cron and on manual
+# dispatch. It's intentionally separate from `dotnet.yml` (which excludes the
+# LiveSmoke project via --filter "Category!=LiveSmoke") so PR builds never
+# consume the Finnhub quota.
+#
+# Why scheduled and not on PR: see Issue #170.
+#   - Mocked unit tests can't detect Finnhub shape drift (PR #166, #167)
+#   - Synthetic URL tests can't detect Finnhub endpoint changes (PR #169)
+#   - Real fixtures only catch drift on the next re-capture, not in real time
+# This workflow plugs that gap.
+
+on:
+  schedule:
+    # Daily at 07:00 UTC. Picked to land before the US market open and after
+    # most Finnhub overnight maintenance windows. Adjust as needed.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: live-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: 🌡️ Live Smoke Against Real Finnhub
+    runs-on: ubuntu-latest
+    # Skip entirely if the secret isn't configured — keeps forked-repo
+    # workflow runs from failing with a missing-secret error.
+    if: ${{ github.repository == 'SalZaki/finnhub-mcp' }}
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: 🧰 Setup .NET
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
+        with:
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+
+      - name: 📦 Restore
+        run: dotnet restore ./finnhub-mcp.sln
+
+      - name: 🛠️ Build live-smoke project
+        run: dotnet build tests/FinnHub.MCP.Server.Tests.LiveSmoke/FinnHub.MCP.Server.Tests.LiveSmoke.csproj --configuration Release --no-restore
+
+      - name: 🌡️ Run live-smoke tests
+        id: smoke
+        env:
+          # The smoke key — separate from any dev key. See CONTRIBUTING.md
+          # ("Live-smoke runbook") for rotation procedure.
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          # Keep logging quiet for the host bootstrap — the test framework
+          # surfaces failures, no need for the server's structured logs to
+          # spam the job output unless we're debugging.
+          ASPNETCORE_ENVIRONMENT: Production
+        run: |
+          if [ -z "$FINNHUB_API_KEY" ]; then
+            echo "::error::FINNHUB_API_KEY secret is not set. Add it under Settings → Secrets → Actions."
+            exit 1
+          fi
+
+          mkdir -p smoke-results
+          dotnet test tests/FinnHub.MCP.Server.Tests.LiveSmoke/FinnHub.MCP.Server.Tests.LiveSmoke.csproj \
+            --configuration Release \
+            --no-build \
+            --filter "Category=LiveSmoke" \
+            --logger "trx;LogFileName=live-smoke.trx" \
+            --logger "console;verbosity=normal" \
+            --results-directory ./smoke-results
+
+      - name: 📁 Upload smoke results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: live-smoke-results
+          path: ./smoke-results/
+
+      - name: 🐛 Open upstream-drift issue on failure
+        if: failure() && steps.smoke.conclusion == 'failure'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const today = new Date().toISOString().slice(0, 10);
+            const title = `Live smoke failed on ${today} — upstream drift?`;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              `Scheduled live-smoke against real Finnhub failed.`,
+              ``,
+              `**Run:** ${runUrl}`,
+              `**Date (UTC):** ${today}`,
+              ``,
+              `Likely causes (most → least common):`,
+              `1. **Finnhub payload shape drift** — a DTO failed to deserialize. Check the test output for the failing tool, re-capture the fixture via \`tests/Fixtures/finnhub/capture.sh\`, update the DTO, ship a PR.`,
+              `2. **Finnhub endpoint change** — URL returns 404 or redirects. Audit \`ConfigureFinnHubClient\` and the per-client \`BuildRequestUri\` paths.`,
+              `3. **Smoke API key issue** — the \`FINNHUB_API_KEY\` secret expired, was rotated upstream, or hit its quota. Rotate via the runbook in CONTRIBUTING.md.`,
+              `4. **Premium gating change** — an endpoint became premium-only overnight. If the failing tool is in the "known free tier" list, this is a Finnhub policy change worth tracking.`,
+              ``,
+              `Runbook: see CONTRIBUTING.md → "Live-smoke runbook" section.`
+            ].join('\n');
+
+            // Avoid spamming: search for an existing open upstream-drift issue
+            // from the last 24h before opening a new one.
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'upstream-drift'
+            });
+            const recent = existing.find(i => {
+              const age = Date.now() - new Date(i.created_at).getTime();
+              return age < 24 * 60 * 60 * 1000;
+            });
+            if (recent) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: recent.number,
+                body: `Another live-smoke failure: ${runUrl}`
+              });
+              return;
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['upstream-drift', 'bug']
+            });

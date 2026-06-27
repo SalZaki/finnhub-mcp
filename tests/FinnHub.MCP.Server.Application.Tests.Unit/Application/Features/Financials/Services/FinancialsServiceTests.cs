@@ -6,11 +6,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 
 using System.Net;
-using FinnHub.MCP.Server.Application.Caching;
 using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Financials.Clients;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
 using FinnHub.MCP.Server.Application.Financials.Services;
+using FinnHub.MCP.Server.Application.Tests.Unit.TestDoubles;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -21,18 +21,11 @@ namespace FinnHub.MCP.Server.Application.Tests.Unit.Application.Features.Financi
 public sealed class FinancialsServiceTests
 {
     private readonly IFinancialsApiClient _apiClient = Substitute.For<IFinancialsApiClient>();
-    private readonly IFinnHubCache _cache = Substitute.For<IFinnHubCache>();
+    private readonly FakeFinnHubCache _cache = new();
     private readonly FinancialsService _sut;
 
     public FinancialsServiceTests()
     {
-        this._cache
-            .GetOrCreateAsync(
-                Arg.Any<string>(),
-                Arg.Any<CacheTier>(),
-                Arg.Any<Func<CancellationToken, ValueTask<GetFinancialsSnapshotResponse>>>(),
-                Arg.Any<CancellationToken>())
-            .Returns(call => call.Arg<Func<CancellationToken, ValueTask<GetFinancialsSnapshotResponse>>>()(CancellationToken.None));
 
         this._sut = new FinancialsService(this._apiClient, this._cache, NullLogger<FinancialsService>.Instance);
     }
@@ -49,6 +42,35 @@ public sealed class FinancialsServiceTests
         var query = new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "AAPL" };
         this._apiClient.GetSnapshotAsync(query, Arg.Any<CancellationToken>())
             .Returns(new GetFinancialsSnapshotResponse { Symbol = "AAPL", MarketCap = 3000000.0 });
+
+        var result = await this._sut.GetSnapshotAsync(query);
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("AAPL", result.Data!.Symbol);
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_AllKpisNull_ReturnsNotFound()
+    {
+        // Finnhub returns 200 with an empty metric object for unknown symbols, deserialising
+        // to a response whose every KPI is null. That must surface as NotFound, not a success.
+        var query = new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "ZZZZ" };
+        this._apiClient.GetSnapshotAsync(query, Arg.Any<CancellationToken>())
+            .Returns(new GetFinancialsSnapshotResponse { Symbol = "ZZZZ" });
+
+        var result = await this._sut.GetSnapshotAsync(query);
+
+        Assert.False(result.IsSuccess);
+        Assert.Equal("NotFound", result.ErrorType);
+    }
+
+    [Fact]
+    public async Task GetSnapshotAsync_SingleKpiPresent_ReturnsSuccess()
+    {
+        // One non-null KPI is enough to be a real result.
+        var query = new GetFinancialsSnapshotQuery { QueryId = "q1", Symbol = "AAPL" };
+        this._apiClient.GetSnapshotAsync(query, Arg.Any<CancellationToken>())
+            .Returns(new GetFinancialsSnapshotResponse { Symbol = "AAPL", Beta = 1.2 });
 
         var result = await this._sut.GetSnapshotAsync(query);
 

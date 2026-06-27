@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.News;
 
-public sealed class GetNewsPulseToolTests
+public sealed class GetNewsPulseToolTests : ToolExceptionPropagationTests<GetNewsPulseResponse>
 {
     private readonly INewsService _service = Substitute.For<INewsService>();
     private readonly GetNewsPulseTool _sut;
@@ -25,6 +25,21 @@ public sealed class GetNewsPulseToolTests
     {
         this._sut = new GetNewsPulseTool(this._service, NullLogger<GetNewsPulseTool>.Instance);
     }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetNewsPulseResponse>.Failure("upstream-error"));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetNewsPulseResponse>> ActAsync()
+        => this._sut.GetNewsPulseAsync("AAPL");
 
     [Fact]
     public async Task GetNewsPulseAsync_InvalidSymbol_Throws()
@@ -37,7 +52,7 @@ public sealed class GetNewsPulseToolTests
     {
         this._service
             .GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetNewsPulseResponse>().Success(
+            .Returns(Result<GetNewsPulseResponse>.Success(
                 new GetNewsPulseResponse { Symbol = "AAPL", Count = 1, SentimentSource = "finnhub" }));
 
         await this._sut.GetNewsPulseAsync("aapl");
@@ -52,7 +67,7 @@ public sealed class GetNewsPulseToolTests
     {
         this._service
             .GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetNewsPulseResponse>().Success(
+            .Returns(Result<GetNewsPulseResponse>.Success(
                 new GetNewsPulseResponse { Symbol = "AAPL", Count = 1 }));
 
         await this._sut.GetNewsPulseAsync("AAPL", view: "full");
@@ -67,34 +82,5 @@ public sealed class GetNewsPulseToolTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             this._sut.GetNewsPulseAsync("AAPL", view: "nonsense"));
-    }
-
-    [Fact]
-    public async Task GetNewsPulseAsync_Cancelled_PropagatesOperationCanceled()
-    {
-        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetNewsPulseAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetNewsPulseAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetNewsPulseAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetNewsPulseAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetPulseAsync(Arg.Any<GetNewsPulseQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetNewsPulseResponse>().Failure("upstream-error"));
-
-        var envelope = await this._sut.GetNewsPulseAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
     }
 }

@@ -10,8 +10,14 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Mime;
 using FinnHub.MCP.Server.Application.Caching;
+using FinnHub.MCP.Server.Application.Calendar.Clients;
+using FinnHub.MCP.Server.Application.Calendar.Services;
+using FinnHub.MCP.Server.Application.Exchanges.Clients;
+using FinnHub.MCP.Server.Application.Exchanges.Services;
 using FinnHub.MCP.Server.Application.Financials.Clients;
 using FinnHub.MCP.Server.Application.Financials.Services;
+using FinnHub.MCP.Server.Application.Insiders.Clients;
+using FinnHub.MCP.Server.Application.Insiders.Services;
 using FinnHub.MCP.Server.Application.News.Clients;
 using FinnHub.MCP.Server.Application.News.Services;
 using FinnHub.MCP.Server.Application.Options;
@@ -24,14 +30,20 @@ using FinnHub.MCP.Server.Application.Profiles.Services;
 using FinnHub.MCP.Server.Application.Quotes.Clients;
 using FinnHub.MCP.Server.Application.Quotes.Services;
 using FinnHub.MCP.Server.Application.RateLimiting;
+using FinnHub.MCP.Server.Application.Recommendations.Clients;
+using FinnHub.MCP.Server.Application.Recommendations.Services;
 using FinnHub.MCP.Server.Application.Search.Clients;
 using FinnHub.MCP.Server.Infrastructure.Caching;
+using FinnHub.MCP.Server.Infrastructure.Clients.Calendar;
+using FinnHub.MCP.Server.Infrastructure.Clients.Exchanges;
 using FinnHub.MCP.Server.Infrastructure.Clients.Financials;
+using FinnHub.MCP.Server.Infrastructure.Clients.Insiders;
 using FinnHub.MCP.Server.Infrastructure.Clients.News;
 using FinnHub.MCP.Server.Infrastructure.Clients.Peers;
 using FinnHub.MCP.Server.Infrastructure.Clients.Prices;
 using FinnHub.MCP.Server.Infrastructure.Clients.Profiles;
 using FinnHub.MCP.Server.Infrastructure.Clients.Quotes;
+using FinnHub.MCP.Server.Infrastructure.Clients.Recommendations;
 using FinnHub.MCP.Server.Infrastructure.Clients.Search;
 using FinnHub.MCP.Server.Infrastructure.RateLimiting;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -139,6 +151,38 @@ public static class ServiceCollectionExtension
             .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
             .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubProfilesApiClient>>()))
             .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<ICalendarService, CalendarService>();
+        services.AddHttpClient<ICalendarApiClient, FinnHubCalendarApiClient>("FinnHub-Calendar-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubCalendarApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubCalendarApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IInsidersService, InsidersService>();
+        services.AddHttpClient<IInsidersApiClient, FinnHubInsidersApiClient>("FinnHub-Insiders-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubInsidersApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubInsidersApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IRecommendationsService, RecommendationsService>();
+        services.AddHttpClient<IRecommendationsApiClient, FinnHubRecommendationsApiClient>("FinnHub-Recommendations-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubRecommendationsApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubRecommendationsApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+
+        services.AddSingleton<IExchangeSymbolsService, ExchangeSymbolsService>();
+        services.AddHttpClient<IExchangesApiClient, FinnHubExchangesApiClient>("FinnHub-Exchanges-Client", ConfigureFinnHubClient)
+            .ConfigurePrimaryHttpMessageHandler(BuildPrimaryHandler)
+            .AddHttpMessageHandler<RateLimitHeaderHandler>()
+            .AddPolicyHandler((provider, _) => GetRetryPolicy(provider.GetRequiredService<ILogger<FinnHubExchangesApiClient>>()))
+            .AddPolicyHandler((provider, _) => GetCircuitBreakerPolicy(provider.GetRequiredService<ILogger<FinnHubExchangesApiClient>>()))
+            .SetHandlerLifetime(TimeSpan.FromMinutes(5));
     }
 
     /// <summary>
@@ -182,19 +226,27 @@ public static class ServiceCollectionExtension
     /// <param name="logger">The logger to record retry attempts and reasons.</param>
     /// <returns>An asynchronous retry policy for HTTP responses.</returns>
     /// <remarks>
-    /// HTTP 403 is excluded — Finnhub uses it to signal premium-locked endpoints, which is
-    /// a permanent failure for the current API key. Retrying wastes quota and delays the
-    /// typed <c>ApiClientPremiumRequiredException</c> the caller needs.
+    /// HTTP 403 and 401 are excluded — Finnhub uses 403 to signal premium-locked endpoints and
+    /// 401 for premium-gated exchanges on <c>/stock/symbol</c>; both are permanent failures for the
+    /// current API key. Retrying either wastes quota and delays the typed
+    /// <c>ApiClientPremiumRequiredException</c> the caller needs.
     /// </remarks>
     internal static AsyncRetryPolicy<HttpResponseMessage> GetRetryPolicy(ILogger logger)
     {
         return Policy<HttpResponseMessage>
-            .HandleResult(res => !res.IsSuccessStatusCode && res.StatusCode != HttpStatusCode.Forbidden)
+            .HandleResult(res => !res.IsSuccessStatusCode && res.StatusCode is not (HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized))
             .Or<HttpRequestException>()
-            .Or<TaskCanceledException>()
+            // Only retry a TaskCanceledException raised by the HttpClient timeout — a caller
+            // cancellation (the request token was tripped) is intentional and must propagate
+            // immediately, not burn ~14s of backoff retrying a request nobody is waiting for.
+            .Or<TaskCanceledException>(ex => ex.InnerException is TimeoutException)
             .WaitAndRetryAsync(
                 retryCount: 3,
-                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                // Exponential backoff with jitter (up to 1s) so concurrent clients hitting a 5xx
+                // storm don't retry in lockstep — avoids the thundering-herd amplification.
+                sleepDurationProvider: retryAttempt =>
+                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt))
+                    + TimeSpan.FromMilliseconds(Random.Shared.Next(0, 1000)),
                 onRetry: (outcome, timespan, retryAttempt, context) =>
                 {
                     context["Policy"] = "RetryPolicy";
@@ -215,14 +267,14 @@ public static class ServiceCollectionExtension
     /// <param name="logger">The logger to record circuit breaker events.</param>
     /// <returns>An asynchronous circuit breaker policy for HTTP responses.</returns>
     /// <remarks>
-    /// HTTP 403 is excluded for the same reason as the retry policy: premium-locked
-    /// endpoints are an expected, per-key permanent failure mode and must not trip the
-    /// breaker for the broader client.
+    /// HTTP 403 and 401 are excluded for the same reason as the retry policy: premium-locked
+    /// endpoints (403) and premium-gated exchanges (401) are expected, per-key permanent failure
+    /// modes and must not trip the breaker for the broader client.
     /// </remarks>
     private static AsyncCircuitBreakerPolicy<HttpResponseMessage> GetCircuitBreakerPolicy(ILogger logger)
     {
         return Policy<HttpResponseMessage>
-            .HandleResult(r => !r.IsSuccessStatusCode && r.StatusCode != HttpStatusCode.Forbidden)
+            .HandleResult(r => !r.IsSuccessStatusCode && r.StatusCode is not (HttpStatusCode.Forbidden or HttpStatusCode.Unauthorized))
             .Or<HttpRequestException>()
             .CircuitBreakerAsync(
                 handledEventsAllowedBeforeBreaking: 3,

@@ -87,7 +87,7 @@ public sealed class StockSymbol
     [JsonPropertyName("cusip")]
     [Description("US-based CUSIP identifier")]
     // ReSharper disable once InconsistentNaming
-    public string? CUSIP { get; set; }
+    public string? CUSIP { get; init; }
 
     /// <summary>
     /// Financial Instrument Global Identifier (FIGI).
@@ -96,7 +96,7 @@ public sealed class StockSymbol
     [JsonPropertyName("figi")]
     [Description("Bloomberg FIGI identifier")]
     // ReSharper disable once InconsistentNaming
-    public string? FIGI { get; set; }
+    public string? FIGI { get; init; }
 
     /// <summary>
     /// A numeric score (0.0 to 1.0) representing the confidence of the match between the query and this result.
@@ -104,7 +104,7 @@ public sealed class StockSymbol
     /// </summary>
     [JsonPropertyName("confidence_score")]
     [Description("Search match confidence score (0.0–1.0)")]
-    public double ConfidenceScore { get; set; }
+    public double ConfidenceScore { get; init; }
 
     /// <summary>
     /// Indicates the field that most likely caused this result to match.
@@ -112,35 +112,35 @@ public sealed class StockSymbol
     /// </summary>
     [JsonPropertyName("matched_by")]
     [Description("What field matched the query (symbol, name, etc.)")]
-    public string? MatchedBy { get; set; }
+    public string? MatchedBy { get; init; }
 
     /// <summary>
     /// Optional ranking of the result in terms of relevance or order returned by the data provider.
     /// </summary>
     [JsonPropertyName("rank")]
     [Description("Result order from the data provider")]
-    public int? QueryRelevanceRank { get; set; }
+    public int? QueryRelevanceRank { get; init; }
 
     /// <summary>
     /// Timestamp (UTC) when the data was retrieved from the source provider.
     /// </summary>
     [JsonPropertyName("retrieved_at_utc")]
     [Description("Timestamp when the result was retrieved from provider")]
-    public DateTime RetrievedAtUtc { get; set; } = DateTime.UtcNow;
+    public DateTime RetrievedAtUtc { get; init; } = DateTime.UtcNow;
 
     /// <summary>
     /// Optional industry or sector to which the security belongs.
     /// </summary>
     [JsonPropertyName("sector")]
     [Description("Optional industry or sector information")]
-    public string? Sector { get; set; }
+    public string? Sector { get; init; }
 
     /// <summary>
     /// Indicates whether this is the primary listing for the security.
     /// </summary>
     [JsonPropertyName("is_primary_listing")]
     [Description("Whether this is the primary listing for the symbol")]
-    public bool? IsPrimaryListing { get; set; }
+    public bool? IsPrimaryListing { get; init; }
 
     /// <summary>
     /// Optional URL to the company or asset logo.
@@ -148,5 +148,5 @@ public sealed class StockSymbol
     /// </summary>
     [JsonPropertyName("logo_url")]
     [Description("Optional logo or branding URL")]
-    public string? LogoUrl { get; set; }
+    public string? LogoUrl { get; init; }
 }

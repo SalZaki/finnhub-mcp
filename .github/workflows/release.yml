@@ -1,4 +1,4 @@
-﻿name: Release
+name: Release
 
 on:
   push:
@@ -26,12 +26,14 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: 🧰 Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: 📦 Restore
         shell: bash
@@ -43,7 +45,9 @@ jobs:
 
       - name: 🧪 Test
         shell: bash
-        run: dotnet test ./finnhub-mcp.sln --configuration Release --no-restore
+        # --filter "Category!=LiveSmoke" excludes the scheduled live-smoke
+        # project — that runs against real Finnhub on its own cron.
+        run: dotnet test ./finnhub-mcp.sln --configuration Release --no-restore --filter "Category!=LiveSmoke"
 
   release:
     name: 📦 Create GitHub Release
@@ -57,11 +61,11 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: 🔖 Release Please
         id: release
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .release-please-config.json
@@ -107,14 +111,16 @@ jobs:
 
     steps:
       - name: 📥 Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
       - name: 🧰 Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@9a946fdbd5fb07b82b2f5a4466058b876ab72bb2 # v5.3.0
         with:
           dotnet-version: '10.0.x'
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: 📦 Restore
         shell: bash
@@ -229,7 +235,7 @@ jobs:
           fi
 
       - name: 🚀 Upload Release Asset
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@718ea10b132b3b2eba29c1007bb80653f286566b # v3.0.1
         with:
           tag_name: ${{ needs.release.outputs.tag_name }}
           files: |
@@ -258,3 +264,79 @@ jobs:
           else
             echo "- **Status**: ❌ Failed" >> "$GITHUB_STEP_SUMMARY"
           fi
+
+  publish-npm:
+    name: 📦 Publish npm Packages
+    needs: [release, build]
+    if: ${{ needs.release.outputs.release_created == 'true' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # npm provenance + OIDC trusted publishing (no NPM_TOKEN needed)
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+
+      - name: 🟢 Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22' # npm trusted publishing requires Node >= 22.14.0
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: ⬆️ Upgrade npm (trusted publishing requires npm >= 11.5.1)
+        run: npm install --global npm@latest
+
+      - name: ⬇️ Download release binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.release.outputs.tag_name }}
+        run: |
+          mkdir -p dist/assets
+          # The self-contained single-file binaries + appsettings.json are already
+          # attached to the GitHub Release by the build matrix above.
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir dist/assets \
+            --pattern 'finnhub-mcp-*' --pattern 'appsettings.json'
+          ls -la dist/assets
+          # Arrange flat release assets into the <rid>/ layout the generator expects.
+          for rid in osx-arm64 osx-x64 linux-x64 linux-arm64 win-x64 win-arm64; do
+            mkdir -p "dist/artifacts/$rid"
+            if [ -f "dist/assets/finnhub-mcp-$rid.exe" ]; then
+              cp "dist/assets/finnhub-mcp-$rid.exe" "dist/artifacts/$rid/finnhub-mcp.exe"
+            else
+              cp "dist/assets/finnhub-mcp-$rid" "dist/artifacts/$rid/finnhub-mcp"
+            fi
+            cp dist/assets/appsettings.json "dist/artifacts/$rid/appsettings.json"
+          done
+
+      - name: 🧱 Generate platform packages + stamp wrapper
+        env:
+          TAG: ${{ needs.release.outputs.tag_name }}
+        run: |
+          VERSION="${TAG#v}"
+          node npm/build/make-platform-packages.mjs \
+            --version "$VERSION" \
+            --artifacts dist/artifacts \
+            --out dist/packages > dist/publish-order.txt
+          echo "Publish order:"; cat dist/publish-order.txt
+
+      - name: 🔍 Smoke-test the packages before publishing
+        # Pack each package (dry run) and assert the launcher, binaries,
+        # appsettings.json, and version lockstep are all present — fail before
+        # publishing rather than ship a broken package to npm.
+        run: node npm/build/smoke-pack.mjs npm/finnhub-mcp dist/packages
+
+      - name: 🚀 Publish to npm (platform packages first, then wrapper)
+        env:
+          # Bootstrap: NPM_TOKEN (granular automation token) creates the
+          # not-yet-existing packages on the first release. Once all 7 exist and a
+          # Trusted Publisher is configured per package, delete the secret —
+          # publishes then run tokenless via OIDC (id-token: write, above).
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          while IFS= read -r pkg; do
+            [ -z "$pkg" ] && continue
+            echo "::group::npm publish $pkg"
+            npm publish "$pkg" --provenance --access public --ignore-scripts
+            echo "::endgroup::"
+          done < dist/publish-order.txt

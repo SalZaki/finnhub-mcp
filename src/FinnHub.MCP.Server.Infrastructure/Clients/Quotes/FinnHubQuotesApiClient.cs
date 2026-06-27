@@ -11,6 +11,7 @@ using FinnHub.MCP.Server.Application.Exceptions;
 using FinnHub.MCP.Server.Application.Options;
 using FinnHub.MCP.Server.Application.Quotes.Clients;
 using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
+using FinnHub.MCP.Server.Infrastructure.Clients.Http;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
 using FinnHub.MCP.Server.Infrastructure.Serialization;
 using Microsoft.Extensions.Logging;
@@ -64,7 +65,10 @@ public sealed class FinnHubQuotesApiClient : IQuotesApiClient
         catch (HttpRequestException ex)
         {
             this._logger.LogError(ex, "HTTP request to FinnHub quote failed: {Uri}", requestUri);
-            throw new ApiClientHttpException($"HTTP request to FinnHub quote failed: {requestUri}", HttpStatusCode.InternalServerError);
+            throw new ApiClientHttpException(
+                $"HTTP request to FinnHub quote failed: {requestUri}",
+                HttpStatusCode.ServiceUnavailable,
+                innerException: ex);
         }
         catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
         {
@@ -81,7 +85,7 @@ public sealed class FinnHubQuotesApiClient : IQuotesApiClient
 
         if (!response.IsSuccessStatusCode)
         {
-            await this.HandleErrorAsync(response, contentStream, cancellationToken).ConfigureAwait(false);
+            await FinnHubResponseErrors.ThrowForStatusAsync(response, contentStream, this._logger, "quote", cancellationToken).ConfigureAwait(false);
         }
 
         FinnHubQuoteResponse? dto;
@@ -113,26 +117,5 @@ public sealed class FinnHubQuotesApiClient : IQuotesApiClient
                 ? DateTimeOffset.FromUnixTimeSeconds(ts)
                 : null
         };
-    }
-
-    private async Task HandleErrorAsync(HttpResponseMessage response, Stream contentStream, CancellationToken ct)
-    {
-        var statusCode = response.StatusCode;
-
-        using var reader = new StreamReader(contentStream);
-        var errorBody = await reader.ReadToEndAsync(ct).ConfigureAwait(false);
-
-        if (statusCode == HttpStatusCode.Forbidden)
-        {
-            var endpoint = response.RequestMessage?.RequestUri?.AbsolutePath ?? "(unknown)";
-            this._logger.LogWarning("Premium-locked quote endpoint: {Endpoint} - {Content}", endpoint, errorBody);
-            throw new ApiClientPremiumRequiredException(endpoint, errorBody);
-        }
-
-        this._logger.Log(
-            (int)statusCode >= 500 ? LogLevel.Error : LogLevel.Warning,
-            "Quote API error: {StatusCode} - {Content}", statusCode, errorBody);
-
-        throw new ApiClientHttpException($"FinnHub quote returned {statusCode}.", statusCode, errorBody);
     }
 }

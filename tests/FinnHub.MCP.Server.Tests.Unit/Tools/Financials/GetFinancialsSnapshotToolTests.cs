@@ -16,7 +16,7 @@ using Xunit;
 
 namespace FinnHub.MCP.Server.Tests.Unit.Tools.Financials;
 
-public sealed class GetFinancialsSnapshotToolTests
+public sealed class GetFinancialsSnapshotToolTests : ToolExceptionPropagationTests<GetFinancialsSnapshotResponse>
 {
     private readonly IFinancialsService _service = Substitute.For<IFinancialsService>();
     private readonly GetFinancialsSnapshotTool _sut;
@@ -25,6 +25,21 @@ public sealed class GetFinancialsSnapshotToolTests
     {
         this._sut = new GetFinancialsSnapshotTool(this._service, NullLogger<GetFinancialsSnapshotTool>.Instance);
     }
+
+    protected override void SetupServiceThrows(Exception ex)
+    {
+        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(ex);
+    }
+
+    protected override void SetupServiceFailureResult()
+    {
+        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
+            .Returns(Result<GetFinancialsSnapshotResponse>.Failure("upstream-error"));
+    }
+
+    protected override Task<ToolResponseEnvelope<GetFinancialsSnapshotResponse>> ActAsync()
+        => this._sut.GetFinancialsSnapshotAsync("AAPL");
 
     [Fact]
     public async Task GetFinancialsSnapshotAsync_InvalidSymbol_Throws()
@@ -37,7 +52,7 @@ public sealed class GetFinancialsSnapshotToolTests
     {
         this._service
             .GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetFinancialsSnapshotResponse>().Success(
+            .Returns(Result<GetFinancialsSnapshotResponse>.Success(
                 new GetFinancialsSnapshotResponse { Symbol = "AAPL" }));
 
         await this._sut.GetFinancialsSnapshotAsync("aapl");
@@ -52,7 +67,7 @@ public sealed class GetFinancialsSnapshotToolTests
     {
         this._service
             .GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetFinancialsSnapshotResponse>().Success(
+            .Returns(Result<GetFinancialsSnapshotResponse>.Success(
                 new GetFinancialsSnapshotResponse { Symbol = "AAPL" }));
 
         await this._sut.GetFinancialsSnapshotAsync("AAPL", view: "full");
@@ -67,34 +82,5 @@ public sealed class GetFinancialsSnapshotToolTests
     {
         await Assert.ThrowsAsync<ArgumentException>(() =>
             this._sut.GetFinancialsSnapshotAsync("AAPL", view: "nonsense"));
-    }
-
-    [Fact]
-    public async Task GetFinancialsSnapshotAsync_Cancelled_PropagatesOperationCanceled()
-    {
-        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new OperationCanceledException());
-
-        await Assert.ThrowsAsync<OperationCanceledException>(() => this._sut.GetFinancialsSnapshotAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetFinancialsSnapshotAsync_UnexpectedFailure_PropagatesException()
-    {
-        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("downstream broke"));
-
-        await Assert.ThrowsAsync<InvalidOperationException>(() => this._sut.GetFinancialsSnapshotAsync("AAPL"));
-    }
-
-    [Fact]
-    public async Task GetFinancialsSnapshotAsync_FailureResult_ReturnsEmptyNextActions()
-    {
-        this._service.GetSnapshotAsync(Arg.Any<GetFinancialsSnapshotQuery>(), Arg.Any<CancellationToken>())
-            .Returns(new Result<GetFinancialsSnapshotResponse>().Failure("upstream-error"));
-
-        var envelope = await this._sut.GetFinancialsSnapshotAsync("AAPL");
-
-        Assert.Empty(envelope.NextActions);
     }
 }

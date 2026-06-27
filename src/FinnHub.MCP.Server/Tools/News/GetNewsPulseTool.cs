@@ -51,8 +51,8 @@ public sealed class GetNewsPulseTool(
         {
             logger.LogTrace("Starting execution of '{Tool}'.", ToolName);
 
-            var validatedSymbol = NewsInputValidator.ValidateSymbol(symbol);
-            var validatedView = NewsInputValidator.ValidateView(view);
+            var validatedSymbol = CommonInputValidators.ValidateSymbol(symbol);
+            var validatedView = CommonInputValidators.ValidateView(view);
 
             var query = new GetNewsPulseQuery
             {
@@ -74,9 +74,9 @@ public sealed class GetNewsPulseTool(
                 explanation: BuildExplanation(result, validatedSymbol),
                 sentimentSource: result.Data?.SentimentSource);
         }
-        catch (OperationCanceledException ex)
+        catch (OperationCanceledException)
         {
-            logger.LogError(ex, "'{Tool}' was cancelled.", ToolName);
+            logger.LogDebug("'{Tool}' was cancelled.", ToolName);
             throw;
         }
         catch (ArgumentException ex)
@@ -91,11 +91,11 @@ public sealed class GetNewsPulseTool(
         }
         finally
         {
-            stopwatch.Stop();
             logger.LogTrace("Finished '{Tool}' in {ElapsedMs}ms.", ToolName, stopwatch.ElapsedMilliseconds);
         }
     }
 
+    // Emit rule: IsSuccess AND (singleton data OR non-empty collection) -- see NextAction.
     private static IReadOnlyList<NextAction> BuildNextActions(Result<GetNewsPulseResponse> result, string symbol)
     {
         if (!result.IsSuccess || result.Data is null || result.Data.Count == 0)

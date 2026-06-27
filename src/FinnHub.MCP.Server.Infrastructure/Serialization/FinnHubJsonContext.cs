@@ -7,13 +7,17 @@
 
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
+using FinnHub.MCP.Server.Application.Calendar.Features.GetCalendar;
+using FinnHub.MCP.Server.Application.Exchanges.Features.GetExchangeSymbols;
 using FinnHub.MCP.Server.Application.Financials.Features.GetFinancialsSnapshot;
+using FinnHub.MCP.Server.Application.Insiders.Features.GetInsiderSignal;
 using FinnHub.MCP.Server.Application.Models;
 using FinnHub.MCP.Server.Application.News.Features.GetNewsPulse;
 using FinnHub.MCP.Server.Application.Peers.Features.GetPeers;
 using FinnHub.MCP.Server.Application.Prices.Features.GetPriceSummary;
 using FinnHub.MCP.Server.Application.Profiles.Features.GetCompanyProfile;
 using FinnHub.MCP.Server.Application.Quotes.Features.GetQuote;
+using FinnHub.MCP.Server.Application.Recommendations.Features.GetRecommendations;
 using FinnHub.MCP.Server.Application.Search.Features.SearchSymbol;
 using FinnHub.MCP.Server.Application.Symbols;
 using FinnHub.MCP.Server.Infrastructure.Dtos;
@@ -75,4 +79,31 @@ namespace FinnHub.MCP.Server.Infrastructure.Serialization;
 [JsonSerializable(typeof(FinnHubProfileResponse))]
 [JsonSerializable(typeof(GetCompanyProfileResponse))]
 [JsonSerializable(typeof(ToolResponseEnvelope<GetCompanyProfileResponse>))]
+[JsonSerializable(typeof(FinnHubEarningsCalendarResponse))]
+[JsonSerializable(typeof(FinnHubEarningsEntry))]
+[JsonSerializable(typeof(EarningsEvent))]
+[JsonSerializable(typeof(FinnHubIpoCalendarResponse))]
+[JsonSerializable(typeof(FinnHubIpoEntry))]
+[JsonSerializable(typeof(IpoEvent))]
+[JsonSerializable(typeof(FinnHubEconomicCalendarResponse))]
+[JsonSerializable(typeof(FinnHubEconomicEntry))]
+[JsonSerializable(typeof(EconomicEvent))]
+[JsonSerializable(typeof(GetCalendarResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetCalendarResponse>))]
+[JsonSerializable(typeof(FinnHubInsiderTransactionsResponse))]
+[JsonSerializable(typeof(FinnHubInsiderTransactionEntry))]
+[JsonSerializable(typeof(InsiderTransaction))]
+[JsonSerializable(typeof(GetInsiderSignalResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetInsiderSignalResponse>))]
+[JsonSerializable(typeof(FinnHubRecommendationEntry[]))]
+[JsonSerializable(typeof(FinnHubRecommendationEntry))]
+[JsonSerializable(typeof(RecommendationSnapshot))]
+[JsonSerializable(typeof(RecommendationChange))]
+[JsonSerializable(typeof(GetRecommendationsResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetRecommendationsResponse>))]
+[JsonSerializable(typeof(FinnHubSymbolRow[]))]
+[JsonSerializable(typeof(FinnHubSymbolRow))]
+[JsonSerializable(typeof(ExchangeSymbol))]
+[JsonSerializable(typeof(GetExchangeSymbolsResponse))]
+[JsonSerializable(typeof(ToolResponseEnvelope<GetExchangeSymbolsResponse>))]
 public partial class FinnHubJsonContext : JsonSerializerContext;
