@@ -321,10 +321,13 @@ jobs:
           echo "Publish order:"; cat dist/publish-order.txt
 
       - name: 🚀 Publish to npm (platform packages first, then wrapper)
+        env:
+          # Bootstrap: NPM_TOKEN (granular automation token) creates the
+          # not-yet-existing packages on the first release. Once all 7 exist and a
+          # Trusted Publisher is configured per package, delete the secret —
+          # publishes then run tokenless via OIDC (id-token: write, above).
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
-          # One-time operator setup: configure npm trusted publishing on npmjs.com
-          # for finnhub-mcp and each @salzaki/finnhub-mcp-<os>-<arch> package, or
-          # swap to NODE_AUTH_TOKEN + an NPM_TOKEN secret.
           while IFS= read -r pkg; do
             [ -z "$pkg" ] && continue
             echo "::group::npm publish $pkg"
