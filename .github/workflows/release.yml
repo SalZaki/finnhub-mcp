@@ -320,6 +320,12 @@ jobs:
             --out dist/packages > dist/publish-order.txt
           echo "Publish order:"; cat dist/publish-order.txt
 
+      - name: 🔍 Smoke-test the packages before publishing
+        # Pack each package (dry run) and assert the launcher, binaries,
+        # appsettings.json, and version lockstep are all present — fail before
+        # publishing rather than ship a broken package to npm.
+        run: node npm/build/smoke-pack.mjs npm/finnhub-mcp dist/packages
+
       - name: 🚀 Publish to npm (platform packages first, then wrapper)
         env:
           # Bootstrap: NPM_TOKEN (granular automation token) creates the
@@ -331,6 +337,6 @@ jobs:
           while IFS= read -r pkg; do
             [ -z "$pkg" ] && continue
             echo "::group::npm publish $pkg"
-            npm publish "$pkg" --provenance --access public
+            npm publish "$pkg" --provenance --access public --ignore-scripts
             echo "::endgroup::"
           done < dist/publish-order.txt

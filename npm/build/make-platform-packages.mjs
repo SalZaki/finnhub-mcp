@@ -92,6 +92,7 @@ for (const { rid, os, cpu } of MATRIX) {
     os: [os],
     cpu: [cpu],
     files: ["bin/"],
+    publishConfig: { access: "public", provenance: true },
     license: "MIT",
     repository: { type: "git", url: "git+https://github.com/SalZaki/finnhub-mcp.git" },
     homepage: "https://github.com/SalZaki/finnhub-mcp#readme",
