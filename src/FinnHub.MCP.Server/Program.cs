@@ -66,19 +66,18 @@ if (builder.Environment.IsDevelopment())
     new LoadOptions(setEnvVars: true, clobberExistingVars: false, onlyExactPath: false).Load();
 }
 
-// Use the host assembly's own directory as the config base path. This is
-// load-bearing for two scenarios:
-//   - Published AOT/single-file binaries that may run from any cwd
-//   - WebApplicationFactory in tests, where Process.MainModule resolves to
-//     the dotnet test-host (/opt/.../dotnet) rather than the server dll, so
-//     SetBasePath(processExeDir) would point at the wrong tree and the
-//     non-optional appsettings.json load would throw FileNotFoundException
-//     at startup. The host assembly's location always points to the
-//     server's bin output, where appsettings.json is co-located.
-var hostAssemblyPath = typeof(Program).Assembly.Location;
-var basePath = !string.IsNullOrEmpty(hostAssemblyPath)
-    ? Path.GetDirectoryName(hostAssemblyPath)!
-    : AppContext.BaseDirectory;
+// Use AppContext.BaseDirectory as the config base path — the directory of the
+// running app, where appsettings.json is co-located. Load-bearing for:
+//   - Published single-file / AOT binaries that may run from any cwd. Note:
+//     Assembly.Location returns "" for single-file apps (IL3000), so it cannot
+//     be used here; AppContext.BaseDirectory resolves to the app/extraction dir.
+//   - WebApplicationFactory in tests, where Process.MainModule resolves to the
+//     dotnet test-host (/opt/.../dotnet) rather than the server dll, so a
+//     Process.MainModule-based path would point at the wrong tree and the
+//     non-optional appsettings.json load would throw FileNotFoundException.
+//     AppContext.BaseDirectory resolves to the test output dir, where the
+//     server's appsettings.json is copied via the project reference.
+var basePath = AppContext.BaseDirectory;
 
 builder.Configuration
     .SetBasePath(basePath)
