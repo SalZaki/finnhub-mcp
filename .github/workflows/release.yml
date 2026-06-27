@@ -7,6 +7,12 @@ on:
     paths-ignore:
       - 'docs/**'
       - 'assets/**'
+  pull_request:
+    # Runs the validate job on promotion PRs (main -> release) so the required
+    # "Validate Release Branch" status check can report on the PR itself. Only
+    # validate runs on PR events; release/build/publish are gated on push.
+    branches:
+      - release
   workflow_dispatch:
 
 concurrency:
@@ -21,7 +27,7 @@ permissions:
 jobs:
   validate:
     name: ✅ Validate Release Branch
-    if: ${{ github.ref_name == 'release' }}
+    if: ${{ github.ref_name == 'release' || github.base_ref == 'release' }}
     runs-on: ubuntu-latest
 
     steps:
