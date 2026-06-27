@@ -2,6 +2,10 @@
   "name": "finnhub-mcp",
   "version": "0.0.0-dev",
   "description": "Model Context Protocol (MCP) server for Finnhub financial data. Launches the native finnhub-mcp server over stdio — no .NET SDK required.",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "bin": {
     "finnhub-mcp": "bin/launcher.js"
   },
