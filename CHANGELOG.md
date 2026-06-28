@@ -1,5 +1,58 @@
 # Changelog
 
+## [1.21.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.20.1...v1.21.0) (2026-06-27)
+
+
+### ✨ Features
+
+* **ci:** scheduled live-smoke against real Finnhub (closes [#170](https://github.com/SalZaki/finnhub-mcp/issues/170)) ([#185](https://github.com/SalZaki/finnhub-mcp/issues/185)) ([43493dd](https://github.com/SalZaki/finnhub-mcp/commit/43493ddaba2da2fc45681cd7a1e03694f7cb2d2e))
+* **npm:** npm/npx distribution channel for the MCP server ([#471](https://github.com/SalZaki/finnhub-mcp/issues/471)) ([96420c9](https://github.com/SalZaki/finnhub-mcp/commit/96420c940b6b41fa89614825c0bd2ae488b63943))
+* **prompt:** add /compare-peers slash command ([#435](https://github.com/SalZaki/finnhub-mcp/issues/435)) ([1d16fec](https://github.com/SalZaki/finnhub-mcp/commit/1d16fec0f79e9c52a83a25bffdecce07f7c37021)), closes [#222](https://github.com/SalZaki/finnhub-mcp/issues/222)
+* **prompt:** add /news-pulse slash command ([#436](https://github.com/SalZaki/finnhub-mcp/issues/436)) ([d415e00](https://github.com/SalZaki/finnhub-mcp/commit/d415e00fb07d2732fa361c61716541a8070ff84f)), closes [#223](https://github.com/SalZaki/finnhub-mcp/issues/223)
+* **prompt:** add /research-ticker slash command ([#434](https://github.com/SalZaki/finnhub-mcp/issues/434)) ([18bd371](https://github.com/SalZaki/finnhub-mcp/commit/18bd3712b11bceda771d2c4a1d47c770873e86d2)), closes [#221](https://github.com/SalZaki/finnhub-mcp/issues/221)
+* **resource:** add capabilities catalog resource ([#220](https://github.com/SalZaki/finnhub-mcp/issues/220)) ([#428](https://github.com/SalZaki/finnhub-mcp/issues/428)) ([b11cf22](https://github.com/SalZaki/finnhub-mcp/commit/b11cf22f7e048cf0fb8aed4f20041ce93f927a73))
+* **resource:** serve full exchanges catalog from curated reference ([#224](https://github.com/SalZaki/finnhub-mcp/issues/224)) ([#426](https://github.com/SalZaki/finnhub-mcp/issues/426)) ([89c030b](https://github.com/SalZaki/finnhub-mcp/commit/89c030b55fc7c5bce101c0fa383769911521852c))
+* **tool:** add get-exchange-symbols listing via /stock/symbol ([#433](https://github.com/SalZaki/finnhub-mcp/issues/433)) ([48a2151](https://github.com/SalZaki/finnhub-mcp/commit/48a2151b08cac2e40a55520e65754c145b1709de)), closes [#225](https://github.com/SalZaki/finnhub-mcp/issues/225)
+* **tools:** add get-calendar earnings dispatch ([#214](https://github.com/SalZaki/finnhub-mcp/issues/214)) ([#421](https://github.com/SalZaki/finnhub-mcp/issues/421)) ([50cdf75](https://github.com/SalZaki/finnhub-mcp/commit/50cdf7598439875001d814dfee8c578faf80b313))
+* **tools:** add get-calendar economic kind ([#423](https://github.com/SalZaki/finnhub-mcp/issues/423)) ([701f1c1](https://github.com/SalZaki/finnhub-mcp/commit/701f1c10aba9554a26f6c62b9843ad6cd4afca5e)), closes [#216](https://github.com/SalZaki/finnhub-mcp/issues/216)
+* **tools:** add get-calendar ipo kind ([#215](https://github.com/SalZaki/finnhub-mcp/issues/215)) ([#422](https://github.com/SalZaki/finnhub-mcp/issues/422)) ([5ecbc4f](https://github.com/SalZaki/finnhub-mcp/commit/5ecbc4f1dc40427c63a67199f165003ed81f31e6))
+* **tools:** add get-insider-signal tool ([#424](https://github.com/SalZaki/finnhub-mcp/issues/424)) ([b916ca1](https://github.com/SalZaki/finnhub-mcp/commit/b916ca1286b400beaa3a28bcd004843842cf3331)), closes [#217](https://github.com/SalZaki/finnhub-mcp/issues/217)
+* **tools:** add get-recommendations tool ([#425](https://github.com/SalZaki/finnhub-mcp/issues/425)) ([f09e5eb](https://github.com/SalZaki/finnhub-mcp/commit/f09e5eb45ef2f55ab8e358c8dfcc60dfd0a3b8c1)), closes [#218](https://github.com/SalZaki/finnhub-mcp/issues/218)
+* **tools:** add search-tools meta-tool for intent-based discovery ([#219](https://github.com/SalZaki/finnhub-mcp/issues/219)) ([#427](https://github.com/SalZaki/finnhub-mcp/issues/427)) ([fab8f41](https://github.com/SalZaki/finnhub-mcp/commit/fab8f41a28f2d4180c0df5c6a848a27e95a0b632))
+
+
+### 🐛 Bug Fixes
+
+* **application:** financials NotFound, resolver trim-length + search cleanup ([51acb2a](https://github.com/SalZaki/finnhub-mcp/commit/51acb2ab24af0364e0930c6f8a7755113cebd029))
+* **application:** include the date window in NewsService cache keys ([6ad65ba](https://github.com/SalZaki/finnhub-mcp/commit/6ad65ba2a92a3d7b3169acc3c04d35683ba3abc7)), closes [#387](https://github.com/SalZaki/finnhub-mcp/issues/387)
+* **application:** NotFound for empty financials + trim-before-length in resolver ([997eecd](https://github.com/SalZaki/finnhub-mcp/commit/997eecd6e8424ad59df10756116c6bf23fbca533))
+* **config:** add trailing slash to Development appsettings BaseUrl ([#411](https://github.com/SalZaki/finnhub-mcp/issues/411)) ([c6fd9ba](https://github.com/SalZaki/finnhub-mcp/commit/c6fd9ba152df0a4a84ee67436723354a32ae3110)), closes [#395](https://github.com/SalZaki/finnhub-mcp/issues/395)
+* **infra:** preserve inner exception, use ServiceUnavailable for transport failures ([#418](https://github.com/SalZaki/finnhub-mcp/issues/418)) ([8c9c83c](https://github.com/SalZaki/finnhub-mcp/commit/8c9c83cbe32f537a2779d56e687a955b3983537a))
+* **middleware:** propagate declared view into budget-exceeded envelope ([#414](https://github.com/SalZaki/finnhub-mcp/issues/414)) ([a4cc4bf](https://github.com/SalZaki/finnhub-mcp/commit/a4cc4bf526bac484a35f10e55ec1bb360db72411)), closes [#394](https://github.com/SalZaki/finnhub-mcp/issues/394)
+* **news:** catch ApiClientPremiumRequiredException on company-news path ([#415](https://github.com/SalZaki/finnhub-mcp/issues/415)) ([89591f7](https://github.com/SalZaki/finnhub-mcp/commit/89591f72e92eb0600616914b66b2427c4d2b32cc)), closes [#392](https://github.com/SalZaki/finnhub-mcp/issues/392)
+* **peers:** project once, derive explanation and total_count from projected result ([#413](https://github.com/SalZaki/finnhub-mcp/issues/413)) ([8444d00](https://github.com/SalZaki/finnhub-mcp/commit/8444d002f3038aa6bea7b015eff4a49fbe91004c)), closes [#393](https://github.com/SalZaki/finnhub-mcp/issues/393)
+* **test:** accept typed NotFound as graceful degradation in live-smoke ([#187](https://github.com/SalZaki/finnhub-mcp/issues/187)) ([684b50f](https://github.com/SalZaki/finnhub-mcp/commit/684b50ff2fd533a3b7cfa87a32229bb68156edca))
+* **transport:** bind STDIO Kestrel to an ephemeral port, not 5000 ([#432](https://github.com/SalZaki/finnhub-mcp/issues/432)) ([1115b12](https://github.com/SalZaki/finnhub-mcp/commit/1115b12403bd279419518758f789ee1ff47cf48f))
+
+
+### ♻️ Refactoring
+
+* **application:** collapse search base classes, make StockSymbol init-only ([8486e23](https://github.com/SalZaki/finnhub-mcp/commit/8486e237c1cf6df9b7c66e79067814fc71de1123))
+* convert Result&lt;T&gt;.Success/.Failure to static factories ([#420](https://github.com/SalZaki/finnhub-mcp/issues/420)) ([5698508](https://github.com/SalZaki/finnhub-mcp/commit/5698508e005ecac5c00a8550b4f1dfc462ef20ee)), closes [#399](https://github.com/SalZaki/finnhub-mcp/issues/399)
+* **infra:** extract shared error handler + unify cache-key construction ([374bc03](https://github.com/SalZaki/finnhub-mcp/commit/374bc03bbeb9ebbf83aaf4ddbaca6d8cd365176a))
+* **infra:** extract shared error handler + unify cache-key construction ([28c30ff](https://github.com/SalZaki/finnhub-mcp/commit/28c30ff800dfabfe324b9633143f1e1a2b1f835d)), closes [#387](https://github.com/SalZaki/finnhub-mcp/issues/387)
+* **infra:** stop retrying cancellations, add backoff jitter, drop unused package ([#451](https://github.com/SalZaki/finnhub-mcp/issues/451)) ([f72f513](https://github.com/SalZaki/finnhub-mcp/commit/f72f5134341dabad3d8554b4e799c890d8e94f9b))
+* propagate cancellation as typed exception instead of demoting to Unknown ([#416](https://github.com/SalZaki/finnhub-mcp/issues/416)) ([ac65d31](https://github.com/SalZaki/finnhub-mcp/commit/ac65d311d4af529ebfffd10f95e9d3990c7c5f5b)), closes [#391](https://github.com/SalZaki/finnhub-mcp/issues/391)
+* **search:** align Search client to the Wave A/B shape (safe axes) ([#453](https://github.com/SalZaki/finnhub-mcp/issues/453)) ([1a58486](https://github.com/SalZaki/finnhub-mcp/commit/1a584863df43b0db823fbfeed2aec30ec9173be6))
+* **tool:** consolidate Wave A/B tool scaffold and validators ([#450](https://github.com/SalZaki/finnhub-mcp/issues/450)) ([5ef9770](https://github.com/SalZaki/finnhub-mcp/commit/5ef9770434f61f0b7508d698ecd2de11cafec191))
+
+
+### 👷 CI/CD
+
+* bump the github-actions group with 2 updates ([#459](https://github.com/SalZaki/finnhub-mcp/issues/459)) ([eb9e2ea](https://github.com/SalZaki/finnhub-mcp/commit/eb9e2ea033729ca64384eef8fb034bbbfbb338b0))
+* bump the github-actions group with 8 updates ([#444](https://github.com/SalZaki/finnhub-mcp/issues/444)) ([f64a341](https://github.com/SalZaki/finnhub-mcp/commit/f64a341d6f17e433fb42dd3158469d643d74cf62))
+* **release:** harden npm publish with smoke-pack + publishConfig ([#472](https://github.com/SalZaki/finnhub-mcp/issues/472)) ([bfeab14](https://github.com/SalZaki/finnhub-mcp/commit/bfeab14188afae5b74e258276643bcbcc46ccaf5))
+
 ## [1.20.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.20.0...v1.20.1) (2026-05-24)
 
 
