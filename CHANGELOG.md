@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.21.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.21.0...v1.21.1) (2026-06-28)
+
+
+### 🐛 Bug Fixes
+
+* **release:** move last-release-sha to config root ([#484](https://github.com/SalZaki/finnhub-mcp/issues/484)) ([2866106](https://github.com/SalZaki/finnhub-mcp/commit/286610624653987687699d74c57934fd12de1c23))
+
+
+### 👷 CI/CD
+
+* **release:** publish to npm via OIDC only (drop NPM_TOKEN) ([#480](https://github.com/SalZaki/finnhub-mcp/issues/480)) ([a826c21](https://github.com/SalZaki/finnhub-mcp/commit/a826c21438d691a1a77d1f15c05a1bf15a23f76e))
+* **release:** run validate on promotion PRs to release ([#476](https://github.com/SalZaki/finnhub-mcp/issues/476)) ([a534991](https://github.com/SalZaki/finnhub-mcp/commit/a5349917f0400882be36bbf944aee03189f514bf))
+* **release:** switch to single-branch release-please on main ([#481](https://github.com/SalZaki/finnhub-mcp/issues/481)) ([205bbd0](https://github.com/SalZaki/finnhub-mcp/commit/205bbd0fece8507a9ed83cfcbcf0cafd3ba68332))
+* remove obsolete sync-changelog workflow ([#483](https://github.com/SalZaki/finnhub-mcp/issues/483)) ([7e1d284](https://github.com/SalZaki/finnhub-mcp/commit/7e1d2845fe19b11836532bdd20040d3f6e644c7e))
+
 ## [1.21.0](https://github.com/SalZaki/finnhub-mcp/compare/v1.20.1...v1.21.0) (2026-06-27)
 
 
