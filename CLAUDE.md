@@ -45,7 +45,7 @@ Dependency direction: `Server` → `Application` ← `Infrastructure`. The `Appl
 ## Conventions
 
 - **Conventional Commits** — release-please depends on them. Enforced by a Husky.Net `commit-msg` hook locally **and** the `PR Title` GitHub Action server-side. Allowed types (the full list, mirrors `.release-please-config.json`): `feat`, `fix`, `perf`, `refactor`, `revert`, `style`, `build`, `ci`, `chore`, `docs`, `test`. Breaking changes via `!` (`feat!:` …) or a `BREAKING CHANGE:` footer.
-  - **`release:` is NOT an allowed type.** Promotion PRs from `main → release` must use `chore(release): promote main to release` (PR #171 was rejected for using `release:`).
+  - **`release:` is NOT an allowed type.** release-please's own release PR uses `chore(release): release X.Y.Z` (PR #171 was rejected for using `release:`).
   - After a fresh clone: `dotnet tool restore && dotnet husky install` — otherwise the local hook isn't wired and commits go straight to the server-side check.
 - **Source-generated JSON** — every DTO must have an entry in the `JsonSerializerContext` partial class in `Infrastructure/Serialization`. No reflection-based `JsonSerializer.Serialize<T>` without a context.
 - **Strongly-typed options** — bind from `appsettings.json` via `IOptions<T>` with data-annotation validation on startup.
@@ -122,31 +122,26 @@ Each Infrastructure test csproj copies fixtures into the test bin directory:
 
 Refresh fixtures when Finnhub changes a shape or you add an endpoint.
 
-## CI & releases — gated through the `release` branch
+## CI & releases — single-branch, release-please on `main`
 
-**Branch model:**
-- `main` — every feature/fix/ci PR lands here as normal (squash or merge, your call)
-- `release` — the ship gate; releases only happen from here
+**Branch model:** `main` is the only long-lived branch. Feature/fix/ci PRs land on `main`; releases are cut from `main` by release-please. There is **no `release` branch** — the gated `main → release` promotion model was retired on 2026-06-27 (it caused a squash-promotion empty-release and an accidental branch-deletion while cutting v1.21.0). This matches the simpler single-branch flow used in the sibling `doodleworks-mcp` repo.
 
 **Workflow files:**
-- `.github/workflows/dotnet.yml` runs format + build + tests on every push to `main`/`develop`/`release` and every PR targeting `main`/`develop`
-- `.github/workflows/release.yml` triggers **only** on push to `release` — runs `validate` (format + tests) → `release-please` (uses `target-branch: release` — required, see PR #162) → 6-platform build matrix on success
-- `.github/workflows/pr-title.yml` validates PR titles against Conventional Commits
-
-**Validate runs BEFORE release-please.** If tests fail, no tag is created. (PR #169 corrected this — previously failed validate left an orphan tag and GitHub release with no artifacts.)
+- `.github/workflows/dotnet.yml` — format + build + tests on every push to `main` and every PR targeting `main`.
+- `.github/workflows/release.yml` — triggers on push to `main` (+ `workflow_dispatch`): `release-please` opens/updates a release PR; merging that PR creates the tag + GitHub Release, which gates the 6-platform build matrix + `publish-npm`. No separate `validate` job — `dotnet.yml` already validates the same pushes/PRs.
+- `.github/workflows/pr-title.yml` — validates PR titles against Conventional Commits.
 
 **Shipping a release:**
-1. Open a `main → release` PR titled `chore(release): promote main to release`
-2. **Merge it with `--merge` (NOT `--squash`)** → validate runs on `release`
-3. release-please opens its own PR against `release` with the version bump + CHANGELOG entry (`release-please--branches--release`)
-4. **Merge that with `--merge` (NOT `--squash`)** → tag + GitHub release + 6-platform build matrix triggers
+1. Land feature/fix PRs on `main` as normal (squash or merge — the squash footgun is gone now that there's no promotion step to collapse).
+2. release-please maintains a `chore(release): release X.Y.Z` PR on `main` (branch `release-please--branches--main`) with the version bump + CHANGELOG.
+3. **Merge that release PR** → tag `vX.Y.Z` + GitHub Release + 6-platform binaries + npm publish (all 7 packages via OIDC trusted publishing).
 
-> **Why `--merge` and not `--squash`?** release-please walks the commit graph since the last release tag and bumps the version off the conventional-commit titles it finds (`fix:` → patch, `feat:` → minor). A squash replaces every inner commit with a single `chore(release):` commit. release-please then sees only a hidden `chore:` type, finds nothing user-facing, and skips releasing — leaving you with an empty cycle. A regular merge preserves the inner titles in release's history. PR #178 was squash-merged and produced no release; PR #180 was the recovery merge that brought the inner `fix(ci):` commits back into release's history so release-please could cut v1.20.1.
+> release-please bumps off the conventional-commit titles since the last release (`fix:` → patch, `feat:` → minor). Because feature PRs land directly on `main`, it always sees the real titles — no special merge discipline for the release PR.
 
 **Things to know:**
-- `CHANGELOG.md` is generated; don't edit it by hand.
-- After a promotion lands on `release`, GitHub's UI will offer a "compare and pull request" prompt suggesting `release → main`. **It's noise** — that direction is circular (release-please adds CHANGELOG + manifest commits to `release` that main doesn't have; merging them back is meaningless). Dismiss the banner.
-- Branch protection on `release` is enabled (require PR + `Validate Release Branch` status check + no force push + no deletions). Direct pushes are blocked; the admin-merge escape valve remains for the Codecov-on-introducing-PR class of chicken-and-egg cases.
+- `CHANGELOG.md` and `.release-please-manifest.json` are release-please-managed; don't edit by hand (the one exception was the 2026-06-27 single-branch migration, which seeded `main` with the v1.21.0 state + a `last-release-sha` in `.release-please-config.json`).
+- npm publishing is **tokenless via OIDC trusted publishing** (configured per package on npmjs.com) — no `NPM_TOKEN`. The `publish-npm` job has `id-token: write` + `--provenance`, and a smoke-pack guard runs before publish.
+- `main` is protected by ruleset 5687245 (require signatures, no force-push, no deletion; owner bypass). Requiring the CI status checks on `main` is recommended but not yet enabled.
 
 ## Coverage
 
@@ -233,14 +228,12 @@ When any AI agent needs to browse, prefer gstack's `/browse` over `mcp__claude-i
 - Don't introduce a different mocking library — stick with NSubstitute.
 - Don't commit `.env`, API keys, or any secrets.
 - Don't edit `CHANGELOG.md` directly.
-- **Don't use `release:` as a Conventional Commit type.** Promotion PRs are `chore(release): …`. The PR-title validator will block `release:` (PR #171).
+- **Don't use `release:` as a Conventional Commit type.** release-please's release PR is `chore(release): …`. The PR-title validator will block `release:` (PR #171).
 - **Don't `git commit --no-verify`** to skip the commit-msg hook. The server-side PR-title check will still reject the merge, so you'd be deferring pain rather than avoiding it.
 - **Don't strip the trailing-slash normalization in `ConfigureFinnHubClient`.** It looks like dead code but it prevents the URL-resolution bug class from PR #169. The XML comment on the method explains why.
-- **Don't merge GitHub's "compare and pull request" prompt for `release → main`.** It's a circular merge (see "Gated release model" above).
+- **Don't recreate the `release` branch or re-add a `main → release` promotion step.** Releases are single-branch on `main` via release-please as of 2026-06-27; the gated-promotion model was retired after it caused a squash empty-release and an accidental branch deletion (see "CI & releases" above).
 - **Don't ship synthetic-payload-only client tests.** Real Finnhub fixtures live under `tests/Fixtures/finnhub/`; use them. Mocks bypass URL resolution AND don't catch upstream shape drift.
 - **Don't guess the fix from a code-review reading when a live error is reported** — read the server log first (see "Debugging discipline" above). The financials misdiagnosis cost a release cycle for this exact reason.
-- **Don't `--squash` promotion PRs from `main → release`.** The squash collapses every inner commit into a single `chore(release): promote main to release` commit, hiding the `fix:` / `feat:` titles that drive release-please's version bump. release-please walks the squashed history, finds only `chore(release):` (hidden type), and skips releasing — leaving you with an empty release cycle that has to be repaired by a follow-up `--merge`. Always use `gh pr merge --merge` for promotion PRs. PR #178 was the canary; PR #180 was the recovery merge that brought the inner `fix(ci):` commits back into release's history.
 - **Don't file development work without a GitHub Issue.** Every PR that ships scope should reference one (`Closes #N` in the body). One-off bug fixes filed reactively are the only exception, and even those should get an issue retroactively if the fix is non-trivial.
 - **Don't bring back the markdown issue templates.** `epic.md`, `feature.md`, `user_story.md`, `task.md` were replaced by the YAML forms in PR #188 because the YAML versions enforce required fields and labels. The legacy files are gone; recreating them silently shadows the YAML and breaks the gate.
 - **Don't put a User Story under an Epic without an intermediate Feature.** The hierarchy is `Epic → Feature → User Story → Sub-task`. Skipping a level breaks the sub-issue parent navigation and the GitHub Project rollups. If the Feature is genuinely a placeholder, file it anyway with `TBD` content rather than pointing the Story at the Epic.
-- **Don't push directly to `release`.** Branch protection blocks it. Use a promotion PR with `--merge` (see above). The admin-merge escape valve exists for the Codecov-on-introducing-PR class only, not for routine pushes.
