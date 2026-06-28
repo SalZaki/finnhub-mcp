@@ -3,12 +3,12 @@
   "release-type": "simple",
   "include-v-in-tag": true,
   "bump-minor-pre-major": true,
+  "last-release-sha": "bfeab14188afae5b74e258276643bcbcc46ccaf5",
   "changelog-path": "CHANGELOG.md",
   "packages": {
     ".": {
       "release-type": "simple",
       "include-component-in-tag": false,
-      "last-release-sha": "bfeab14188afae5b74e258276643bcbcc46ccaf5",
       "changelog-sections": [
         {"type": "feat", "section": "✨ Features", "hidden": false},
         {"type": "fix", "section": "🐛 Bug Fixes", "hidden": false},
