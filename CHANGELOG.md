@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.2](https://github.com/SalZaki/finnhub-mcp/compare/v1.21.1...v1.21.2) (2026-06-30)
+
+
+### 👷 CI/CD
+
+* bump the github-actions group with 2 updates ([#486](https://github.com/SalZaki/finnhub-mcp/issues/486)) ([2443648](https://github.com/SalZaki/finnhub-mcp/commit/2443648f220f0b4575b69c482425309e1e950f21))
+
 ## [1.21.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.21.0...v1.21.1) (2026-06-28)
 
 
