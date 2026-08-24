@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.21.2](https://github.com/SalZaki/finnhub-mcp/compare/v1.21.1...v1.21.2) (2026-08-24)
+
+
+### 🐛 Bug Fixes
+
+* **deps:** resolve NU1903 by lifting Microsoft.OpenApi to the patched 2.7.5 ([#526](https://github.com/SalZaki/finnhub-mcp/issues/526)) ([fe807fe](https://github.com/SalZaki/finnhub-mcp/commit/fe807fe6f68d46a9d60c2cf6e1928c9b78c9663e))
+
+
+### 👷 CI/CD
+
+* bump the github-actions group across 1 directory with 4 updates ([#491](https://github.com/SalZaki/finnhub-mcp/issues/491)) ([c7d5dfd](https://github.com/SalZaki/finnhub-mcp/commit/c7d5dfd128bc04a61cfb2bee305a10cc994d865a))
+* bump the github-actions group with 2 updates ([#486](https://github.com/SalZaki/finnhub-mcp/issues/486)) ([2443648](https://github.com/SalZaki/finnhub-mcp/commit/2443648f220f0b4575b69c482425309e1e950f21))
+
 ## [1.21.1](https://github.com/SalZaki/finnhub-mcp/compare/v1.21.0...v1.21.1) (2026-06-28)
 
 
