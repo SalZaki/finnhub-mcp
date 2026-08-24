@@ -13,12 +13,24 @@
 
   <ItemGroup Label="Common">
     <PackageVersion Include="DotNetEnv" Version="3.1.1" />
-    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.7" />
+    <!--
+      Held at >= 10.2.0. Swashbuckle.AspNetCore.Swagger 10.1.7 pulled in
+      Microsoft.OpenApi 2.4.1, which GHSA-v5pm-xwqc-g5wc (high, CVSS 7.5,
+      published 2026-06-30) covers; NuGet audit raises NU1903 and
+      TreatWarningsAsErrors turns it into a restore failure. 10.2.3 requires
+      Microsoft.OpenApi 2.7.5, the patched floor. Do not lower this.
+    -->
+    <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.2.3" />
     <PackageVersion Include="Polly" Version="8.6.1" />
   </ItemGroup>
 
   <ItemGroup Label="Microsoft">
-    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.0"/>
+    <!--
+      Held at >= 10.0.11 for the same advisory: 10.0.0 asked only for
+      Microsoft.OpenApi >= 2.0.0, so it could not lift the vulnerable 2.4.1.
+      10.0.11 constrains it to [2.7.5, 3.0.0) and matches the runtime CI uses.
+    -->
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.11"/>
     <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="$(MicrosoftExtensionsVersion)" />
