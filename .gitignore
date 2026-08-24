@@ -52,8 +52,15 @@ x86/
 .env
 .env.local
 
-# Ignore intermediate working files, scratch, and ephemeral session state
-.planning/
+# Ignore intermediate working files, scratch, and ephemeral session state.
+# Note the `/*` rather than `/` - git will not descend into a fully excluded
+# directory, so the epics negation below only works if the directory itself
+# stays un-ignored.
+.planning/*
+
+# Except the committed epic backlog specs (E01-E15 programme). Issue bodies cite
+# these by section anchor, so they have to be readable from the repo.
+!.planning/epics/
 
 # AI agent local state
 .claude/
