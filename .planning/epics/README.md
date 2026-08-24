@@ -5,7 +5,7 @@ baseline_commit: 2443648f220f0b4575b69c482425309e1e950f21
 epic_range: E01-E15
 ---
 
-# Finnhub MCP Epic Backlog — E01 to E15
+# Finnhub MCP Epic Backlog - E01 to E15
 
 This package splits the comprehensive backlog into 15 self-contained Markdown specifications. A coding agent should start here, select the next Epic from the roadmap, and then work inside that Epic file in dependency order.
 
@@ -102,4 +102,3 @@ The source backlog contains one unresolved circular blocker: [US02.04.01](./E02-
 - [ ] Keep all 168 traceability rows covered across the programme.
 - [ ] Do not bypass P0 security, protocol, financial-accuracy, or release gates to start later breadth work.
 - [ ] Reconcile package totals after any approved backlog change.
-
