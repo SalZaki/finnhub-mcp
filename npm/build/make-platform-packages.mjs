@@ -56,6 +56,43 @@ const here = path.dirname(url.fileURLToPath(import.meta.url));
 const wrapperDir = path.resolve(here, "..", "finnhub-mcp");
 
 const exeFor = (os) => (os === "win32" ? "finnhub-mcp.exe" : "finnhub-mcp");
+
+// npm renders this on the package page. Without it the six generated packages
+// display "ERROR: No README data found!" where the description belongs, and npm
+// publishes are immutable, so every release without one ships six more such
+// pages (#531). npm always includes README.md in the tarball regardless of the
+// `files` field below, so the manifest needs no change to carry it.
+function readmeFor(key, os, cpu, exe) {
+  return [
+    `# ${SCOPE}/${PKG}-${key}`,
+    "",
+    `Platform binary for [\`${PKG}\`](https://www.npmjs.com/package/${PKG}), a`,
+    "[Model Context Protocol](https://modelcontextprotocol.io) server exposing",
+    "Finnhub's financial-data APIs to MCP-compatible clients.",
+    "",
+    "## Do not install this package directly",
+    "",
+    `npm selects it automatically as an optional dependency of \`${PKG}\` when`,
+    `installing on ${os}/${cpu}. Install the wrapper instead:`,
+    "",
+    "```sh",
+    `npx ${PKG}`,
+    "```",
+    "",
+    "## Contents",
+    "",
+    `- \`bin/${exe}\` - self-contained .NET binary for ${key}`,
+    "- `bin/appsettings.json` - default configuration",
+    "",
+    "## Links",
+    "",
+    "- Source and documentation: <https://github.com/SalZaki/finnhub-mcp>",
+    `- Wrapper package: <https://www.npmjs.com/package/${PKG}>`,
+    "",
+    "Released under the MIT licence.",
+    "",
+  ].join("\n");
+}
 const sha256 = (buf) => crypto.createHash("sha256").update(buf).digest("hex");
 
 const checksums = {};
@@ -98,6 +135,7 @@ for (const { rid, os, cpu } of MATRIX) {
     homepage: "https://github.com/SalZaki/finnhub-mcp#readme",
   };
   fs.writeFileSync(path.join(pkgDir, "package.json"), JSON.stringify(manifest, null, 2) + "\n");
+  fs.writeFileSync(path.join(pkgDir, "README.md"), readmeFor(key, os, cpu, exe));
   platformPackages.push(pkgDir);
 }
 
