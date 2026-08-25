@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.21.3](https://github.com/SalZaki/finnhub-mcp/compare/v1.21.2...v1.21.3) (2026-08-25)
+
+
+### 🐛 Bug Fixes
+
+* **ci:** handle the npm 12 pack --json shape in smoke-pack ([#528](https://github.com/SalZaki/finnhub-mcp/issues/528)) ([2a04be7](https://github.com/SalZaki/finnhub-mcp/commit/2a04be7207c5fb9cb7d266ab2fd85dfe643465d4))
+
 ## [1.21.2](https://github.com/SalZaki/finnhub-mcp/compare/v1.21.1...v1.21.2) (2026-08-24)
 
 
