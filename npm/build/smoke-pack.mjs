@@ -74,7 +74,9 @@ if (packagesDir && fs.existsSync(packagesDir)) {
     const dir = path.join(packagesDir, name);
     if (!fs.statSync(dir).isDirectory()) continue;
     const exe = name.includes("win32-") ? "bin/finnhub-mcp.exe" : "bin/finnhub-mcp";
-    assertFiles(`platform ${name}`, dir, ["package.json", exe, "bin/appsettings.json"]);
+    // README.md included so a platform package can never regress to npm's
+    // "ERROR: No README data found!" page (#531).
+    assertFiles(`platform ${name}`, dir, ["package.json", "README.md", exe, "bin/appsettings.json"]);
   }
 } else {
   console.log("• no packages dir given — skipping platform-package checks");
