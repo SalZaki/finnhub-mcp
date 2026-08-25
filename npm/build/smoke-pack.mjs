@@ -19,7 +19,23 @@ const ok = (m) => console.log(`✓ ${m}`);
 function packedFiles(dir) {
   const out = execFileSync("npm", ["pack", "--dry-run", "--json"], { cwd: dir, encoding: "utf8" });
   const meta = JSON.parse(out);
-  return (meta[0]?.files ?? []).map((f) => f.path);
+  // npm <= 11 emits an array of package objects; npm >= 12 emits an object keyed
+  // by package name. Normalise both. npm 12.0.0 (2026-07-08) made this change and
+  // the release job installs `npm@latest`, so v1.21.2 packed fine but every file
+  // read as missing — `meta[0]` is undefined on an object. Don't drop either branch.
+  const entries = Array.isArray(meta) ? meta : Object.values(meta);
+  const entry = entries[0];
+  if (!entry?.files) {
+    // Fail loudly rather than returning [] — an unparsed shape previously looked
+    // identical to "the tarball is empty", which sent the last investigation at
+    // the packages instead of at the parser.
+    const v = execFileSync("npm", ["--version"], { encoding: "utf8" }).trim();
+    throw new Error(
+      `cannot read the packed file list from \`npm pack --json\` in ${dir}: ` +
+      `npm ${v} returned an unrecognised shape: ${out.slice(0, 200)}`,
+    );
+  }
+  return entry.files.map((f) => f.path);
 }
 
 function assertFiles(label, dir, required) {
